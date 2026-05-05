@@ -140,6 +140,7 @@ Then run the project's frontend verification commands, typically lint, typecheck
 | State (Client) | `Jotai` (minimize use) |
 | Forms | `@tanstack/react-form` + `zod` |
 | Auth | `better-auth` (client SDK only — never import server library or database adapters) |
+| Animation | `motion` — import from `motion/react`. `framer-motion` (legacy package name) is BANNED. |
 
 ### Shadcn Workflow
 

@@ -1,7 +1,7 @@
 {
   "name": "oh-my-agent",
   "version": "6.16.0",
-  "releaseDate": "2026-05-07T13:47:40.622Z",
+  "releaseDate": "2026-05-07T14:06:01.294Z",
   "repository": "https://github.com/first-fluke/oh-my-agent",
   "files": [
     {
@@ -1351,13 +1351,13 @@
     },
     {
       "path": ".agents/skills/oma-translator/SKILL.md",
-      "sha256": "f26830f1e48d15cb4262ab6d03149729a41e4640c6535cd792d5dd16934ff3ed",
-      "size": 23494
+      "sha256": "524c6c411df5e969eac97dcb97766027e8aa942407614aa69fd1d58daead6a24",
+      "size": 26087
     },
     {
       "path": ".agents/skills/oma-translator/resources/anti-ai-patterns.md",
-      "sha256": "5b5d4de2568a0934c91207dcca40d808109256ba15b4ea5c0f2172b55c823ed3",
-      "size": 15225
+      "sha256": "bc675f394ebca5e76f742018c21fe814d77274690023ea561fb872c154a7b43f",
+      "size": 16423
     },
     {
       "path": ".agents/skills/oma-translator/resources/translation-rubric.md",

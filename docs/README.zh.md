@@ -71,6 +71,7 @@ APM 只分发 skill。workflow、规则、`oma-config.yaml`、关键词检测 ho
 | **oma-debug** | 根因分析、修复、回归测试 |
 | **oma-design** | 设计系统、token、无障碍、响应式 |
 | **oma-dev-workflow** | CI/CD、发布、monorepo 自动化 |
+| **oma-docs** | 文档漂移检测 — 验证代码↔文档引用，同步受 diff 影响的文档 |
 | **oma-frontend** | React/Next.js、TypeScript、Tailwind CSS v4、shadcn/ui |
 | **oma-hwp** | HWP/HWPX/HWPML 转 Markdown |
 | **oma-image** | 多供应商 AI 图像生成 |

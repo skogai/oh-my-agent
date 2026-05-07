@@ -71,6 +71,7 @@ APM แจกแค่ skill เท่านั้น ส่วน workflow, rul
 | **oma-debug** | วิเคราะห์สาเหตุต้นตอ (root cause), แก้ไขบัค, ทำ regression tests |
 | **oma-design** | ระบบการออกแบบ (Design systems), tokens, accessibility, responsive |
 | **oma-dev-workflow** | CI/CD, releases, ระบบอัตโนมัติสำหรับ monorepo |
+| **oma-docs** | ตรวจจับความเหลื่อมของเอกสาร — ตรวจสอบการอ้างอิง code↔docs, ซิงก์ docs ที่ได้รับผลกระทบจาก diff |
 | **oma-frontend** | React/Next.js, TypeScript, Tailwind CSS v4, shadcn/ui |
 | **oma-hwp** | แปลงไฟล์ HWP/HWPX/HWPML เป็น Markdown |
 | **oma-image** | สร้างภาพ AI แบบหลายผู้ให้บริการ |

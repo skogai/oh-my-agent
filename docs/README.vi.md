@@ -71,6 +71,7 @@ Chọn một preset và bạn đã sẵn sàng:
 | **oma-debug** | Phân tích nguyên nhân gốc, sửa lỗi, regression test |
 | **oma-design** | Hệ thống thiết kế, token, accessibility, responsive |
 | **oma-dev-workflow** | CI/CD, release, tự động hóa monorepo |
+| **oma-docs** | Phát hiện trôi tài liệu — xác minh tham chiếu code↔docs, đồng bộ docs bị ảnh hưởng bởi diff |
 | **oma-frontend** | React/Next.js, TypeScript, Tailwind CSS v4, shadcn/ui |
 | **oma-hwp** | Chuyển đổi HWP/HWPX/HWPML sang Markdown |
 | **oma-image** | Tạo ảnh AI đa nhà cung cấp |

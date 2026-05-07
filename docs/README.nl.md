@@ -71,6 +71,7 @@ Kies een preset en je bent klaar:
 | **oma-debug** | Root cause-analyse, fixes, regressietests |
 | **oma-design** | Design systems, tokens, toegankelijkheid, responsive |
 | **oma-dev-workflow** | CI/CD, releases, monorepo-automatisering |
+| **oma-docs** | Documentatie-drift-detectie — code↔docs-referenties verifiëren, door diff geraakte docs synchroniseren |
 | **oma-frontend** | React/Next.js, TypeScript, Tailwind CSS v4, shadcn/ui |
 | **oma-hwp** | HWP/HWPX/HWPML naar Markdown conversie |
 | **oma-image** | Multi-vendor AI-beeldgeneratie |

@@ -72,6 +72,7 @@ Pick a preset and you're ready:
 | **oma-debug** | Root cause analysis, fixes, regression tests |
 | **oma-design** | Design systems, tokens, accessibility, responsive |
 | **oma-dev-workflow** | CI/CD, releases, monorepo automation |
+| **oma-docs** | Documentation drift detection — verify code↔docs refs, sync diff-affected docs |
 | **oma-frontend** | React/Next.js, TypeScript, Tailwind CSS v4, shadcn/ui |
 | **oma-hwp** | HWP/HWPX/HWPML to Markdown conversion |
 | **oma-image** | Multi-vendor AI image generation |

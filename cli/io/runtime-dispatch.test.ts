@@ -347,6 +347,58 @@ describe("planDispatch — plan integration (T10b)", () => {
       }),
     ).not.toThrow();
   });
+
+  // Regression: issue #336 follow-up. Before cursor was promoted to a
+  // first-class vendor, `model_preset: cursor-only` did not exist and
+  // resolveAgentPlan would route cursor dispatch through whatever model the
+  // active preset declared (e.g. google/gemini-3-flash), producing
+  // `cursor agent ... --model gemini-3-flash <prompt>` — wrong model.
+  it("cursor-only preset → cursor dispatch injects preset cliModel before prompt", () => {
+    writeFileSync(
+      join(tempDir, ".agents", "oma-config.yaml"),
+      "language: en\nmodel_preset: cursor-only\n",
+    );
+
+    const plan = planDispatch(
+      "pm",
+      "cursor",
+      minimalVendorConfigCursor,
+      null,
+      "do-the-thing",
+      { CURSOR_AGENT: "1" },
+    );
+
+    const args = plan.invocation.args;
+    const modelIdx = args.indexOf("--model");
+    expect(modelIdx).toBeGreaterThan(-1);
+    expect(args[modelIdx + 1]).toBe("composer-2-fast");
+    expect(args.at(-1)).toContain("do-the-thing");
+    // Model flag is the last option before the trailing positional prompt.
+    expect(modelIdx + 2).toBe(args.length - 1);
+    // No duplicate --model flag (regression for the
+    // vendorConfigWithoutModel + injectCursorModelBeforeTrailingPrompt path).
+    expect(args.filter((a) => a === "--model")).toHaveLength(1);
+  });
+
+  it("cursor-only preset (architecture role) → cursor dispatch uses composer-2", () => {
+    writeFileSync(
+      join(tempDir, ".agents", "oma-config.yaml"),
+      "language: en\nmodel_preset: cursor-only\n",
+    );
+
+    const plan = planDispatch(
+      "architecture",
+      "cursor",
+      minimalVendorConfigCursor,
+      null,
+      "review",
+      { CURSOR_AGENT: "1" },
+    );
+
+    const args = plan.invocation.args;
+    const modelIdx = args.indexOf("--model");
+    expect(args[modelIdx + 1]).toBe("composer-2");
+  });
 });
 
 describe("buildExternalInvocation — vendor branches", () => {

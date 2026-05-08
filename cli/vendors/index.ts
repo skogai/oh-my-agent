@@ -3,7 +3,13 @@ import { isCodexAuthenticated } from "./codex/auth.js";
 import { isGeminiAuthenticated } from "./gemini/auth.js";
 import { isQwenAuthenticated } from "./qwen/auth.js";
 
-export type VendorId = "claude" | "gemini" | "codex" | "qwen" | "antigravity";
+export type VendorId =
+  | "claude"
+  | "gemini"
+  | "codex"
+  | "cursor"
+  | "qwen"
+  | "antigravity";
 
 export interface Vendor {
   id: VendorId;

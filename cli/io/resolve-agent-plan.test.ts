@@ -67,6 +67,12 @@ const QWEN_ONLY_CONFIG = {
   model_preset: "qwen-only",
 } as const;
 
+/** Minimal config using cursor-only preset */
+const CURSOR_ONLY_CONFIG = {
+  language: "en",
+  model_preset: "cursor-only",
+} as const;
+
 // ---------------------------------------------------------------------------
 // Case 1: agents override takes precedence over preset default
 // ---------------------------------------------------------------------------
@@ -228,6 +234,48 @@ describe("resolveAgentPlanFromConfig — Case 8: vendorOverride not in native_di
       expect.stringContaining('"codex" is not in native_dispatch_from'),
     );
     warnSpy.mockRestore();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Case 8b: cursor-only preset routes to cursor cli + cursor cliModel
+// Regression for issue #336 follow-up — preset must produce cursor-owned
+// model slugs (composer-2/composer-2-fast), not bleed gemini/codex slugs into
+// `cursor agent --model <slug>`.
+// ---------------------------------------------------------------------------
+
+describe("resolveAgentPlanFromConfig — Case 8b: cursor-only preset", () => {
+  it("pm role → cli=cursor, cliModel=composer-2-fast", () => {
+    const plan = resolveAgentPlanFromConfig("pm", CURSOR_ONLY_CONFIG);
+    expect(plan.cli).toBe("cursor");
+    expect(plan.cliModel).toBe("composer-2-fast");
+  });
+
+  it("architecture role → cli=cursor, cliModel=composer-2", () => {
+    const plan = resolveAgentPlanFromConfig("architecture", CURSOR_ONLY_CONFIG);
+    expect(plan.cli).toBe("cursor");
+    expect(plan.cliModel).toBe("composer-2");
+  });
+
+  it("vendorOverride='cursor' on cursor-owned model is honored", () => {
+    const plan = resolveAgentPlanFromConfig(
+      "backend",
+      CURSOR_ONLY_CONFIG,
+      "cursor",
+    );
+    expect(plan.cli).toBe("cursor");
+  });
+
+  it("inline agents override with cursor/composer-2-fast slug works", () => {
+    const config = {
+      ...CODEX_ONLY_CONFIG,
+      agents: {
+        pm: { model: "cursor/composer-2-fast" },
+      },
+    };
+    const plan = resolveAgentPlanFromConfig("pm", config);
+    expect(plan.cli).toBe("cursor");
+    expect(plan.cliModel).toBe("composer-2-fast");
   });
 });
 

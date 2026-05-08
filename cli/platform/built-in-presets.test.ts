@@ -3,7 +3,7 @@
 //
 // T11 — integrity tests for BUILT_IN_PRESETS and BUILT_IN_PRESET_ALIASES.
 // Asserts:
-//   • All 5 built-in presets exist and have all 11 agent_defaults.
+//   • All 6 built-in presets exist and have all 11 agent_defaults.
 //   • Every model slug resolves via getModelSpec (boot-time integrity check).
 //   • BUILT_IN_PRESET_ALIASES shape is Record<string, BuiltInPresetKey> and
 //     any defined alias resolves to a real preset key.
@@ -17,6 +17,7 @@ const EXPECTED_PRESET_KEYS = [
   "codex-only",
   "gemini-only",
   "qwen-only",
+  "cursor-only",
   "antigravity",
 ] as const;
 
@@ -35,9 +36,9 @@ const EXPECTED_AGENT_IDS = [
 ] as const;
 
 describe("BUILT_IN_PRESETS", () => {
-  it("exports exactly 5 built-in presets", async () => {
+  it("exports exactly 6 built-in presets", async () => {
     const { BUILT_IN_PRESETS } = await import("./built-in-presets.js");
-    expect(Object.keys(BUILT_IN_PRESETS)).toHaveLength(5);
+    expect(Object.keys(BUILT_IN_PRESETS)).toHaveLength(6);
   });
 
   it.each(EXPECTED_PRESET_KEYS)("preset '%s' exists", async (key) => {

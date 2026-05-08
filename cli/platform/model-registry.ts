@@ -7,7 +7,13 @@ import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
-export type RuntimeId = "claude" | "codex" | "gemini" | "antigravity" | "qwen";
+export type RuntimeId =
+  | "claude"
+  | "codex"
+  | "gemini"
+  | "cursor"
+  | "antigravity"
+  | "qwen";
 
 export type EffortLevel = "none" | "low" | "medium" | "high" | "xhigh";
 
@@ -289,6 +295,62 @@ const RAW_REGISTRY: ReadonlyMap<string, ModelSpec> = new Map([
   ],
 
   // -------------------------------------------------------------------------
+  // Cursor (3)
+  // -------------------------------------------------------------------------
+  [
+    "cursor/composer-2",
+    {
+      cli: "cursor",
+      cli_model: "composer-2",
+      supports: {
+        effort: null,
+        apply_patch: false,
+        task_budget: false,
+        prompt_cache: false,
+        computer_use: false,
+        native_dispatch_from: ["cursor"],
+        api_only: false,
+      },
+      auth_hint: "Cursor Pro 또는 Pro Student 구독 필요",
+    } satisfies ModelSpec,
+  ],
+  [
+    "cursor/composer-2-fast",
+    {
+      cli: "cursor",
+      cli_model: "composer-2-fast",
+      supports: {
+        effort: null,
+        apply_patch: false,
+        task_budget: false,
+        prompt_cache: false,
+        computer_use: false,
+        native_dispatch_from: ["cursor"],
+        api_only: false,
+      },
+      auth_hint: "Cursor Pro 또는 Pro Student 구독 필요",
+    } satisfies ModelSpec,
+  ],
+  [
+    "cursor/auto",
+    {
+      cli: "cursor",
+      cli_model: "auto",
+      supports: {
+        effort: null,
+        apply_patch: false,
+        task_budget: false,
+        prompt_cache: false,
+        computer_use: false,
+        native_dispatch_from: ["cursor"],
+        api_only: false,
+      },
+      auth_hint:
+        "Cursor Pro 또는 Pro Student 구독 필요 (자동 라우팅 — 쿼터 친화적)",
+    } satisfies ModelSpec,
+  ],
+
+  // -------------------------------------------------------------------------
   // Alibaba Qwen (3)
   // -------------------------------------------------------------------------
   [
@@ -368,6 +430,7 @@ const RuntimeIdSchema = z.enum([
   "claude",
   "codex",
   "gemini",
+  "cursor",
   "antigravity",
   "qwen",
 ]);
@@ -388,7 +451,7 @@ const EffortSpecSchema = z.union([
 ]);
 
 const ModelSpecSchema = z.object({
-  cli: z.enum(["claude", "codex", "gemini", "qwen"]),
+  cli: z.enum(["claude", "codex", "gemini", "cursor", "qwen"]),
   cli_model: z.string().min(1),
   supports: z.object({
     effort: EffortSpecSchema,
@@ -618,6 +681,7 @@ const OWNER_TO_CLI: Record<string, RuntimeId> = {
   anthropic: "claude",
   openai: "codex",
   google: "gemini",
+  cursor: "cursor",
   qwen: "qwen",
 };
 

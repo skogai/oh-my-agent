@@ -57,6 +57,7 @@ export function qwenThinkingFlag(plan: AgentPlan): string | null {
  * - claude: --model {cliModel}
  * - gemini: --model {cliModel}  + optional --thinking-budget flag
  * - qwen:   -m {cliModel}  + optional --thinking / --no-thinking flag
+ * - cursor: [] (model flag injected before trailing prompt by injectCursorModelBeforeTrailingPrompt)
  * - antigravity: [] (external only; no model flag on top-level CLI)
  */
 export function buildAgentPlanArgs(plan: AgentPlan): string[] {
@@ -83,6 +84,12 @@ export function buildAgentPlanArgs(plan: AgentPlan): string[] {
       args.push("-m", plan.cliModel);
       const thinkingFlag = qwenThinkingFlag(plan);
       if (thinkingFlag) args.push(thinkingFlag);
+      break;
+    }
+    case "cursor": {
+      // Model flag is injected before the trailing prompt positional argument
+      // by injectCursorModelBeforeTrailingPrompt in runtime-dispatch.ts.
+      // buildAgentPlanArgs must return [] here to avoid duplicating --model.
       break;
     }
     case "antigravity": {

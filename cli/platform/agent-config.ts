@@ -32,6 +32,7 @@ export type BuiltInPresetKey =
   | "claude-only"
   | "codex-only"
   | "gemini-only"
+  | "cursor-only"
   | "qwen-only"
   | "antigravity";
 

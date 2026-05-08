@@ -85,6 +85,23 @@ export const BUILT_IN_PRESETS: Record<BuiltInPresetKey, ModelPreset> = {
     },
   },
 
+  "cursor-only": {
+    description: "Cursor-only — Cursor Pro / Pro Student",
+    agent_defaults: {
+      orchestrator: { model: "cursor/composer-2-fast" },
+      architecture: { model: "cursor/composer-2" },
+      qa: { model: "cursor/composer-2-fast" },
+      pm: { model: "cursor/composer-2-fast" },
+      backend: { model: "cursor/composer-2" },
+      frontend: { model: "cursor/composer-2" },
+      mobile: { model: "cursor/composer-2" },
+      db: { model: "cursor/composer-2" },
+      debug: { model: "cursor/composer-2" },
+      "tf-infra": { model: "cursor/composer-2" },
+      retrieval: { model: "cursor/composer-2-fast" },
+    },
+  },
+
   antigravity: {
     description:
       "Antigravity IDE — all impl roles fall back to external subprocess (handled at dispatch layer)",

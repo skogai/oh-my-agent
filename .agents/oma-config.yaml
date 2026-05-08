@@ -48,7 +48,7 @@ docs:
 # Model selection
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Built-in: claude-only | codex-only | gemini-only | qwen-only | antigravity
+# Built-in: claude-only | codex-only | gemini-only | qwen-only | cursor-only | antigravity
 # (custom_presets entries are also valid)
 model_preset: gemini-only
 

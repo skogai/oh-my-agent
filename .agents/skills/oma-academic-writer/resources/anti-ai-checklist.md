@@ -2,13 +2,9 @@
 
 Academic prose must read as authentically human-written. This checklist targets patterns that AI detection tools and experienced markers identify as machine-generated.
 
----
-
 ## Pre-submission Scan
 
 Run through each category. A single FAIL requires revision before output.
-
----
 
 ## 1. Vocabulary Clustering
 
@@ -23,8 +19,6 @@ Additionally, align with, crucial, delve, emphasize/emphasizing, enduring, enhan
 - [ ] Count flagged words per paragraph
 - [ ] If 3+ found → replace with plain academic alternatives
 - [ ] Check entire document for repeated use of the same flagged word
-
----
 
 ## 2. Inflated Significance
 
@@ -53,8 +47,6 @@ Additionally, align with, crucial, delve, emphasize/emphasizing, enduring, enhan
 - [ ] Is the language proportional to the evidence?
 - [ ] Would a sceptical reader accept the level of emphasis?
 
----
-
 ## 3. Superficial -ing Analysis
 
 **Rule:** Never append a present participle clause as shallow analysis.
@@ -74,8 +66,6 @@ Additionally, align with, crucial, delve, emphasize/emphasizing, enduring, enhan
 - [ ] For each: does it add substantive analysis or just filler?
 - [ ] Rewrite or delete accordingly
 
----
-
 ## 4. Copula Avoidance
 
 **Rule:** Use "is/are/has" when they are the natural choice. Do not replace them with fancier alternatives.
@@ -94,8 +84,6 @@ Additionally, align with, crucial, delve, emphasize/emphasizing, enduring, enhan
 
 - [ ] Scan for "serves as", "stands as", "marks", "represents" used as copula substitutes
 - [ ] Replace with "is/are" unless the verb genuinely adds meaning
-
----
 
 ## 5. Structural Patterns
 
@@ -125,8 +113,6 @@ Additionally, align with, crucial, delve, emphasize/emphasizing, enduring, enhan
 - [ ] No triple adjective/noun lists without substantive expansion
 - [ ] Terminology is consistent — no synonym cycling
 - [ ] All "from X to Y" constructions have a meaningful scale
-
----
 
 ## 6. Formatting Artefacts
 
@@ -172,8 +158,6 @@ Additionally, align with, crucial, delve, emphasize/emphasizing, enduring, enhan
 - [ ] All headings in sentence case
 - [ ] Tables justified for the content type
 
----
-
 ## 7. Meta-commentary
 
 ### Banned Phrases
@@ -193,8 +177,6 @@ Additionally, align with, crucial, delve, emphasize/emphasizing, enduring, enhan
 
 - [ ] No meta-commentary phrases found
 - [ ] Transitions use content-based links, not meta-phrases
-
----
 
 ## 8. Sentence Openers
 
@@ -217,8 +199,6 @@ Additionally, align with, crucial, delve, emphasize/emphasizing, enduring, enhan
 
 - [ ] No 3+ consecutive sentences starting the same way
 - [ ] At least 3 different opener types per paragraph
-
----
 
 ## 9. Rhythm & Paragraph Length
 
@@ -251,8 +231,6 @@ Additionally, align with, crucial, delve, emphasize/emphasizing, enduring, enhan
 - [ ] Paragraph lengths vary (no 4+ consecutive same-length paragraphs)
 - [ ] Semicolons ≤2 per 1000 words
 
----
-
 ## 10. Chatbot Artefacts
 
 ### Never Include
@@ -268,8 +246,6 @@ Additionally, align with, crucial, delve, emphasize/emphasizing, enduring, enhan
 ### Self-check
 
 - [ ] Zero chatbot artefacts in output
-
----
 
 ## Final Verification
 

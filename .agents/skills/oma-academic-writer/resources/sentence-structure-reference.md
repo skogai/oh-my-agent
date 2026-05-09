@@ -1,7 +1,5 @@
 # Sentence structure reference for academic English
 
----
-
 ## Four sentence types
 
 ### 1. Simple sentence
@@ -60,8 +58,6 @@ Two or more independent clauses + one or more dependent clauses.
 
 **Target:** 10–20% of sentences per paragraph (use sparingly for maximum impact).
 
----
-
 ## Variation rules
 
 ### Within a paragraph
@@ -90,8 +86,6 @@ Two or more independent clauses + one or more dependent clauses.
 
 **Rule:** No 3+ consecutive sentences beginning with the same opener type.
 
----
-
 ## Common errors to prevent
 
 ### Sentence fragments
@@ -118,8 +112,6 @@ Two independent clauses joined without proper punctuation or conjunction.
 
 Every sentence must be fully understandable when read in isolation. If a sentence requires mental gymnastics to parse, rewrite it more simply.
 
----
-
 ## Paragraph cohesion model
 
 ```
@@ -141,8 +133,6 @@ Every sentence must be fully understandable when read in isolation. If a sentenc
 > Nursing educators argue that strict measures should be implemented to avoid infection in medical institutions. There is also much evidence to demonstrate that infection rates rise dramatically when hygiene standards begin to fall. Therefore, it is argued that appropriate steps need to be in place to decrease and minimise these potential risks. Furthermore, aggressive steps should be taken to ensure that all staff maintain effective hygiene and infection control.
 
 **Improvements:** Varied openers, mixed simple/complex/compound structures, varied sentence lengths, logical flow from claim → evidence → argument → recommendation.
-
----
 
 ## Quick reference: conjunction inventory
 

@@ -4,8 +4,6 @@ Ranked by frequency in a corpus of academic papers. Higher tiers are more univer
 
 Source: `src/_ingredients/verbs.md` — top 437 verbs from academic corpus.
 
----
-
 ## Banned verbs (generic / low-level)
 
 These verbs lack precision and register in academic writing. Never use them as the main verb of a sentence.
@@ -42,8 +40,6 @@ These verbs lack precision and register in academic writing. Never use them as t
 | take | adopt, assume, undertake, acquire, embrace |
 | become | emerge, evolve, develop, transition, transform |
 
----
-
 ## Tier 1 — universal academic verbs (frequency rank 1–30)
 
 These are safe in any academic context. Use liberally.
@@ -78,8 +74,6 @@ These are safe in any academic context. Use liberally.
 | study | 54 | Investigation, research, examination |
 | utilise | 55 | Application (prefer "employ" or "use" in less formal contexts) |
 | solve | 56 | Resolution, addressing problems |
-
----
 
 ## Tier 2 — strong academic verbs (frequency rank 31–80)
 
@@ -119,8 +113,6 @@ Excellent for adding precision and variety.
 | select | 128 | Choosing, picking, sampling |
 | serve | 132 | Function, role fulfillment |
 | process | 133 | Handling, transformation, treatment |
-
----
 
 ## Tier 3 — precision verbs (frequency rank 81–200)
 
@@ -162,8 +154,6 @@ For nuanced, specific claims. Excellent for adding sophistication without over-r
 | resolve | 338 | Solving, addressing, settling |
 | calculate | 350 | Computing, determining numerically |
 
----
-
 ## Verb selection by rhetorical purpose
 
 | Purpose | Recommended Verbs |
@@ -180,8 +170,6 @@ For nuanced, specific claims. Excellent for adding sophistication without over-r
 | Proposing | propose, recommend, suggest, advocate, put forward |
 | Limiting scope | focus, confine, restrict, constrain, delimit |
 | Citing work | note, report, document, record, observe |
-
----
 
 ## Usage notes
 

@@ -2,8 +2,6 @@
 
 Academic writing requires calibrated certainty — neither overclaiming nor excessive caution.
 
----
-
 ## Evidence-to-hedge mapping
 
 | Evidence Strength | Description | Hedge Level | Example Constructions |
@@ -14,8 +12,6 @@ Academic writing requires calibrated certainty — neither overclaiming nor exce
 | Exploratory | Pilot study, limited sample, emerging trends | Strong | "This **may indicate** that...", "Preliminary evidence **points toward**..." |
 | Interpretive | Author's own analysis without external validation | Attribution | "This pattern **appears to** reflect...", "One possible interpretation is that..." |
 | Speculative | No direct evidence; inference from adjacent domains | Maximal | "It is **conceivable** that...", "**If** this trend continues, X **could** occur." |
-
----
 
 ## Hedging devices
 
@@ -52,8 +48,6 @@ possibility, tendency, likelihood, indication, suggestion, assumption, interpret
 ### Hedging prepositional phrases
 
 according to, on the basis of, in light of, given the limitations of, with reference to, from the perspective of
-
----
 
 ## Rules
 
@@ -122,8 +116,6 @@ These intensifiers are appropriate only for:
 - Universally accepted facts: appropriate in very limited contexts
 
 For all other claims, remove the intensifier and let the evidence speak.
-
----
 
 ## Quick reference: hedge calibration checklist
 

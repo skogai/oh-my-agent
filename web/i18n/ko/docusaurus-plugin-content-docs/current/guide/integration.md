@@ -1,6 +1,6 @@
 ---
 title: "가이드: 기존 프로젝트 통합"
-description: 기존 프로젝트에 oh-my-agent를 추가하는 완전 가이드 — CLI 경로, 수동 경로, 검증, SSOT 심볼릭 링크 구조, 설치 프로그램의 내부 동작.
+description: 기존 프로젝트에 oh-my-agent를 추가하는 완전 가이드입니다. CLI 경로, 수동 경로, 검증, SSOT 심볼릭 링크 구조, 설치 프로그램의 내부 동작을 다룹니다.
 ---
 
 # 가이드: 기존 프로젝트 통합
@@ -9,8 +9,8 @@ description: 기존 프로젝트에 oh-my-agent를 추가하는 완전 가이드
 
 기존 프로젝트에 oh-my-agent를 추가하는 방법은 두 가지입니다:
 
-1. **CLI 경로** — `oma` (또는 `npx oh-my-agent`)를 실행하고 대화형 프롬프트를 따릅니다. 대부분의 사용자에게 권장됩니다.
-2. **수동 경로** — 파일을 직접 복사하고 심볼릭 링크를 설정합니다. 제한된 환경이나 커스텀 설정에 유용합니다.
+1. **CLI 경로**: `oma` (또는 `npx oh-my-agent`)를 실행하고 대화형 프롬프트를 따릅니다. 대부분의 사용자에게 권장됩니다.
+2. **수동 경로**: 파일을 직접 복사하고 심볼릭 링크를 설정합니다. 제한된 환경이나 커스텀 설정에 유용합니다.
 
 두 경로 모두 동일한 결과를 생성합니다: IDE별 디렉토리가 심볼릭 링크로 연결된 `.agents/` 디렉토리 (SSOT).
 
@@ -64,10 +64,10 @@ oma
 
 백엔드 스킬이 포함된 프리셋을 선택한 경우, 언어 변형을 선택하라는 메시지가 표시됩니다:
 
-- **Python** — FastAPI/SQLAlchemy (기본값)
-- **Node.js** — NestJS/Hono + Prisma/Drizzle
-- **Rust** — Axum/Actix-web
-- **Other / Auto-detect** — 나중에 `/stack-set`으로 설정
+- **Python**: FastAPI/SQLAlchemy (기본값)
+- **Node.js**: NestJS/Hono + Prisma/Drizzle
+- **Rust**: Axum/Actix-web
+- **Other / Auto-detect**: 나중에 `/stack-set`으로 설정
 
 ### 6. IDE 심볼릭 링크 설정
 
@@ -228,7 +228,7 @@ doctor 명령이 확인하는 항목:
 
 | 검사 | 확인 내용 |
 |:-----|:---------|
-| **CLI 설치** | gemini, claude, codex, qwen — 버전 및 가용성 |
+| **CLI 설치** | gemini, claude, codex, qwen의 버전 및 가용성 |
 | **인증** | 각 CLI의 API 키 또는 OAuth 상태 |
 | **MCP 설정** | 각 CLI 환경의 Serena MCP 서버 설정 |
 | **스킬 상태** | 어떤 스킬이 설치되어 있고 최신 상태인지 |
@@ -390,9 +390,9 @@ oma dashboard:web
 
 `installShared()`가 `_shared/` 디렉토리를 `.agents/skills/_shared/`에 복사합니다. 여기에 포함되는 것:
 
-- `core/` — 스킬 라우팅, 컨텍스트 로딩, 프롬프트 구조, 품질 원칙, 벤더 감지, API 컨트랙트.
-- `runtime/` — 메모리 프로토콜, 벤더별 실행 프로토콜.
-- `conditional/` — 특정 조건이 충족될 때만 로드되는 리소스 (품질 점수, 탐색 루프).
+- `core/`: 스킬 라우팅, 컨텍스트 로딩, 프롬프트 구조, 품질 원칙, 벤더 감지, API 컨트랙트.
+- `runtime/`: 메모리 프로토콜, 벤더별 실행 프로토콜.
+- `conditional/`: 특정 조건이 충족될 때만 로드되는 리소스 (품질 점수, 탐색 루프).
 
 ### 5. 워크플로우 설치
 

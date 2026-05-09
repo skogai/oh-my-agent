@@ -1,6 +1,6 @@
 ---
 title: "指南：图像生成"
-description: oh-my-agent 图像生成完整指南 —— 通过 Codex（gpt-image-2）、Pollinations（flux/zimage，免费）和 Gemini 进行多供应商分发，支持参考图像、成本护栏、输出布局、故障排查以及共享调用模式。
+description: oh-my-agent 图像生成完整指南。通过 Codex（gpt-image-2）、Pollinations（flux/zimage，免费）和 Gemini 进行多供应商分发，支持参考图像、成本护栏、输出布局、故障排查以及共享调用模式。
 ---
 
 # 图像生成
@@ -20,10 +20,10 @@ description: oh-my-agent 图像生成完整指南 —— 通过 Codex（gpt-imag
 
 ## 何时不要使用
 
-- 编辑或修饰已有图像 —— 超出范围（使用专用工具）
-- 生成视频或音频 —— 超出范围
-- 从结构化数据生成内联 SVG / 矢量合成 —— 使用模板技能
-- 简单的尺寸调整 / 格式转换 —— 使用图像库，而非生成管线
+- 编辑或修饰已有图像：超出范围（使用专用工具）
+- 生成视频或音频：超出范围
+- 从结构化数据生成内联 SVG / 矢量合成：使用模板技能
+- 简单的尺寸调整 / 格式转换：使用图像库，而非生成管线
 
 ---
 
@@ -34,7 +34,7 @@ description: oh-my-agent 图像生成完整指南 —— 通过 Codex（gpt-imag
 | 供应商 | 策略 | 模型 | 触发条件 | 成本 |
 |---|---|---|---|---|
 | `pollinations` | 直接 HTTP | 免费：`flux`、`zimage`。需积分：`qwen-image`、`wan-image`、`gpt-image-2`、`klein`、`kontext`、`gptimage`、`gptimage-large` | 设置 `POLLINATIONS_API_KEY`（在 https://enter.pollinations.ai 免费注册） | `flux` / `zimage` 免费 |
-| `codex` | CLI 优先 —— 通过 ChatGPT OAuth 调用 `codex exec` | `gpt-image-2` | `codex login`（无需 API key） | 计入你的 ChatGPT 套餐 |
+| `codex` | CLI 优先：通过 ChatGPT OAuth 调用 `codex exec` | `gpt-image-2` | `codex login`（无需 API key） | 计入你的 ChatGPT 套餐 |
 | `gemini` | CLI 优先，回退到直接 API | `gemini-2.5-flash-image`、`gemini-3.1-flash-image-preview` | `gemini auth login` 或 `GEMINI_API_KEY` + 计费 | 默认禁用；需要计费 |
 
 `pollinations` 是默认供应商，因为 `flux` / `zimage` 免费，所以根据关键词自动触发是安全的。
@@ -75,7 +75,7 @@ oma image list-vendors
 /oma-image -n 3 --quality high --out ./hero "minimalist dashboard hero illustration"
 ```
 
-斜杠命令会被转发到同一个 `oma image generate` 管线 —— 所有 CLI flag 在这里同样有效。
+斜杠命令会被转发到同一个 `oma image generate` 管线，所有 CLI flag 在这里同样有效。
 
 ---
 
@@ -132,9 +132,9 @@ oma image generate -r a.png,b.png "blend these styles" --vendor gemini
 
 ### 附件图像存放位置
 
-- **Claude Code** —— `~/.claude/image-cache/<session>/N.png`，在系统消息中以 `[Image: source: <path>]` 形式呈现。会话级作用域：如果想以后复用，请复制到持久位置。
-- **Antigravity** —— 工作区上传目录（IDE 会显示确切路径）
-- **Codex CLI 作为宿主** —— 必须显式传入；对话内的附件不会被转发
+- **Claude Code** ， `~/.claude/image-cache/<session>/N.png`，在系统消息中以 `[Image: source: <path>]` 形式呈现。会话级作用域：如果想以后复用，请复制到持久位置。
+- **Antigravity**：工作区上传目录（IDE 会显示确切路径）
+- **Codex CLI 作为宿主**：必须显式传入；对话内的附件不会被转发
 
 当用户附加图像并要求基于该图像生成或编辑时，调用方智能体**必须**通过 `--reference <path>` 转发它，而不是用文字描述。如果本地 CLI 太旧不支持 `--reference`，请运行 `oma update` 后重试。
 
@@ -155,18 +155,18 @@ oma image generate -r a.png,b.png "blend these styles" --vendor gemini
     └── manifest.json
 ```
 
-`manifest.json` 记录供应商、模型、提示（或其 SHA-256）、尺寸、质量和成本 —— 仅凭 manifest 即可复现每次运行。
+`manifest.json` 记录供应商、模型、提示（或其 SHA-256）、尺寸、质量和成本，仅凭 manifest 即可复现每次运行。
 
 ---
 
 ## 成本、安全与取消
 
-1. **成本护栏** —— 预估 ≥ `$0.20` 的运行会请求确认。可用 `-y` 或 `OMA_IMAGE_YES=1` 绕过。默认的 `pollinations`（flux/zimage）免费，因此对其会自动跳过提示。
-2. **路径安全** —— `$PWD` 之外的输出路径需要 `--allow-external-out`，以避免意外写入。
-3. **可取消** —— `Ctrl+C`（SIGINT/SIGTERM）会一并中止所有进行中的供应商调用和编排器。
-4. **确定性输出** —— `manifest.json` 始终写入图像旁边。
-5. **最大 `n` = 5** —— 这是墙钟时间约束，不是配额。
-6. **退出码** —— 与 `oma search fetch` 对齐：`0` 成功、`1` 通用、`2` 安全、`3` not-found、`4` invalid-input、`5` auth-required、`6` 超时。
+1. **成本护栏**：预估 ≥ `$0.20` 的运行会请求确认。可用 `-y` 或 `OMA_IMAGE_YES=1` 绕过。默认的 `pollinations`（flux/zimage）免费，因此对其会自动跳过提示。
+2. **路径安全** ， `$PWD` 之外的输出路径需要 `--allow-external-out`，以避免意外写入。
+3. **可取消** ， `Ctrl+C`（SIGINT/SIGTERM）会一并中止所有进行中的供应商调用和编排器。
+4. **确定性输出** ， `manifest.json` 始终写入图像旁边。
+5. **最大 `n` = 5**：这是墙钟时间约束，不是配额。
+6. **退出码**：与 `oma search fetch` 对齐：`0` 成功、`1` 通用、`2` 安全、`3` not-found、`4` invalid-input、`5` auth-required、`6` 超时。
 
 ---
 
@@ -175,21 +175,21 @@ oma image generate -r a.png,b.png "blend these styles" --vendor gemini
 调用 `oma image generate` 之前，调用方智能体会运行此检查清单。若有任何缺失且无法推断，则先询问，或者扩写提示并展示扩写结果以供确认。
 
 **必需：**
-- **主体** —— 图像中的主要事物是什么？（物体、人物、场景）
-- **场景 / 背景** —— 在哪里？
+- **主体**：图像中的主要事物是什么？（物体、人物、场景）
+- **场景 / 背景**：在哪里？
 
 **强烈推荐（缺失且无法推断时询问）：**
-- **风格** —— 写实摄影、插画、3D 渲染、油画、概念艺术、扁平矢量？
-- **氛围 / 光照** —— 明亮 vs 阴郁、暖色 vs 冷色、戏剧化 vs 极简
-- **使用语境** —— hero 图、图标、缩略图、产品图、海报？
-- **宽高比** —— 方形、竖版还是横版
+- **风格**：写实摄影、插画、3D 渲染、油画、概念艺术、扁平矢量？
+- **氛围 / 光照**：明亮 vs 阴郁、暖色 vs 冷色、戏剧化 vs 极简
+- **使用语境**：hero 图、图标、缩略图、产品图、海报？
+- **宽高比**：方形、竖版还是横版
 
 对于像 *"a red apple"* 这样简短的提示，智能体**不会**追问。相反，它会就地扩写并展示给用户：
 
 > 用户："a red apple"
 > 智能体："我会按以下方式生成：*a single glossy red apple centered on a clean white background, soft studio lighting, photorealistic, shallow depth of field, 1024×1024*。是否继续，或者你想要不同的风格 / 构图？"
 
-当用户已经撰写了完整的创作简报（≥ 2 项：主体 + 风格 + 光照 + 构图），其提示将被原样尊重 —— 不澄清、不扩写。
+当用户已经撰写了完整的创作简报（≥ 2 项：主体 + 风格 + 光照 + 构图），其提示将被原样尊重，不澄清、不扩写。
 
 **输出语言。** 生成提示以英文发送给供应商（图像模型主要在英文 caption 上训练）。如果用户使用其他语言书写，智能体会翻译并在扩写阶段展示译文，以便用户纠正任何误读。
 
@@ -203,7 +203,7 @@ oma image generate -r a.png,b.png "blend these styles" --vendor gemini
 oma image generate "<prompt>" --format json
 ```
 
-写入 stdout 的 JSON manifest 包含输出路径、供应商、模型和成本 —— 易于解析与串联。
+写入 stdout 的 JSON manifest 包含输出路径、供应商、模型和成本，易于解析与串联。
 
 ---
 
@@ -211,12 +211,12 @@ oma image generate "<prompt>" --format json
 
 - **项目配置：** `config/image-config.yaml`
 - **环境变量：**
-  - `OMA_IMAGE_DEFAULT_VENDOR` —— 覆盖默认供应商（否则为 `pollinations`）
-  - `OMA_IMAGE_DEFAULT_OUT` —— 覆盖默认输出目录
-  - `OMA_IMAGE_YES` —— 设为 `1` 可跳过成本确认
-  - `POLLINATIONS_API_KEY` —— pollinations 供应商所需（免费注册）
-  - `GEMINI_API_KEY` —— 当 gemini 供应商回退到直接 API 时所需
-  - `OMA_IMAGE_GEMINI_STRATEGIES` —— gemini 的升级顺序，逗号分隔（`mcp,stream,api`）
+  - `OMA_IMAGE_DEFAULT_VENDOR`：覆盖默认供应商（否则为 `pollinations`）
+  - `OMA_IMAGE_DEFAULT_OUT`：覆盖默认输出目录
+  - `OMA_IMAGE_YES`：设为 `1` 可跳过成本确认
+  - `POLLINATIONS_API_KEY`：pollinations 供应商所需（免费注册）
+  - `GEMINI_API_KEY`：当 gemini 供应商回退到直接 API 时所需
+  - `OMA_IMAGE_GEMINI_STRATEGIES`：gemini 的升级顺序，逗号分隔（`mcp,stream,api`）
 
 ---
 
@@ -236,6 +236,6 @@ oma image generate "<prompt>" --format json
 
 ## 相关
 
-- [Skills](/docs/core-concepts/skills) —— 驱动 `oma-image` 的双层技能架构
-- [CLI Commands](/docs/cli-interfaces/commands) —— 完整的 `oma image` 命令参考
-- [CLI Options](/docs/cli-interfaces/options) —— 全局选项矩阵
+- [Skills](/docs/core-concepts/skills)：驱动 `oma-image` 的双层技能架构
+- [CLI Commands](/docs/cli-interfaces/commands)：完整的 `oma image` 命令参考
+- [CLI Options](/docs/cli-interfaces/options)：全局选项矩阵

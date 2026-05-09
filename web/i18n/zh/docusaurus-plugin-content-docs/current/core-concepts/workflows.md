@@ -1,11 +1,11 @@
 ---
 title: 工作流
-description: 全部 16 个 oh-my-agent 工作流的完整参考 —— 斜杠命令、持久化与非持久化模式、11 种语言的触发关键词、阶段和步骤、读写文件、通过 triggers.json 和 keyword-detector.ts 的自动检测机制、信息性模式过滤和持久化模式状态管理。
+description: 全部 16 个 oh-my-agent 工作流的完整参考。斜杠命令、持久化与非持久化模式、11 种语言的触发关键词、阶段和步骤、读写文件、通过 triggers.json 和 keyword-detector.ts 的自动检测机制、信息性模式过滤和持久化模式状态管理。
 ---
 
 # 工作流
 
-工作流是由斜杠命令或自然语言关键词触发的结构化多步骤流程。它们定义了智能体如何在任务上协作 —— 从单阶段工具到复杂的 5 阶段质量关卡。
+工作流是由斜杠命令或自然语言关键词触发的结构化多步骤流程。它们定义了智能体如何在任务上协作，从单阶段工具到复杂的 5 阶段质量关卡。
 
 共有 16 个工作流，其中 4 个是持久化的（它们维护状态且不能被意外中断）。
 
@@ -47,14 +47,14 @@ description: 全部 16 个 oh-my-agent 工作流的完整参考 —— 斜杠命
 名词白名单（15 个）：app、api、service、server、cli、tool、website、dashboard、system、feature、backend、frontend、prototype、mvp、bot。
 
 **步骤：**
-1. **步骤 0 —— 准备：** 读取协调技能、上下文加载指南、内存协议。检测供应商。
-2. **步骤 1 —— 加载/创建计划：** 检查 `.agents/results/plan-{sessionId}.json`。如果缺失，提示用户先运行 `/plan`。
-3. **步骤 2 —— 初始化会话：** 加载 `oma-config.yaml`，显示 CLI 映射表，生成会话 ID（`session-YYYYMMDD-HHMMSS`），在内存中创建 `orchestrator-session.md` 和 `task-board.md`。
-4. **步骤 3 —— 启动智能体：** 对每个优先级层（先 P0，然后 P1...），使用供应商适配的方式启动智能体（Claude Code 用 Agent 工具，Gemini/Antigravity 用 `oma agent:spawn`，Codex 用模型协调）。不超过 MAX_PARALLEL。
-5. **步骤 4 —— 监控：** 轮询 `progress-{agent}.md` 文件，更新 `task-board.md`。监视完成、失败、崩溃。
-6. **步骤 5 —— 验证：** 对每个完成的智能体运行 `verify.sh {agent-type} {workspace}`。失败时带错误上下文重新启动（最多 2 次重试）。2 次重试后，激活探索循环：生成 2-3 个假设，启动并行实验，评分，保留最佳。
-7. **步骤 6 —— 收集：** 读取所有 `result-{agent}.md` 文件，汇总摘要。
-8. **步骤 7 —— 最终报告：** 呈现会话摘要。如果测量了质量评分，包含实验账本摘要和自动生成的经验教训。
+1. **步骤 0：准备** 读取协调技能、上下文加载指南、内存协议。检测供应商。
+2. **步骤 1：加载/创建计划** 检查 `.agents/results/plan-{sessionId}.json`。如果缺失，提示用户先运行 `/plan`。
+3. **步骤 2：初始化会话** 加载 `oma-config.yaml`，显示 CLI 映射表，生成会话 ID（`session-YYYYMMDD-HHMMSS`），在内存中创建 `orchestrator-session.md` 和 `task-board.md`。
+4. **步骤 3：启动智能体** 对每个优先级层（先 P0，然后 P1...），使用供应商适配的方式启动智能体（Claude Code 用 Agent 工具，Gemini/Antigravity 用 `oma agent:spawn`，Codex 用模型协调）。不超过 MAX_PARALLEL。
+5. **步骤 4：监控** 轮询 `progress-{agent}.md` 文件，更新 `task-board.md`。监视完成、失败、崩溃。
+6. **步骤 5：验证** 对每个完成的智能体运行 `verify.sh {agent-type} {workspace}`。失败时带错误上下文重新启动（最多 2 次重试）。2 次重试后，激活探索循环：生成 2-3 个假设，启动并行实验，评分，保留最佳。
+7. **步骤 6：收集** 读取所有 `result-{agent}.md` 文件，汇总摘要。
+8. **步骤 7：最终报告** 呈现会话摘要。如果测量了质量评分，包含实验账本摘要和自动生成的经验教训。
 
 **读取文件：** `.agents/results/plan-{sessionId}.json`、`.agents/oma-config.yaml`、`progress-{agent}.md`、`result-{agent}.md`。
 **写入文件：** `orchestrator-session.md`、`task-board.md`（内存）、最终报告。
@@ -81,15 +81,15 @@ description: 全部 16 个 oh-my-agent 工作流的完整参考 —— 斜杠命
 | 德语 | "koordinieren"、"schritt für schritt" |
 
 **步骤：**
-1. **步骤 0 —— 准备：** 读取技能、上下文加载、内存协议。记录会话开始。
-2. **步骤 1 —— 分析需求：** 识别涉及的领域。如果是单一领域，建议直接使用智能体。
-3. **步骤 2 —— PM 智能体规划：** PM 分解需求，定义 API 契约，创建优先级任务分解，保存到 `.agents/results/plan-{sessionId}.json`。
-4. **步骤 3 —— 审查计划：** 向用户展示计划。**必须获得确认后才能继续。**
-5. **步骤 4 —— 启动智能体：** 按优先级层启动，同层并行，独立工作空间。
-6. **步骤 5 —— 监控：** 轮询进度文件，验证智能体间的 API 契约对齐。
-7. **步骤 6 —— QA 审查：** 启动 QA 智能体进行安全（OWASP）、性能、无障碍、代码质量审查。
-8. **步骤 6.1 —— 质量评分**（条件）：测量并记录基线。
-9. **步骤 7 —— 迭代：** 如果发现 CRITICAL/HIGH 问题，重新启动责任智能体。如果同一问题在 2 次尝试后仍存在，激活探索循环。
+1. **步骤 0：准备** 读取技能、上下文加载、内存协议。记录会话开始。
+2. **步骤 1：分析需求** 识别涉及的领域。如果是单一领域，建议直接使用智能体。
+3. **步骤 2：PM 智能体规划** PM 分解需求，定义 API 契约，创建优先级任务分解，保存到 `.agents/results/plan-{sessionId}.json`。
+4. **步骤 3：审查计划** 向用户展示计划。**必须获得确认后才能继续。**
+5. **步骤 4：启动智能体** 按优先级层启动，同层并行，独立工作空间。
+6. **步骤 5：监控** 轮询进度文件，验证智能体间的 API 契约对齐。
+7. **步骤 6：QA 审查** 启动 QA 智能体进行安全（OWASP）、性能、无障碍、代码质量审查。
+8. **步骤 6.1：质量评分**（条件）：测量并记录基线。
+9. **步骤 7：迭代** 如果发现 CRITICAL/HIGH 问题，重新启动责任智能体。如果同一问题在 2 次尝试后仍存在，激活探索循环。
 
 **何时使用：** 跨越多个领域的功能，你需要逐步控制和每个关卡的用户批准。
 
@@ -154,18 +154,18 @@ description: 全部 16 个 oh-my-agent 工作流的完整参考 —— 斜杠命
 | 德语 | "hör nicht auf", "bis zur fertigstellung", "alles fertigstellen" |
 
 **阶段：**
-1. **Phase 0 — INIT：** 加载前置条件（context-loading、内存协议、judge 协议）。定义可验证的完成标准（每项必须可机械验证 —— 测试通过、构建成功、文件存在）。向用户展示标准以供确认。以 `max_iterations: 5` 初始化会话。
-2. **Phase 1 — WORK：** 将 ultrawork（PLAN → IMPL → VERIFY → REFINE → SHIP）作为一次迭代执行。
-3. **Phase 2 — JUDGE：** 独立验证器将每个完成标准与项目实际状态核对（运行测试、检查构建、验证文件存在）。将每个标准评为 PASS/FAIL 并附上证据。
-4. **Phase 3 — DECIDE：** 若所有标准 PASS → 结束循环，生成最终报告。若有 FAIL → 递增迭代计数器，回传失败上下文，返回 Phase 1。
+1. **Phase 0：INIT** 加载前置条件（context-loading、内存协议、judge 协议）。定义可验证的完成标准（每项必须可机械验证，测试通过、构建成功、文件存在）。向用户展示标准以供确认。以 `max_iterations: 5` 初始化会话。
+2. **Phase 1：WORK** 将 ultrawork（PLAN → IMPL → VERIFY → REFINE → SHIP）作为一次迭代执行。
+3. **Phase 2：JUDGE** 独立验证器将每个完成标准与项目实际状态核对（运行测试、检查构建、验证文件存在）。将每个标准评为 PASS/FAIL 并附上证据。
+4. **Phase 3：DECIDE** 若所有标准 PASS → 结束循环，生成最终报告。若有 FAIL → 递增迭代计数器，回传失败上下文，返回 Phase 1。
 5. **安全措施：** 当 `current_iteration >= max_iterations`（默认 5）达到时，或同一标准因相同根本原因连续失败 3 次时（卡住检测），循环停止。
 
-**与 /ultrawork 的主要区别：** Ultrawork 是一次性的 5 阶段工作流。Ralph 将 ultrawork 包装在重试循环中，由独立的 judge 客观验证完成情况 —— 它会一直运行直到工作真正完成，而不仅仅是"已审查"。
+**与 /ultrawork 的主要区别：** Ultrawork 是一次性的 5 阶段工作流。Ralph 将 ultrawork 包装在重试循环中，由独立的 judge 客观验证完成情况，它会一直运行直到工作真正完成，而不仅仅是"已审查"。
 
 **读取文件：** `.agents/workflows/ralph/resources/judge-protocol.md`，以及所有 ultrawork 文件。
 **写入文件：** `session-ralph.md`（内存）、迭代日志、最终报告。
 
-**何时使用：** 当需要有保障的完成时 —— 智能体必须持续工作直到可验证的标准通过，而不是只做一次就报告。
+**何时使用：** 当需要有保障的完成时，智能体必须持续工作直到可验证的标准通过，而不是只做一次就报告。
 
 ---
 
@@ -227,7 +227,7 @@ description: 全部 16 个 oh-my-agent 工作流的完整参考 —— 斜杠命
 
 ### /architecture
 
-**说明：** 软件架构工作流 —— 诊断架构问题，选择合适的分析方法（诊断路由 / design-twice / ATAM / CBAM / ADR），对比选项，综合利益相关者的意见，并产出建议、评审或 ADR。
+**说明：** 软件架构工作流，诊断架构问题，选择合适的分析方法（诊断路由 / design-twice / ATAM / CBAM / ADR），对比选项，综合利益相关者的意见，并产出建议、评审或 ADR。
 
 **触发关键词：**
 | 语言 | 关键词 |
@@ -353,7 +353,7 @@ description: 全部 16 个 oh-my-agent 工作流的完整参考 —— 斜杠命
 
 ### /pdf
 
-**说明：** 使用 `opendataloader-pdf` 将 PDF 转换为 Markdown —— 以正确的阅读顺序提取文本、表格、标题和图像。
+**说明：** 使用 `opendataloader-pdf` 将 PDF 转换为 Markdown，以正确的阅读顺序提取文本、表格、标题和图像。
 
 **触发关键词：** 无（必须使用输入文件路径显式调用）。
 
@@ -417,15 +417,15 @@ oh-my-agent 使用 `UserPromptSubmit` 钩子，在处理每条用户消息之前
 
 | 分节 | 行为 |
 |------|------|
-| `*` | 通用 —— 无论 `.agents/oma-config.yaml` 中的 `language` 设置如何都会加载。用于英语内容（通用语）以及真正跨语言的 token（如工作流名 `"orchestrate"`）。 |
-| `en` | 英语 —— 为向后兼容而加载。功能上等价于 `*`。新的英语内容应放入 `*`。 |
-| `ko`、`ja`、`zh`、`es`、`fr`、`de`、`pt`、`ru`、`nl`、`pl` | 语言专用 —— 仅当 `.agents/oma-config.yaml` 中设置了 `language: <lang>` 时才加载。 |
+| `*` | 通用：无论 `.agents/oma-config.yaml` 中的 `language` 设置如何都会加载。用于英语内容（通用语）以及真正跨语言的 token（如工作流名 `"orchestrate"`）。 |
+| `en` | 英语：为向后兼容而加载。功能上等价于 `*`。新的英语内容应放入 `*`。 |
+| `ko`、`ja`、`zh`、`es`、`fr`、`de`、`pt`、`ru`、`nl`、`pl` | 语言专用：仅当 `.agents/oma-config.yaml` 中设置了 `language: <lang>` 时才加载。 |
 
 **含义**：如果在 `.agents/oma-config.yaml` 中设置 `language: en`，则只会加载 `*` 和 `en` 模式。即使用户使用韩语/日语等输入，这些自然语言触发器也不会触发。要启用非英语语言，请相应地设置 `language: <code>`。`*` 中的英语回退始终保持活跃。
 
 ### 模式字段（原始正则）
 
-除了字面量 `keywords` 之外，每个工作流还可以声明 `patterns` —— 使用 `iu` 标志编译的原始正则表达式字符串。模式可实现多 token 的意图匹配，否则需要组合爆炸的关键词列表才能覆盖。
+除了字面量 `keywords` 之外，每个工作流还可以声明 `patterns`，使用 `iu` 标志编译的原始正则表达式字符串。模式可实现多 token 的意图匹配，否则需要组合爆炸的关键词列表才能覆盖。
 
 ```jsonc
 {
@@ -443,8 +443,8 @@ oh-my-agent 使用 `UserPromptSubmit` 钩子，在处理每条用户消息之前
 ```
 
 编写规则：
-- 字符串会被直接编译 —— 反斜杠需要转义两次：一次给 JSON，一次给正则（`\\b`、`\\s+`）
-- 不会自动包裹单词边界 —— 模式作者需自行处理 `\b`
+- 字符串会被直接编译：反斜杠需要转义两次：一次给 JSON，一次给正则（`\\b`、`\\s+`）
+- 不会自动包裹单词边界：模式作者需自行处理 `\b`
 - 无效正则在运行时会被静默跳过（在配置编辑期间通过测试失败可见）
 
 ### 信息性模式过滤
@@ -459,8 +459,8 @@ oh-my-agent 使用 `UserPromptSubmit` 钩子，在处理每条用户消息之前
 | `zh` | "是什么"、"什么是"、"怎么"、"解释" |
 
 如果输入同时匹配工作流触发器和信息性模式，信息性模式优先，不触发任何工作流。这正是用于阻止以下提示的机制：
-- `"How do you build a TODO app?"` —— `*` 中的 `how do` 阻止 orchestrate 意图正则
-- `"orchestrate 트리거 해주면 되나요?"`（在 `language: ko` 下） —— `ko` 中的 `트리거` 阻止 orchestrate 关键词
+- `"How do you build a TODO app?"`：`*` 中的 `how do` 阻止 orchestrate 意图正则
+- `"orchestrate 트리거 해주면 되나요?"`（在 `language: ko` 下） ， `ko` 中的 `트리거` 阻止 orchestrate 关键词
 
 ### 排除的工作流
 

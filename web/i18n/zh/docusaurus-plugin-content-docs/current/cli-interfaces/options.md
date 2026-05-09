@@ -1,6 +1,6 @@
 ---
 title: "CLI 选项"
-description: 所有 CLI 选项的详尽参考 —— 全局标志、输出控制、每命令选项和实际使用模式。
+description: 所有 CLI 选项的详尽参考。全局标志、输出控制、每命令选项和实际使用模式。
 ---
 
 # CLI 选项
@@ -123,9 +123,9 @@ oma retro [window] [--json] [--output <format>] [--interactive] [--compare]
 | `--compare` | 将当前时间窗口与上一个同等长度的窗口比较。显示增量指标（如提交 +12、添加行 -340）。 | `false` |
 
 **窗口参数格式：**
-- `7d` —— 7 天
-- `2w` —— 2 周
-- `1m` —— 1 个月
+- `7d`：7 天
+- `2w`：2 周
+- `1m`：1 个月
 - 省略则默认（7 天）
 
 ### cleanup
@@ -142,7 +142,7 @@ oma cleanup [--dry-run] [-y | --yes] [--json] [--output <format>]
 **清理内容：**
 1. 孤立 PID 文件：`/tmp/subagent-*.pid`，其引用的进程不再运行。
 2. 孤立日志文件：`/tmp/subagent-*.log`，匹配已死亡 PID。
-3. Gemini Antigravity 目录：`.gemini/antigravity/brain/`、`.gemini/antigravity/implicit/`、`.gemini/antigravity/knowledge/` —— 这些会随时间积累状态并变得很大。
+3. Gemini Antigravity 目录：`.gemini/antigravity/brain/`、`.gemini/antigravity/implicit/`、`.gemini/antigravity/knowledge/`，这些会随时间积累状态并变得很大。
 
 ### agent:spawn
 
@@ -166,7 +166,7 @@ oma agent:spawn <agent-id> <prompt> <session-id> [-m <vendor>] [-w <workspace>]
 |:-------|:-----|:-----------|:----------|
 | gemini | `gemini` | `--approval-mode=yolo` | `-p` |
 | claude | `claude` | （无） | `-p` |
-| codex | `codex` | `--full-auto` | （无 —— 提示词是位置参数） |
+| codex | `codex` | `--full-auto` | （无，提示词是位置参数） |
 | qwen | `qwen` | `--yolo` | `-p` |
 
 这些默认值可在 `.agents/skills/oma-orchestrator/config/cli-config.yaml` 中覆盖。
@@ -200,8 +200,8 @@ oma agent:parallel [tasks...] [-m <vendor>] [-i | --inline] [--no-wait]
 
 **内联任务格式：** `agent:task` 或 `agent:task:workspace`
 - 通过检查最后一个冒号分隔段是否以 `./`、`/` 开头或等于 `.` 来检测 workspace。
-- 示例：`backend:Implement auth API:./api` —— agent=backend，task="Implement auth API"，workspace=./api。
-- 示例：`frontend:Build login page` —— agent=frontend，task="Build login page"，workspace=自动检测。
+- 示例：`backend:Implement auth API:./api`，agent=backend，task="Implement auth API"，workspace=./api。
+- 示例：`frontend:Build login page`，agent=frontend，task="Build login page"，workspace=自动检测。
 
 **YAML 任务文件格式：**
 ```yaml

@@ -1,15 +1,15 @@
 ---
 title: 安装
-description: oh-my-agent 完整安装指南 —— 三种安装方式、全部六个预设及其技能列表、四个供应商的 CLI 工具要求、安装后配置、oma-config.yaml 字段说明以及 oma doctor 验证。
+description: oh-my-agent 完整安装指南。三种安装方式、全部六个预设及其技能列表、四个供应商的 CLI 工具要求、安装后配置、oma-config.yaml 字段说明以及 oma doctor 验证。
 ---
 
 # 安装
 
 ## 前置要求
 
-- **AI 驱动的 IDE 或 CLI** —— 至少安装以下之一：Claude Code、Gemini CLI、Codex CLI、Qwen CLI、Antigravity IDE、Cursor 或 OpenCode
-- **bun** —— JavaScript 运行时和包管理器（安装脚本会在缺失时自动安装）
-- **uv** —— Serena MCP 的 Python 包管理器（缺失时自动安装）
+- **AI 驱动的 IDE 或 CLI**：至少安装以下之一：Claude Code、Gemini CLI、Codex CLI、Qwen CLI、Antigravity IDE、Cursor 或 OpenCode
+- **bun**：JavaScript 运行时和包管理器（安装脚本会在缺失时自动安装）
+- **uv**：Serena MCP 的 Python 包管理器（缺失时自动安装）
 
 ---
 
@@ -142,7 +142,7 @@ oma star                # 为仓库加星
 
 ## AI CLI 工具安装
 
-你至少需要安装一个 AI CLI 工具。oh-my-agent 支持四个供应商，你可以混合使用 —— 通过智能体-CLI 映射为不同智能体使用不同的 CLI。
+你至少需要安装一个 AI CLI 工具。oh-my-agent 支持四个供应商，你可以混合使用，通过智能体-CLI 映射为不同智能体使用不同的 CLI。
 
 ### Gemini CLI
 

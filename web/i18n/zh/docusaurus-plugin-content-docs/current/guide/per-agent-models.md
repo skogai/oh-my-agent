@@ -117,7 +117,7 @@ Without `extends:`, you must provide `agent_defaults` for all 11 agent roles. Wi
 
 ## `oma doctor --profile`
 
-Run `oma doctor --profile` to inspect the fully resolved model matrix — after preset defaults, `custom_presets`, and `agents:` overrides are merged.
+Run `oma doctor --profile` to inspect the fully resolved model matrix，after preset defaults, `custom_presets`, and `agents:` overrides are merged.
 
 ```bash
 oma doctor --profile
@@ -155,7 +155,7 @@ Migration 008 runs automatically on `oma install` and `oma update`. It converts 
 | `models.yaml` content | Inlined into `oma-config.yaml.models` |
 | Customized `defaults.yaml` | Preserved as `custom_presets.user-customized` with a warning |
 
-Originals are backed up to `.agents/.backup-pre-008-{timestamp}/` before any changes. The migration is idempotent — if `model_preset` is already present, it skips.
+Originals are backed up to `.agents/.backup-pre-008-{timestamp}/` before any changes. The migration is idempotent，if `model_preset` is already present, it skips.
 
 After migration, `cli built-in presets (no user file)`, ``oma-config.yaml` `models:` block`, and the `.agents/config/` directory are removed.
 

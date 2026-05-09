@@ -1,6 +1,6 @@
 ---
 title: "ガイド：自動更新"
-description: oh-my-agent GitHub Actionの完全ドキュメント — セットアップ、全入出力、詳細例、内部動作。
+description: oh-my-agent GitHub Actionの完全ドキュメント。セットアップ、全入出力、詳細例、内部動作を解説します。
 ---
 
 # ガイド：自動更新

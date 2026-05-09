@@ -1,6 +1,6 @@
 ---
 title: "CLIオプション"
-description: oh-my-agent CLIの全オプション網羅的リファレンス — グローバルフラグ、出力制御、コマンドごとのオプション、実践的な使用パターン。
+description: oh-my-agent CLIの全オプション網羅的リファレンス。グローバルフラグ、出力制御、コマンドごとのオプション、実践的な使用パターンを解説します。
 ---
 
 # CLIオプション
@@ -203,7 +203,7 @@ oma search <subcommand> [...]
 | `media <url>` | `--subs`、`--sub-lang <list>`（デフォルト`en`）、`--format <spec>`、`--timeout`（デフォルト`30`）、`--pretty` |
 | `code <query>` | `--host <github\|gitlab>`（デフォルト`github`）、`--language`、`--repo`、`--limit`（デフォルト`20`）、`--pretty` |
 | `trust <domain>` | `--pretty` |
-| `doctor` | なし — Chrome / `python3 curl_cffi` / `yt-dlp` / `gh`のバイナリチェックを実行 |
+| `doctor` | なし。Chrome / `python3 curl_cffi` / `yt-dlp` / `gh`のバイナリチェックを実行します |
 
 **終了コード：** `0` ok、`1` error、`2` blocked、`3` not-found、`4` invalid-input、`5` auth-required、`6` timeout。スクリプト中で一時的なブロッカーと無効入力を区別するために使用してください。
 

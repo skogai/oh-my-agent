@@ -1,6 +1,6 @@
 ---
 title: 워크플로우
-description: oh-my-agent 16개 워크플로우 완전 레퍼런스 — 슬래시 명령, 영구 vs 비영구 모드, 11개 언어의 트리거 키워드, 단계 및 스텝, 읽기/쓰기 파일, triggers.json과 keyword-detector.ts를 통한 자동 감지 메커니즘, 정보성 패턴 필터링, 영구 모드 상태 관리.
+description: oh-my-agent 16개 워크플로우 완전 레퍼런스입니다. 슬래시 명령, 영구 vs 비영구 모드, 11개 언어의 트리거 키워드, 단계 및 스텝, 읽기/쓰기 파일, triggers.json과 keyword-detector.ts를 통한 자동 감지 메커니즘, 정보성 패턴 필터링, 영구 모드 상태 관리를 다룹니다.
 ---
 
 # 워크플로우
@@ -47,14 +47,14 @@ description: oh-my-agent 16개 워크플로우 완전 레퍼런스 — 슬래시
 명사 화이트리스트 (15개): app, api, service, server, cli, tool, website, dashboard, system, feature, backend, frontend, prototype, mvp, bot.
 
 **단계:**
-1. **Step 0 — 준비:** 코디네이션 스킬, 컨텍스트 로딩 가이드, 메모리 프로토콜 읽기. 벤더 감지.
-2. **Step 1 — 계획 로딩/생성:** `.agents/results/plan-{sessionId}.json` 확인. 없으면 `/plan`을 먼저 실행하도록 안내.
-3. **Step 2 — 세션 초기화:** `oma-config.yaml` 로딩, CLI 매핑 테이블 표시, 세션 ID(`session-YYYYMMDD-HHMMSS`) 생성, 메모리에 `orchestrator-session.md`와 `task-board.md` 생성.
-4. **Step 3 — 에이전트 스폰:** 각 우선순위 티어(P0 먼저, 그 다음 P1...)에 대해 벤더에 맞는 방식으로 에이전트 스폰. MAX_PARALLEL을 초과하지 않음.
-5. **Step 4 — 모니터링:** `progress-{agent}.md` 파일 폴링, `task-board.md` 업데이트. 완료, 실패, 크래시 감시.
-6. **Step 5 — 검증:** 완료된 에이전트별로 `verify.sh {agent-type} {workspace}` 실행. 실패 시 에러 컨텍스트와 함께 재스폰 (최대 2회 재시도). 2회 재시도 후에도 실패하면 Exploration Loop 활성화: 2-3개 가설 생성, 병렬 실험 스폰, 점수 매기기, 최적 선택.
-7. **Step 6 — 수집:** 모든 `result-{agent}.md` 파일 읽기, 요약 정리.
-8. **Step 7 — 최종 보고서:** 세션 요약 제시. Quality Score가 측정된 경우 Experiment Ledger 요약 포함 및 교훈 자동 생성.
+1. **Step 0 (준비):** 코디네이션 스킬, 컨텍스트 로딩 가이드, 메모리 프로토콜 읽기. 벤더 감지.
+2. **Step 1 (계획 로딩/생성):** `.agents/results/plan-{sessionId}.json` 확인. 없으면 `/plan`을 먼저 실행하도록 안내.
+3. **Step 2 (세션 초기화):** `oma-config.yaml` 로딩, CLI 매핑 테이블 표시, 세션 ID(`session-YYYYMMDD-HHMMSS`) 생성, 메모리에 `orchestrator-session.md`와 `task-board.md` 생성.
+4. **Step 3 (에이전트 스폰):** 각 우선순위 티어(P0 먼저, 그 다음 P1...)에 대해 벤더에 맞는 방식으로 에이전트 스폰. MAX_PARALLEL을 초과하지 않음.
+5. **Step 4 (모니터링):** `progress-{agent}.md` 파일 폴링, `task-board.md` 업데이트. 완료, 실패, 크래시 감시.
+6. **Step 5 (검증):** 완료된 에이전트별로 `verify.sh {agent-type} {workspace}` 실행. 실패 시 에러 컨텍스트와 함께 재스폰 (최대 2회 재시도). 2회 재시도 후에도 실패하면 Exploration Loop 활성화: 2-3개 가설 생성, 병렬 실험 스폰, 점수 매기기, 최적 선택.
+7. **Step 6 (수집):** 모든 `result-{agent}.md` 파일 읽기, 요약 정리.
+8. **Step 7 (최종 보고서):** 세션 요약 제시. Quality Score가 측정된 경우 Experiment Ledger 요약 포함 및 교훈 자동 생성.
 
 **읽는 파일:** `.agents/results/plan-{sessionId}.json`, `.agents/oma-config.yaml`, `progress-{agent}.md`, `result-{agent}.md`.
 **쓰는 파일:** `orchestrator-session.md`, `task-board.md` (메모리), 최종 보고서.
@@ -81,15 +81,15 @@ description: oh-my-agent 16개 워크플로우 완전 레퍼런스 — 슬래시
 | 독일어 | "koordinieren", "schritt für schritt" |
 
 **단계:**
-1. **Step 0 — 준비:** 스킬, 컨텍스트 로딩, 메모리 프로토콜 읽기. 세션 시작 기록.
-2. **Step 1 — 요구사항 분석:** 관련 도메인 식별. 단일 도메인이면 직접 에이전트 사용 제안.
-3. **Step 2 — PM 에이전트 기획:** PM이 요구사항 분해, API 컨트랙트 정의, 우선순위 태스크 분해 생성, `.agents/results/plan-{sessionId}.json`에 저장.
-4. **Step 3 — 계획 리뷰:** 사용자에게 계획 제시. **진행 전 반드시 확인 필요.**
-5. **Step 4 — 에이전트 스폰:** 우선순위 티어별 스폰, 같은 티어 내 병렬, 별도 워크스페이스.
-6. **Step 5 — 모니터링:** 진행 파일 폴링, 에이전트 간 API 컨트랙트 정렬 확인.
-7. **Step 6 — QA 리뷰:** 보안(OWASP), 성능, 접근성, 코드 품질을 위한 QA 에이전트 스폰.
-8. **Step 6.1 — Quality Score** (조건부): 기준선 측정 및 기록.
-9. **Step 7 — 반복:** CRITICAL/HIGH 이슈 발견 시 담당 에이전트 재스폰. 2회 시도 후에도 같은 이슈 지속 시 Exploration Loop 활성화.
+1. **Step 0 (준비):** 스킬, 컨텍스트 로딩, 메모리 프로토콜 읽기. 세션 시작 기록.
+2. **Step 1 (요구사항 분석):** 관련 도메인 식별. 단일 도메인이면 직접 에이전트 사용 제안.
+3. **Step 2 (PM 에이전트 기획):** PM이 요구사항 분해, API 컨트랙트 정의, 우선순위 태스크 분해 생성, `.agents/results/plan-{sessionId}.json`에 저장.
+4. **Step 3 (계획 리뷰):** 사용자에게 계획 제시. **진행 전 반드시 확인 필요.**
+5. **Step 4 (에이전트 스폰):** 우선순위 티어별 스폰, 같은 티어 내 병렬, 별도 워크스페이스.
+6. **Step 5 (모니터링):** 진행 파일 폴링, 에이전트 간 API 컨트랙트 정렬 확인.
+7. **Step 6 (QA 리뷰):** 보안(OWASP), 성능, 접근성, 코드 품질을 위한 QA 에이전트 스폰.
+8. **Step 6.1 (Quality Score)** (조건부): 기준선 측정 및 기록.
+9. **Step 7 (반복):** CRITICAL/HIGH 이슈 발견 시 담당 에이전트 재스폰. 2회 시도 후에도 같은 이슈 지속 시 Exploration Loop 활성화.
 
 **사용 시기:** 단계별 제어와 각 게이트에서 사용자 승인이 필요한 멀티 도메인 기능.
 
@@ -151,15 +151,15 @@ description: oh-my-agent 16개 워크플로우 완전 레퍼런스 — 슬래시
 | 중국어 | "不要停", "直到完成", "全部完成", "做完为止" |
 
 **단계:**
-1. **Phase 0 — INIT:** 사전 조건 로드(context-loading, 메모리 프로토콜, judge 프로토콜). 검증 가능한 완료 기준 정의(테스트 통과, 빌드 성공, 파일 존재 등 기계적으로 확인 가능해야 함). 사용자 확인. `max_iterations: 5` 초기화.
-2. **Phase 1 — WORK:** ultrawork(PLAN → IMPL → VERIFY → REFINE → SHIP) 1회 실행.
-3. **Phase 2 — JUDGE:** 독립적 검증자가 각 완료 기준을 실제 프로젝트 상태와 대조 확인(테스트 실행, 빌드 확인, 파일 존재 검증). PASS/FAIL 점수 부여.
-4. **Phase 3 — DECIDE:** 모든 기준 PASS → 루프 종료, 최종 보고서 생성. FAIL 존재 → 반복 카운터 증가, 실패 컨텍스트 피드백, Phase 1로 복귀.
+1. **Phase 0 (INIT):** 사전 조건 로드(context-loading, 메모리 프로토콜, judge 프로토콜). 검증 가능한 완료 기준 정의(테스트 통과, 빌드 성공, 파일 존재 등 기계적으로 확인 가능해야 함). 사용자 확인. `max_iterations: 5` 초기화.
+2. **Phase 1 (WORK):** ultrawork(PLAN → IMPL → VERIFY → REFINE → SHIP) 1회 실행.
+3. **Phase 2 (JUDGE):** 독립적 검증자가 각 완료 기준을 실제 프로젝트 상태와 대조 확인(테스트 실행, 빌드 확인, 파일 존재 검증). PASS/FAIL 점수 부여.
+4. **Phase 3 (DECIDE):** 모든 기준 PASS → 루프 종료, 최종 보고서 생성. FAIL 존재 → 반복 카운터 증가, 실패 컨텍스트 피드백, Phase 1로 복귀.
 5. **안전장치:** `current_iteration >= max_iterations`(기본 5) 도달 시, 또는 같은 기준이 같은 원인으로 3회 연속 실패 시(멈춤 감지) 루프 중단.
 
-**/ultrawork와의 차이:** ultrawork는 단일 패스 5단계 워크플로우. ralph는 ultrawork를 독립적 judge가 객관적으로 완료를 검증하는 재시도 루프로 감쌈 — "검토 완료"가 아닌 실제로 완료될 때까지 계속 작업합니다.
+**/ultrawork와의 차이:** ultrawork는 단일 패스 5단계 워크플로우입니다. ralph는 ultrawork를 독립적 judge가 객관적으로 완료를 검증하는 재시도 루프로 감쌉니다. "검토 완료"가 아닌 실제로 완료될 때까지 계속 작업합니다.
 
-**사용 시기:** 보장된 완료가 필요할 때 — 에이전트가 한 번 패스하고 보고하는 것이 아니라, 검증 가능한 기준이 통과할 때까지 계속 작업해야 할 때.
+**사용 시기:** 보장된 완료가 필요할 때입니다. 에이전트가 한 번 패스하고 보고하는 것이 아니라, 검증 가능한 기준이 통과할 때까지 계속 작업해야 할 때 사용합니다.
 
 ---
 
@@ -221,7 +221,7 @@ description: oh-my-agent 16개 워크플로우 완전 레퍼런스 — 슬래시
 
 ### /architecture
 
-**설명:** 소프트웨어 아키텍처 워크플로우 — 아키텍처 문제를 진단하고, 올바른 분석 방법(진단 라우팅 / design-twice / ATAM / CBAM / ADR)을 선택하고, 옵션을 비교하고, 이해관계자 입력을 종합하여 권장안, 리뷰 또는 ADR을 생성합니다.
+**설명:** 소프트웨어 아키텍처 워크플로우입니다. 아키텍처 문제를 진단하고, 올바른 분석 방법(진단 라우팅 / design-twice / ATAM / CBAM / ADR)을 선택하고, 옵션을 비교하고, 이해관계자 입력을 종합하여 권장안, 리뷰 또는 ADR을 생성합니다.
 
 **트리거 키워드:**
 | 언어 | 키워드 |
@@ -345,7 +345,7 @@ description: oh-my-agent 16개 워크플로우 완전 레퍼런스 — 슬래시
 
 ### /pdf
 
-**설명:** `opendataloader-pdf`를 사용하여 PDF를 Markdown으로 변환 — 텍스트, 표, 제목, 이미지를 올바른 읽기 순서로 추출합니다.
+**설명:** `opendataloader-pdf`를 사용하여 PDF를 Markdown으로 변환합니다. 텍스트, 표, 제목, 이미지를 올바른 읽기 순서로 추출합니다.
 
 **트리거 키워드:** 없음 (입력 파일 경로와 함께 명시적으로 호출).
 

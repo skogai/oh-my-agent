@@ -1,15 +1,15 @@
 ---
 title: 설치
-description: oh-my-agent 설치 가이드 — 세 가지 설치 방법, 6개 프리셋과 포함 스킬 목록, 4개 벤더별 CLI 도구 요구사항, 설치 후 설정, oma-config.yaml 필드, oma doctor를 통한 검증.
+description: oh-my-agent 설치 가이드입니다. 세 가지 설치 방법, 6개 프리셋과 포함 스킬 목록, 4개 벤더별 CLI 도구 요구사항, 설치 후 설정, oma-config.yaml 필드, oma doctor를 통한 검증을 다룹니다.
 ---
 
 # 설치
 
 ## 사전 요구사항
 
-- **AI 기반 IDE 또는 CLI** — 다음 중 하나 이상: Claude Code, Gemini CLI, Codex CLI, Qwen CLI, Antigravity IDE, Cursor, 또는 OpenCode
-- **bun** — JavaScript 런타임 및 패키지 매니저 (설치 스크립트에서 없으면 자동 설치)
-- **uv** — Serena MCP용 Python 패키지 매니저 (없으면 자동 설치)
+- **AI 기반 IDE 또는 CLI**: 다음 중 하나 이상 (Claude Code, Gemini CLI, Codex CLI, Qwen CLI, Antigravity IDE, Cursor, 또는 OpenCode)
+- **bun**: JavaScript 런타임 및 패키지 매니저 (설치 스크립트에서 없으면 자동 설치)
+- **uv**: Serena MCP용 Python 패키지 매니저 (없으면 자동 설치)
 
 ---
 

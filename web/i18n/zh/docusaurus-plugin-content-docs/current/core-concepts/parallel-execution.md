@@ -1,15 +1,15 @@
 ---
 title: 并行执行
-description: 同时运行多个 oh-my-agent 智能体的完整指南 —— agent:spawn 语法及所有选项、agent:parallel 内联模式、工作区感知模式、多 CLI 配置、供应商解析优先级、仪表盘监控、会话 ID 策略以及应避免的反模式。
+description: 同时运行多个 oh-my-agent 智能体的完整指南。agent:spawn 语法及所有选项、agent:parallel 内联模式、工作区感知模式、多 CLI 配置、供应商解析优先级、仪表盘监控、会话 ID 策略以及应避免的反模式。
 ---
 
 # 并行执行
 
-oh-my-agent 的核心优势在于同时运行多个专业化智能体。当 backend 智能体在实现 API 时，frontend 智能体在创建 UI，mobile 智能体在构建应用界面 —— 所有这些都通过共享内存协调。
+oh-my-agent 的核心优势在于同时运行多个专业化智能体。当 backend 智能体在实现 API 时，frontend 智能体在创建 UI，mobile 智能体在构建应用界面，所有这些都通过共享内存协调。
 
 ---
 
-## agent:spawn —— 单智能体启动
+## agent:spawn：单智能体启动
 
 ### 基本语法
 
@@ -34,7 +34,7 @@ oma agent:spawn <agent-id> <prompt> <session-id> [options]
 | `--model <name>` | `-m` | 覆盖此次启动的 CLI 供应商。选项：`gemini`、`claude`、`codex`、`qwen`。 |
 | `--max-turns <n>` | `-t` | 覆盖此智能体的默认轮次限制。 |
 | `--json` | | 以 JSON 格式输出结果（适用于脚本化场景）。 |
-| `--no-wait` | | 即发即忘 —— 立即返回，不等待完成。 |
+| `--no-wait` | | 即发即忘：立即返回，不等待完成。 |
 
 ### 示例
 
@@ -88,7 +88,7 @@ oma agent:spawn qa "Review all implementations for security and accessibility" s
 
 ---
 
-## agent:parallel —— 内联并行模式
+## agent:parallel：内联并行模式
 
 提供更简洁的语法，自动管理后台进程：
 
@@ -190,7 +190,7 @@ Agent(subagent_type="backend-engineer", prompt="...", run_in_background=true)
 Agent(subagent_type="frontend-engineer", prompt="...", run_in_background=true)
 ```
 
-同一消息中的多个 Agent 工具调用以真正并行方式执行 —— 不需要顺序等待。
+同一消息中的多个 Agent 工具调用以真正并行方式执行，不需要顺序等待。
 
 ---
 
@@ -284,7 +284,7 @@ oma agent:status <session-id> <agent-id>
    oma agent:spawn frontend "task" session-01 -w ./apps/web &
    ```
 
-4. **主动监控。** 打开仪表盘终端尽早发现问题 —— 失败的智能体如果不能及时发现会浪费轮次。
+4. **主动监控。** 打开仪表盘终端尽早发现问题：失败的智能体如果不能及时发现会浪费轮次。
 
 5. **实现后运行 QA。** 在所有实现智能体完成后顺序启动 QA 智能体：
    ```bash
@@ -304,7 +304,7 @@ oma agent:status <session-id> <agent-id>
 
 2. **不要超过 MAX_PARALLEL（默认 3）。** 更多并发智能体不一定意味着更快的结果。每个智能体需要内存和 CPU 资源。默认的 3 适合大多数系统。
 
-3. **不要跳过计划步骤。** 没有计划就启动智能体会导致实现不一致 —— frontend 按一种 API 格式构建，backend 按另一种格式构建。
+3. **不要跳过计划步骤。** 没有计划就启动智能体会导致实现不一致：frontend 按一种 API 格式构建，backend 按另一种格式构建。
 
 4. **不要忽略失败的智能体。** 失败智能体的工作是不完整的。检查 `result-{agent}.md` 了解失败原因，修正提示词，重新启动。
 

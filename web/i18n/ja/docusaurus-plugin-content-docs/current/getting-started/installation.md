@@ -1,15 +1,15 @@
 ---
 title: インストール
-description: oh-my-agentの完全インストールガイド — 3つのインストール方法、6つのプリセットとスキルリスト、4つのベンダー向けCLIツール要件、インストール後の設定、oma-config.yamlフィールド、oma doctorによる検証。
+description: oh-my-agentの完全インストールガイド。3つのインストール方法、6つのプリセットとスキルリスト、4つのベンダー向けCLIツール要件、インストール後の設定、oma-config.yamlフィールド、oma doctorによる検証を解説します。
 ---
 
 # インストール
 
 ## 前提条件
 
-- **AI搭載IDEまたはCLI** — 以下のいずれか：Claude Code、Gemini CLI、Codex CLI、Qwen CLI、Antigravity IDE、Cursor、またはOpenCode
-- **bun** — JavaScriptランタイムおよびパッケージマネージャー（インストールスクリプトが未インストールの場合自動インストール）
-- **uv** — Serena MCP用Pythonパッケージマネージャー（未インストールの場合自動インストール）
+- **AI搭載IDEまたはCLI**: 以下のいずれか。Claude Code、Gemini CLI、Codex CLI、Qwen CLI、Antigravity IDE、Cursor、またはOpenCode
+- **bun**: JavaScriptランタイムおよびパッケージマネージャー（インストールスクリプトが未インストールの場合自動インストール）
+- **uv**: Serena MCP用Pythonパッケージマネージャー（未インストールの場合自動インストール）
 
 ---
 

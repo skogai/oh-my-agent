@@ -1,6 +1,6 @@
 ---
 title: "指南：现有项目集成"
-description: 将 oh-my-agent 添加到现有项目的完整指南 —— CLI 路径、手动路径、验证、SSOT 符号链接结构以及安装器的底层工作原理。
+description: 将 oh-my-agent 添加到现有项目的完整指南。CLI 路径、手动路径、验证、SSOT 符号链接结构以及安装器的底层工作原理。
 ---
 
 # 指南：现有项目集成
@@ -9,8 +9,8 @@ description: 将 oh-my-agent 添加到现有项目的完整指南 —— CLI 路
 
 有两种方式将 oh-my-agent 添加到现有项目：
 
-1. **CLI 路径** —— 运行 `oma`（或 `npx oh-my-agent`）并按照交互式提示操作。推荐大多数用户使用。
-2. **手动路径** —— 自行复制文件和配置符号链接。适用于受限环境或自定义设置。
+1. **CLI 路径**：运行 `oma`（或 `npx oh-my-agent`）并按照交互式提示操作。推荐大多数用户使用。
+2. **手动路径**：自行复制文件和配置符号链接。适用于受限环境或自定义设置。
 
 两种路径产生相同的结果：一个 `.agents/` 目录（SSOT），IDE 特定目录通过符号链接指向它。
 
@@ -64,10 +64,10 @@ oma
 
 如果选择了包含 backend 技能的预设，会询问语言变体：
 
-- **Python** —— FastAPI/SQLAlchemy（默认）
-- **Node.js** —— NestJS/Hono + Prisma/Drizzle
-- **Rust** —— Axum/Actix-web
-- **Other / Auto-detect** —— 稍后使用 `/stack-set` 配置
+- **Python**：FastAPI/SQLAlchemy（默认）
+- **Node.js**：NestJS/Hono + Prisma/Drizzle
+- **Rust**：Axum/Actix-web
+- **Other / Auto-detect**：稍后使用 `/stack-set` 配置
 
 ### 6. 配置 IDE 符号链接
 
@@ -228,7 +228,7 @@ doctor 命令检查：
 
 | 检查项 | 验证内容 |
 |:-------|:---------|
-| **CLI 安装** | gemini、claude、codex、qwen —— 版本和可用性 |
+| **CLI 安装** | gemini、claude、codex、qwen：版本和可用性 |
 | **认证** | 每个 CLI 的 API 密钥或 OAuth 状态 |
 | **MCP 配置** | 每个 CLI 环境的 Serena MCP 服务器设置 |
 | **技能状态** | 已安装哪些技能以及是否为最新版本 |
@@ -390,9 +390,9 @@ oma dashboard:web
 
 `installShared()` 将 `_shared/` 目录复制到 `.agents/skills/_shared/`。包括：
 
-- `core/` —— 技能路由、上下文加载、提示词结构、质量原则、供应商检测、API 契约。
-- `runtime/` —— 内存协议、每供应商的执行协议。
-- `conditional/` —— 仅在特定条件满足时加载的资源（质量评分、探索循环）。
+- `core/`：技能路由、上下文加载、提示词结构、质量原则、供应商检测、API 契约。
+- `runtime/`：内存协议、每供应商的执行协议。
+- `conditional/`：仅在特定条件满足时加载的资源（质量评分、探索循环）。
 
 ### 5. 工作流安装
 

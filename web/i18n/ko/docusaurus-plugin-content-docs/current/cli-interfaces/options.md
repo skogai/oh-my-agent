@@ -1,6 +1,6 @@
 ---
 title: CLI 옵션
-description: 모든 CLI 옵션의 종합 레퍼런스 — 전역 플래그, 출력 제어, 명령어별 옵션, 실전 사용 패턴.
+description: 모든 CLI 옵션의 종합 레퍼런스입니다. 전역 플래그, 출력 제어, 명령어별 옵션, 실전 사용 패턴을 다룹니다.
 ---
 
 # CLI 옵션
@@ -143,9 +143,9 @@ oma retro [window] [--json] [--output <format>] [--interactive] [--compare]
 | `--compare` | 현재 시간 범위를 이전 동일 기간과 비교합니다. 변동 메트릭을 표시합니다 (예: 커밋 +12, 추가된 줄 -340). | `false` |
 
 **window 인자 형식:**
-- `7d` — 7일
-- `2w` — 2주
-- `1m` — 1개월
+- `7d`: 7일
+- `2w`: 2주
+- `1m`: 1개월
 - 생략 시 기본값 (7일)
 
 ### cleanup
@@ -162,7 +162,7 @@ oma cleanup [--dry-run] [-y | --yes] [--json] [--output <format>]
 **정리 대상:**
 1. 고아 PID 파일: 참조된 프로세스가 더 이상 실행되지 않는 `/tmp/subagent-*.pid`.
 2. 고아 로그 파일: 죽은 PID에 매칭되는 `/tmp/subagent-*.log`.
-3. Gemini Antigravity 디렉토리: `.gemini/antigravity/brain/`, `.gemini/antigravity/implicit/`, `.gemini/antigravity/knowledge/` — 시간이 지남에 따라 상태가 누적되어 커질 수 있습니다.
+3. Gemini Antigravity 디렉토리: `.gemini/antigravity/brain/`, `.gemini/antigravity/implicit/`, `.gemini/antigravity/knowledge/`. 이 디렉토리는 시간이 지남에 따라 상태가 누적되어 커질 수 있습니다.
 
 ### agent:spawn
 
@@ -186,7 +186,7 @@ oma agent:spawn <agent-id> <prompt> <session-id> [-m <vendor>] [-w <workspace>]
 |:-----|:-----|:---------------|:-------------|
 | gemini | `gemini` | `--approval-mode=yolo` | `-p` |
 | claude | `claude` | (없음) | `-p` |
-| codex | `codex` | `--full-auto` | (없음 — 프롬프트는 위치 인자) |
+| codex | `codex` | `--full-auto` | (없음, 프롬프트는 위치 인자) |
 | qwen | `qwen` | `--yolo` | `-p` |
 
 이 기본값은 `.agents/skills/oma-orchestrator/config/cli-config.yaml`에서 오버라이드할 수 있습니다.
@@ -220,8 +220,8 @@ oma agent:parallel [tasks...] [-m <vendor>] [-i | --inline] [--no-wait]
 
 **인라인 태스크 형식:** `agent:task` 또는 `agent:task:workspace`
 - 콜론으로 구분된 마지막 세그먼트가 `./` 또는 `/`로 시작하거나 `.`인 경우 워크스페이스로 감지합니다.
-- 예시: `backend:Implement auth API:./api` — agent=backend, task="Implement auth API", workspace=./api.
-- 예시: `frontend:Build login page` — agent=frontend, task="Build login page", workspace=자동 감지.
+- 예시: `backend:Implement auth API:./api` (agent=backend, task="Implement auth API", workspace=./api).
+- 예시: `frontend:Build login page` (agent=frontend, task="Build login page", workspace=자동 감지).
 
 **YAML 태스크 파일 형식:**
 ```yaml

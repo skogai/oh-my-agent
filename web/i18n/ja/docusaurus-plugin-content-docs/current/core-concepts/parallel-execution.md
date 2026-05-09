@@ -1,6 +1,6 @@
 ---
 title: 並列実行
-description: oh-my-agentの複数エージェント同時実行完全ガイド — agent:spawnの構文と全オプション、agent:parallelインラインモード、ワークスペース対応パターン、マルチCLI設定、ベンダー解決優先度、ダッシュボードモニタリング、セッションID戦略、避けるべきアンチパターン。
+description: oh-my-agentの複数エージェント同時実行完全ガイド。agent:spawnの構文と全オプション、agent:parallelインラインモード、ワークスペース対応パターン、マルチCLI設定、ベンダー解決優先度、ダッシュボードモニタリング、セッションID戦略、避けるべきアンチパターンを解説します。
 ---
 
 # 並列実行
@@ -9,7 +9,7 @@ oh-my-agentの核心的な利点は、複数の専門エージェントを同時
 
 ---
 
-## agent:spawn — 単一エージェントのスポーン
+## agent:spawn: 単一エージェントのスポーン
 
 ### 基本構文
 
@@ -82,7 +82,7 @@ oma agent:spawn qa "Review all implementations for security and accessibility" s
 
 ---
 
-## agent:parallel — インライン並列モード
+## agent:parallel: インライン並列モード
 
 ```bash
 oma agent:parallel -i <agent1>:<prompt1> <agent2>:<prompt2> [options]

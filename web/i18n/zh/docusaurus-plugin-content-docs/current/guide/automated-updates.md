@@ -1,6 +1,6 @@
 ---
 title: "指南：自动更新"
-description: oh-my-agent GitHub Action 的完整文档 —— 设置、所有输入和输出、详细示例以及底层工作原理。
+description: oh-my-agent GitHub Action 的完整文档。设置、所有输入和输出、详细示例以及底层工作原理。
 ---
 
 # 指南：自动更新
@@ -49,7 +49,7 @@ jobs:
 | `force` | string | 否 | `"false"` | 传递 `--force` 给 `oma update`。为 `"true"` 时，覆盖用户自定义的配置文件（`oma-config.yaml`、`mcp.json`）和 `stack/` 目录。正常情况下这些会被保留。 |
 | `pr-title` | string | 否 | `"chore(deps): update oh-my-agent skills"` | Pull Request 的自定义标题。仅在 `pr` 模式下使用。 |
 | `pr-labels` | string | 否 | `"dependencies,automated"` | 添加到 PR 的逗号分隔标签。仅在 `pr` 模式下使用。 |
-| `commit-message` | string | 否 | `"chore(deps): update oh-my-agent skills"` | 自定义提交消息。两种模式都使用 —— 作为 PR 提交消息或直接提交消息。 |
+| `commit-message` | string | 否 | `"chore(deps): update oh-my-agent skills"` | 自定义提交消息。两种模式都使用：作为 PR 提交消息或直接提交消息。 |
 | `token` | string | 否 | `${{ github.token }}` | 创建 PR 的 GitHub token。如果需要 PR 触发其他工作流，请使用 Personal Access Token（PAT）（默认的 `GITHUB_TOKEN` 不会在其创建的 PR 上触发工作流运行）。 |
 
 ---

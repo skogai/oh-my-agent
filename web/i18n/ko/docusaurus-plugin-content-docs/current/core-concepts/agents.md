@@ -1,11 +1,11 @@
 ---
 title: 에이전트
-description: oh-my-agent 21개 에이전트의 완전한 레퍼런스 — 도메인, 기술 스택, 리소스 파일, 기능, Charter Preflight 프로토콜, 2계층 스킬 로딩, 범위 제한 실행 규칙, 품질 게이트, 워크스페이스 전략, 오케스트레이션 흐름, 런타임 메모리.
+description: oh-my-agent 21개 에이전트의 완전한 레퍼런스입니다. 도메인, 기술 스택, 리소스 파일, 기능, Charter Preflight 프로토콜, 2계층 스킬 로딩, 범위 제한 실행 규칙, 품질 게이트, 워크스페이스 전략, 오케스트레이션 흐름, 런타임 메모리를 다룹니다.
 ---
 
 # 에이전트
 
-oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각 에이전트는 정의된 도메인, 기술 스택 지식, 리소스 파일, 품질 게이트, 실행 제약을 갖고 있습니다. 에이전트는 범용 챗봇이 아닙니다 — 자신의 영역 안에서 체계적인 프로토콜을 따르는 범위가 한정된 작업자입니다.
+oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각 에이전트는 정의된 도메인, 기술 스택 지식, 리소스 파일, 품질 게이트, 실행 제약을 갖고 있습니다. 에이전트는 범용 챗봇이 아니라, 자신의 영역 안에서 체계적인 프로토콜을 따르는 범위가 한정된 작업자입니다.
 
 ---
 
@@ -47,7 +47,7 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 - 한 번에 하나의 명확화 질문 (묶음 질문 금지)
 - 항상 추천 옵션과 함께 2-3가지 접근 방식 제안
 - 각 단계에서 사용자 확인과 함께 섹션별 설계
-- YAGNI — 필요한 것만 설계
+- YAGNI: 필요한 것만 설계
 
 **워크플로우:** 6단계: 컨텍스트 탐색, 질문, 접근 방식, 설계, 문서화(`docs/plans/`에 저장), `/plan`으로 전환.
 
@@ -57,7 +57,7 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 
 ### oma-architecture
 
-**도메인:** 소프트웨어/시스템 아키텍처 — 모듈·서비스 경계, 트레이드오프 분석, 이해관계자 종합, 의사결정 기록.
+**도메인:** 소프트웨어/시스템 아키텍처 (모듈·서비스 경계, 트레이드오프 분석, 이해관계자 종합, 의사결정 기록).
 
 **사용 시기:** 시스템 아키텍처 선택 또는 검토, 모듈/서비스/오너십 경계 정의, 명시적 트레이드오프와 함께 아키텍처 대안 비교, 아키텍처적 문제(변경 증폭, 숨은 의존성, 어색한 API) 진단, 아키텍처 투자 또는 리팩토링 우선순위 결정, 아키텍처 권고안 또는 ADR 작성.
 
@@ -80,7 +80,7 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 
 ### oma-pm
 
-**도메인:** 프로덕트 관리 — 요구사항 분석, 태스크 분해, API 컨트랙트.
+**도메인:** 프로덕트 관리 (요구사항 분석, 태스크 분해, API 컨트랙트).
 
 **사용 시기:** 복잡한 기능 분해, 실현 가능성 판단, 우선순위 결정, API 컨트랙트 정의.
 
@@ -102,7 +102,7 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 
 ### oma-frontend
 
-**도메인:** 웹 UI — React, Next.js, TypeScript와 FSD-lite 아키텍처.
+**도메인:** 웹 UI (React, Next.js, TypeScript와 FSD-lite 아키텍처).
 
 **사용 시기:** 사용자 인터페이스, 컴포넌트, 클라이언트 사이드 로직, 스타일링, 폼 유효성 검사, API 통합을 구축할 때.
 
@@ -129,7 +129,7 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 - shadcn/ui 우선, cva로 확장, `components/ui/*`를 직접 수정하지 않음
 - 디자인 토큰 1:1 매핑 (컬러 하드코딩 금지)
 - 미들웨어 대신 프록시 (Next.js 16+는 프록시 로직에 `middleware.ts`가 아닌 `proxy.ts` 사용)
-- 3단계를 넘는 prop drilling 금지 — Jotai 아톰 사용
+- 3단계를 넘는 prop drilling 금지 (Jotai 아톰 사용)
 - `@/` 절대 임포트 필수
 - FCP 목표 < 1초
 - 반응형 브레이크포인트: 320px, 768px, 1024px, 1440px
@@ -175,7 +175,7 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 
 ### oma-mobile
 
-**도메인:** 크로스 플랫폼 모바일 앱 — Flutter, React Native.
+**도메인:** 크로스 플랫폼 모바일 앱 (Flutter, React Native).
 
 **사용 시기:** 네이티브 모바일 앱(iOS + Android), 모바일 특화 UI 패턴, 플랫폼 기능(카메라, GPS, 푸시 알림), 오프라인 우선 아키텍처.
 
@@ -197,7 +197,7 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 
 ### oma-db
 
-**도메인:** 데이터베이스 아키텍처 — SQL, NoSQL, 벡터 데이터베이스.
+**도메인:** 데이터베이스 아키텍처 (SQL, NoSQL, 벡터 데이터베이스).
 
 **사용 시기:** 스키마 설계, ERD, 정규화, 인덱싱, 트랜잭션, 용량 계획, 백업 전략, 마이그레이션 설계, 벡터 DB/RAG 아키텍처, 안티 패턴 리뷰, 컴플라이언스 인식 설계(ISO 27001/27002/22301).
 
@@ -308,7 +308,7 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 
 ### oma-qa
 
-**도메인:** 품질 보증 — 보안, 성능, 접근성, 코드 품질.
+**도메인:** 품질 보증 (보안, 성능, 접근성, 코드 품질).
 
 **사용 시기:** 배포 전 최종 리뷰, 보안 감사, 성능 분석, 접근성 준수, 테스트 커버리지 분석.
 
@@ -323,7 +323,7 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 **핵심 규칙:**
 - 모든 발견 사항에 파일:라인, 설명, 수정 방안 포함 필수
 - 먼저 자동화 도구 실행 (npm audit, bandit, lighthouse)
-- 오탐 금지 — 모든 발견 사항은 재현 가능해야 함
+- 오탐 금지 (모든 발견 사항은 재현 가능해야 함)
 - 설명만이 아닌 수정 코드 제공
 
 **리소스:** `execution-protocol.md`, `iso-quality.md`, `checklist.md`, `self-check.md`, `error-playbook.md`, `examples.md`.
@@ -348,9 +348,9 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 - `.agents/results/bugs/`에 문서화
 
 **사용하는 Serena MCP 도구:**
-- `find_symbol("functionName")` — 함수 위치 찾기
-- `find_referencing_symbols("Component")` — 모든 사용처 찾기
-- `search_for_pattern("error pattern")` — 유사한 문제 찾기
+- `find_symbol("functionName")`: 함수 위치 찾기
+- `find_referencing_symbols("Component")`: 모든 사용처 찾기
+- `search_for_pattern("error pattern")`: 유사한 문제 찾기
 
 **리소스:** `execution-protocol.md`, `common-patterns.md`, `debugging-checklist.md`, `bug-report-template.md`, `error-playbook.md`, `examples.md`.
 
@@ -440,7 +440,7 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 
 **핵심 규칙:**
 - 에이전트 스폰 전 반드시 계획을 사용자에게 확인
-- 한 번에 하나의 우선순위 티어만 — 완료 후 다음 티어 진행
+- 한 번에 하나의 우선순위 티어만 처리 (완료 후 다음 티어 진행)
 - 사용자가 각 게이트 전환을 승인
 - 머지 전 QA 리뷰 필수
 - CRITICAL/HIGH 이슈에 대한 수정 반복 루프
@@ -453,21 +453,21 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 
 ### oma-search
 
-**도메인:** 도메인 신뢰도 점수를 사용하는 의도 기반 검색 라우터 — 쿼리를 Context7(문서), 네이티브 웹 검색, `gh`/`glab`(코드), Serena(로컬)로 라우팅.
+**도메인:** 도메인 신뢰도 점수를 사용하는 의도 기반 검색 라우터입니다. 쿼리를 Context7(문서), 네이티브 웹 검색, `gh`/`glab`(코드), Serena(로컬)로 라우팅합니다.
 
 **사용 시기:** 공식 라이브러리/프레임워크 문서 찾기, 튜토리얼/예제/비교/솔루션을 위한 웹 리서치, 구현 패턴을 위한 GitHub/GitLab 코드 검색, 검색 채널이 불명확한 쿼리(자동 라우팅), 검색 인프라가 필요한 다른 스킬(공유 호출).
 
 **사용하지 말아야 할 때:** 로컬 전용 코드베이스 탐색(Serena MCP를 직접 사용), Git 이력 또는 blame 분석(oma-scm 사용), 전체 아키텍처 리서치(이 스킬을 내부적으로 호출할 수 있는 oma-architecture 사용).
 
 **핵심 규칙:**
-- 검색 전에 의도 분류 — 모든 쿼리는 먼저 IntentClassifier를 통과
-- 하나의 쿼리, 하나의 최적 경로 — 의도가 모호하지 않은 한 중복 멀티 라우팅을 피함
-- 모든 결과에 신뢰도 점수 — 모든 비로컬 결과는 레지스트리의 도메인 신뢰도 레이블을 받음
+- 검색 전에 의도 분류 (모든 쿼리는 먼저 IntentClassifier를 통과)
+- 하나의 쿼리, 하나의 최적 경로 (의도가 모호하지 않은 한 중복 멀티 라우팅을 피함)
+- 모든 결과에 신뢰도 점수 (모든 비로컬 결과는 레지스트리의 도메인 신뢰도 레이블을 받음)
 - 플래그가 분류기를 우선: `--docs`, `--code`, `--web`, `--strict`, `--wide`, `--gitlab`
 - Fail forward: 주 경로가 실패하면 우아하게 폴백(docs→web, web→`oma search fetch` 전략)
 - 추가 MCP 불필요: 문서는 Context7, 웹은 런타임 네이티브, 코드는 CLI, 로컬은 Serena
 - 벤더 중립 웹 검색: 현재 런타임이 제공하는 무엇이든 사용(WebSearch, Google, Bing)
-- 도메인 수준 신뢰도만 — 하위 경로 또는 페이지 수준 점수 없음
+- 도메인 수준 신뢰도만 사용 (하위 경로 또는 페이지 수준 점수 없음)
 
 **리소스:** `SKILL.md`, 의도 분류기·경로 정의·신뢰 레지스트리가 담긴 `resources/` 디렉토리.
 
@@ -488,7 +488,7 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 4. 테마 추출(작업한 기능, 수정한 버그, 탐색한 도구)
 5. 주제별 일/기간 요약 렌더링
 
-**리소스:** `SKILL.md` — 무거운 작업은 `oma recap` CLI에 위임.
+**리소스:** `SKILL.md`. 무거운 작업은 `oma recap` CLI에 위임합니다.
 
 ---
 
@@ -501,11 +501,11 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 **사용하지 말아야 할 때:** PDF 파일(oma-pdf 사용), XLSX/DOCX(범위 외), HWP 생성/편집(범위 외), 이미 텍스트 파일(Read 도구 직접 사용).
 
 **핵심 규칙:**
-- 실행에 `bunx kordoc@latest` 사용 — 설치 불필요; 항상 `@latest` 또는 고정 버전 전달
+- 실행에 `bunx kordoc@latest` 사용 (설치 불필요. 항상 `@latest` 또는 고정 버전 전달)
 - 기본 출력 형식은 Markdown
 - 출력 디렉토리가 지정되지 않으면 입력과 동일한 디렉토리에 출력
 - kordoc이 구조 보존 처리(헤딩, 표, 중첩 표, 각주, 하이퍼링크, 이미지)
-- 보안 방어(ZIP bomb, XXE, SSRF, XSS)는 kordoc이 제공 — 커스텀 방어 추가 금지
+- 보안 방어(ZIP bomb, XXE, SSRF, XSS)는 kordoc이 제공 (커스텀 방어 추가 금지)
 - 암호화된 또는 DRM 잠금 HWP의 경우 제한 사항을 사용자에게 명확히 보고
 - HTML `<table>` 블록을 GFM 파이프 테이블로 변환하고 Hancom 폰트 Private Use Area 문자를 제거하기 위해 `resources/flatten-tables.ts`로 후처리
 
@@ -522,7 +522,7 @@ oh-my-agent의 에이전트는 전문화된 엔지니어링 역할입니다. 각
 **사용하지 말아야 할 때:** PDF 생성/작성(적절한 문서 도구 사용), 기존 PDF 편집(범위 외), 이미 텍스트인 파일의 단순 읽기(Read 도구 직접 사용).
 
 **핵심 규칙:**
-- 실행에 `uvx opendataloader-pdf` 사용 — 설치 불필요
+- 실행에 `uvx opendataloader-pdf` 사용 (설치 불필요)
 - 기본 출력 형식은 Markdown
 - 출력 디렉토리가 지정되지 않으면 입력 PDF와 동일한 디렉토리에 출력
 - 문서 구조 보존(헤딩, 표, 목록, 이미지)
@@ -567,10 +567,10 @@ CHARTER_CHECK:
 
 각 에이전트의 지식은 두 계층으로 나뉩니다:
 
-**Layer 1 — SKILL.md (~800바이트):**
+**Layer 1: SKILL.md (~800바이트):**
 항상 로딩됩니다. 프론트매터(이름, 설명), 사용 시기 / 사용하지 말아야 할 때, 핵심 규칙, 아키텍처 개요, 라이브러리 목록, Layer 2 리소스에 대한 참조가 포함됩니다.
 
-**Layer 2 — resources/ (필요 시 로딩):**
+**Layer 2: resources/ (필요 시 로딩):**
 에이전트가 활발히 작업할 때만 로딩되며, 태스크 유형과 난이도에 맞는 리소스만 로딩됩니다:
 
 | 난이도 | 로딩되는 리소스 |
@@ -580,9 +580,9 @@ CHARTER_CHECK:
 | **Complex** | execution-protocol.md + examples.md + tech-stack.md + snippets.md |
 
 실행 중 필요에 따라 추가 리소스가 로딩됩니다:
-- `checklist.md` — Verify 단계에서
-- `error-playbook.md` — 에러 발생 시에만
-- `common-checklist.md` — Complex 태스크의 최종 검증에서
+- `checklist.md`: Verify 단계에서
+- `error-playbook.md`: 에러 발생 시에만
+- `common-checklist.md`: Complex 태스크의 최종 검증에서
 
 ---
 
@@ -623,9 +623,9 @@ oma agent:spawn frontend "Build login form" session-01 -w ./apps/web
 멀티 에이전트 워크플로우(`/orchestrate` 또는 `/work`) 실행 시:
 
 1. **PM 에이전트**가 요청을 우선순위(P0, P1, P2)와 의존성이 있는 도메인별 태스크로 분해
-2. **세션 초기화** — 세션 ID 생성, 메모리에 `orchestrator-session.md`와 `task-board.md` 생성
+2. **세션 초기화**: 세션 ID 생성, 메모리에 `orchestrator-session.md`와 `task-board.md` 생성
 3. **P0 태스크** 병렬 스폰 (최대 MAX_PARALLEL 동시 에이전트)
-4. **진행 상황 모니터링** — 오케스트레이터가 매 POLL_INTERVAL마다 `progress-{agent}.md` 파일 폴링
+4. **진행 상황 모니터링**: 오케스트레이터가 매 POLL_INTERVAL마다 `progress-{agent}.md` 파일 폴링
 5. **P1 태스크** P0 완료 후 스폰, 이후 동일
 6. **검증 루프** 각 완료된 에이전트에 대해 실행 (자체 리뷰 -> 자동화 검증 -> QA에 의한 크로스 리뷰)
 7. **결과 수집** 모든 `result-{agent}.md` 파일에서
@@ -637,7 +637,7 @@ oma agent:spawn frontend "Build login form" session-01 -w ./apps/web
 
 에이전트는 두 위치에 정의됩니다:
 
-**`.agents/agents/`** — 7개 서브에이전트 정의 파일:
+**`.agents/agents/`**: 7개 서브에이전트 정의 파일
 - `backend-engineer.md`
 - `frontend-engineer.md`
 - `mobile-engineer.md`
@@ -648,7 +648,7 @@ oma agent:spawn frontend "Build login form" session-01 -w ./apps/web
 
 이 파일들은 에이전트의 정체성, 실행 프로토콜 참조, CHARTER_CHECK 템플릿, 아키텍처 요약, 규칙을 정의합니다. Task/Agent 도구(Claude Code) 또는 CLI를 통해 서브에이전트를 스폰할 때 사용됩니다.
 
-**`.claude/agents/`** — IDE 특화 서브에이전트 정의로, 심볼릭 링크 또는 직접 복사를 통해 `.agents/agents/` 파일을 참조합니다.
+**`.claude/agents/`**: IDE 특화 서브에이전트 정의로, 심볼릭 링크 또는 직접 복사를 통해 `.agents/agents/` 파일을 참조합니다.
 
 ---
 

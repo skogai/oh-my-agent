@@ -1,6 +1,6 @@
 ---
 title: CLI 명령어
-description: 모든 oh-my-agent CLI 명령어의 종합 레퍼런스 — 구문, 옵션, 예제, 카테고리별 정리.
+description: 모든 oh-my-agent CLI 명령어의 종합 레퍼런스입니다. 구문, 옵션, 예제, 카테고리별 정리를 다룹니다.
 ---
 
 # CLI 명령어
@@ -337,9 +337,9 @@ oma agent:status <session-id> [agent-ids...] [-r <root>]
 | `-r, --root <path>` | 메모리 확인을 위한 루트 경로 | 현재 디렉토리 |
 
 **상태 값:**
-- `completed` — 결과 파일 존재 (선택적 상태 헤더 포함).
-- `running` — PID 파일이 존재하고 프로세스가 살아 있음.
-- `crashed` — PID 파일이 존재하지만 프로세스가 죽었거나, PID/결과 파일이 없음.
+- `completed`: 결과 파일이 존재합니다(선택적 상태 헤더 포함).
+- `running`: PID 파일이 존재하고 프로세스가 살아 있습니다.
+- `crashed`: PID 파일이 존재하지만 프로세스가 죽었거나, PID/결과 파일이 없습니다.
 
 **출력 형식:** 에이전트당 한 줄: `{agent-id}:{status}`
 
@@ -376,7 +376,7 @@ oma agent:parallel [tasks...] [-m <vendor>] [-i | --inline] [--no-wait]
 |:-------|:-----|
 | `-m, --model <vendor>` | 모든 에이전트에 대한 CLI 벤더 오버라이드 |
 | `-i, --inline` | 인라인 모드: 태스크를 `agent:task[:workspace]` 인자로 지정 |
-| `--no-wait` | 백그라운드 모드 — 에이전트를 시작하고 즉시 반환 |
+| `--no-wait` | 백그라운드 모드(에이전트를 시작하고 즉시 반환) |
 
 **YAML 태스크 파일 형식:**
 ```yaml

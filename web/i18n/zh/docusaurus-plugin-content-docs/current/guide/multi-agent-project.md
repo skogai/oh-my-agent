@@ -1,13 +1,13 @@
 ---
 title: "指南：多智能体项目"
-description: 协调跨前端、后端、数据库、移动端和 QA 的多个领域智能体的完整指南 —— 从规划到合并。
+description: 协调跨前端、后端、数据库、移动端和 QA 的多个领域智能体的完整指南。从规划到合并。
 ---
 
 # 指南：多智能体项目
 
 ## 何时使用多智能体协调
 
-你的功能跨越多个领域 —— backend API + frontend UI + 数据库 schema + 移动端客户端 + QA 审查。单个智能体无法处理全部范围，你需要各领域并行推进且互不干扰对方的文件。
+你的功能跨越多个领域，backend API + frontend UI + 数据库 schema + 移动端客户端 + QA 审查。单个智能体无法处理全部范围，你需要各领域并行推进且互不干扰对方的文件。
 
 多智能体协调适用于以下场景：
 
@@ -24,7 +24,7 @@ description: 协调跨前端、后端、数据库、移动端和 QA 的多个领
 
 推荐的多智能体工作流遵循严格的四步流水线。
 
-### 步骤 1：/plan —— 需求和任务分解
+### 步骤 1：/plan，需求和任务分解
 
 `/plan` 工作流内联运行（不启动子智能体），产出结构化计划。
 
@@ -34,28 +34,28 @@ description: 协调跨前端、后端、数据库、移动端和 QA 的多个领
 
 流程：
 
-1. **收集需求** —— PM 智能体询问目标用户、核心功能、约束和部署目标。
-2. **分析技术可行性** —— 使用 MCP 代码分析工具（`get_symbols_overview`、`find_symbol`、`search_for_pattern`）扫描现有代码库，寻找可复用代码和架构模式。
-3. **定义 API 契约** —— 设计端点契约（方法、路径、请求/响应 schema、认证、错误响应），保存到 `.agents/skills/_shared/core/api-contracts/`。
-4. **分解为任务** —— 将项目分解为可执行任务，每个任务包含：分配的智能体、标题、验收标准、优先级（P0-P3）和依赖关系。
-5. **与用户审查计划** —— 展示完整计划供确认。没有用户明确批准，工作流不会继续。
-6. **保存计划** —— 将批准的计划写入 `.agents/results/plan-{sessionId}.json` 并在内存中记录摘要。
+1. **收集需求**：PM 智能体询问目标用户、核心功能、约束和部署目标。
+2. **分析技术可行性**：使用 MCP 代码分析工具（`get_symbols_overview`、`find_symbol`、`search_for_pattern`）扫描现有代码库，寻找可复用代码和架构模式。
+3. **定义 API 契约**：设计端点契约（方法、路径、请求/响应 schema、认证、错误响应），保存到 `.agents/skills/_shared/core/api-contracts/`。
+4. **分解为任务**：将项目分解为可执行任务，每个任务包含：分配的智能体、标题、验收标准、优先级（P0-P3）和依赖关系。
+5. **与用户审查计划**：展示完整计划供确认。没有用户明确批准，工作流不会继续。
+6. **保存计划**：将批准的计划写入 `.agents/results/plan-{sessionId}.json` 并在内存中记录摘要。
 
 输出的 `.agents/results/plan-{sessionId}.json` 是 `/work` 和 `/orchestrate` 的输入。
 
-### 步骤 2：/work 或 /orchestrate —— 执行
+### 步骤 2：/work 或 /orchestrate，执行
 
 你有两条执行路径：
 
 | 方面 | /work | /orchestrate |
 |:-----|:-----------|:-------------|
-| **交互方式** | 交互式 —— 用户在每个阶段确认 | 自动化 —— 运行至完成 |
+| **交互方式** | 交互式：用户在每个阶段确认 | 自动化，运行至完成 |
 | **PM 规划** | 内置（步骤 2 运行 PM 智能体） | 需要来自 /plan 的 plan |
 | **用户检查点** | 计划审查后（步骤 3） | 启动前（计划必须存在） |
-| **持久化模式** | 是 —— 完成前不能终止 | 是 —— 完成前不能终止 |
+| **持久化模式** | 是：完成前不能终止 | 是，完成前不能终止 |
 | **最适用于** | 首次使用、需要监督的复杂项目 | 重复运行、定义明确的任务 |
 
-#### /work —— 交互式多智能体流水线
+#### /work：交互式多智能体流水线
 
 ```
 /work
@@ -63,13 +63,13 @@ description: 协调跨前端、后端、数据库、移动端和 QA 的多个领
 
 1. 分析用户请求并识别涉及的领域。
 2. 运行 PM 智能体进行任务分解（创建 plan-\{sessionId\}.json）。
-3. 向用户展示计划供确认 —— **阻塞直到确认**。
+3. 向用户展示计划供确认：**阻塞直到确认**。
 4. 按优先级层启动智能体（先 P0，然后 P1 等），同一优先级的任务并行运行。
 5. 通过内存文件监控智能体进度。
 6. 对所有交付物运行 QA 智能体审查（OWASP Top 10、性能、无障碍、代码质量）。
-7. 如果 QA 发现 CRITICAL 或 HIGH 问题，带着 QA 发现重新启动负责的智能体。每个问题最多重复 2 次。如果同一问题持续存在，激活**探索循环** —— 生成 2-3 个替代方案，在独立工作区使用不同假设提示词启动同类型智能体，QA 对每个评分，采用最佳结果。
+7. 如果 QA 发现 CRITICAL 或 HIGH 问题，带着 QA 发现重新启动负责的智能体。每个问题最多重复 2 次。如果同一问题持续存在，激活**探索循环**：生成 2-3 个替代方案，在独立工作区使用不同假设提示词启动同类型智能体，QA 对每个评分，采用最佳结果。
 
-#### /orchestrate —— 自动并行执行
+#### /orchestrate：自动并行执行
 
 ```
 /orchestrate
@@ -80,10 +80,10 @@ description: 协调跨前端、后端、数据库、移动端和 QA 的多个领
 3. 在内存目录中创建 `orchestrator-session.md` 和 `task-board.md`。
 4. 按优先级层启动智能体，每个智能体获得：任务描述、API 契约和上下文。
 5. 通过轮询 `progress-{agent}.md` 文件监控进度。
-6. 通过 `verify.sh` 验证每个完成的智能体 —— PASS（退出码 0）接受，FAIL（退出码 1）带错误上下文重新启动（最多 2 次重试），持续失败触发探索循环。
+6. 通过 `verify.sh` 验证每个完成的智能体：PASS（退出码 0）接受，FAIL（退出码 1）带错误上下文重新启动（最多 2 次重试），持续失败触发探索循环。
 7. 收集所有 `result-{agent}.md` 文件并编译最终报告。
 
-### 步骤 3：agent:spawn —— CLI 级别的智能体管理
+### 步骤 3：agent:spawn，CLI 级别的智能体管理
 
 `agent:spawn` 命令是工作流内部调用的底层机制。你也可以直接使用：
 
@@ -110,7 +110,7 @@ oma agent:spawn backend "Implement user auth API with JWT" session-20260324-1430
 
 **提示词解析：** `<prompt>` 参数可以是内联文本或文件路径。如果路径解析为现有文件，则读取其内容作为提示词。CLI 还自动注入来自 `.agents/skills/_shared/runtime/execution-protocols/{vendor}.md` 的供应商特定执行协议。
 
-### 步骤 4：/review —— QA 验证
+### 步骤 4：/review，QA 验证
 
 ```
 /review
@@ -118,13 +118,13 @@ oma agent:spawn backend "Implement user auth API with JWT" session-20260324-1430
 
 review 工作流运行完整 QA 流水线：
 
-1. **确定范围** —— 询问审查什么（特定文件、功能分支或整个项目）。
-2. **自动安全检查** —— 运行 `npm audit`、`bandit` 或等效工具。
-3. **OWASP Top 10 手动审查** —— 注入、认证缺陷、敏感数据、访问控制、配置错误、不安全反序列化、有漏洞的组件、日志不足。
-4. **性能分析** —— N+1 查询、缺失索引、无界分页、内存泄漏、不必要的重新渲染、包大小。
-5. **无障碍性** —— WCAG 2.1 AA：语义 HTML、ARIA、键盘导航、颜色对比、焦点管理。
-6. **代码质量** —— 命名、错误处理、测试覆盖率、TypeScript strict 模式、未使用的导入、async/await 模式。
-7. **报告** —— 发现按 CRITICAL / HIGH / MEDIUM / LOW 分类，包含 `file:line`、描述和修复代码。
+1. **确定范围**：询问审查什么（特定文件、功能分支或整个项目）。
+2. **自动安全检查**：运行 `npm audit`、`bandit` 或等效工具。
+3. **OWASP Top 10 手动审查**：注入、认证缺陷、敏感数据、访问控制、配置错误、不安全反序列化、有漏洞的组件、日志不足。
+4. **性能分析**：N+1 查询、缺失索引、无界分页、内存泄漏、不必要的重新渲染、包大小。
+5. **无障碍性**：WCAG 2.1 AA：语义 HTML、ARIA、键盘导航、颜色对比、焦点管理。
+6. **代码质量**：命名、错误处理、测试覆盖率、TypeScript strict 模式、未使用的导入、async/await 模式。
+7. **报告**：发现按 CRITICAL / HIGH / MEDIUM / LOW 分类，包含 `file:line`、描述和修复代码。
 
 对于大范围，工作流委派给 QA 智能体子智能体。使用 `--fix` 选项时，进入修复-验证循环：启动领域智能体修复 CRITICAL/HIGH 问题，重新审查，最多重复 3 次。
 
@@ -308,7 +308,7 @@ oma agent:parallel tasks.yaml -m claude
 
 ### 2. 工作区重叠
 
-将两个智能体分配到同一工作区目录。这导致文件冲突 —— 一个智能体的变更覆盖另一个的。始终使用独立工作区目录。
+将两个智能体分配到同一工作区目录。这导致文件冲突，一个智能体的变更覆盖另一个的。始终使用独立工作区目录。
 
 ### 3. 缺少 API 契约
 
@@ -336,15 +336,15 @@ oma agent:parallel tasks.yaml -m claude
 
 所有智能体完成各自任务后，必须验证跨领域集成：
 
-1. **API 契约对齐** —— MCP 工具（`find_symbol`、`search_for_pattern`）验证 backend 实现匹配 frontend 和 mobile 消费的契约。
+1. **API 契约对齐**：MCP 工具（`find_symbol`、`search_for_pattern`）验证 backend 实现匹配 frontend 和 mobile 消费的契约。
 
-2. **类型一致性** —— 跨领域共享的 TypeScript 类型、Python dataclass 或 Dart 模型必须使用一致的字段名称和类型。
+2. **类型一致性**：跨领域共享的 TypeScript 类型、Python dataclass 或 Dart 模型必须使用一致的字段名称和类型。
 
-3. **认证流程** —— 如果 backend 实现 JWT 认证，frontend 必须正确在 header 中发送 token，mobile 应用必须适当地存储和刷新 token。
+3. **认证流程**：如果 backend 实现 JWT 认证，frontend 必须正确在 header 中发送 token，mobile 应用必须适当地存储和刷新 token。
 
-4. **错误处理** —— 所有 API 的消费者必须处理文档化的错误响应。如果 backend 返回 `{ "error": "unauthorized", "code": 401 }`，所有客户端必须处理此格式。
+4. **错误处理**：所有 API 的消费者必须处理文档化的错误响应。如果 backend 返回 `{ "error": "unauthorized", "code": 401 }`，所有客户端必须处理此格式。
 
-5. **数据库 schema 对齐** —— 如果 database 智能体创建了迁移，backend ORM 模型必须精确匹配 schema。
+5. **数据库 schema 对齐**：如果 database 智能体创建了迁移，backend ORM 模型必须精确匹配 schema。
 
 QA 智能体的对齐审查（ultrawork 的步骤 6、work 的步骤 6）系统性地执行此跨领域验证。
 

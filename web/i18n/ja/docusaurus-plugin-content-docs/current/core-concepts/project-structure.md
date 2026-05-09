@@ -1,6 +1,6 @@
 ---
 title: プロジェクト構造
-description: oh-my-agentインストール後の完全ディレクトリツリー — .agents/（config、skills、workflows、agents、state、results、mcp.json）、.claude/（settings、hooks、skillsシンボリックリンク、agents）、.serena/memories/、oh-my-agentソースリポジトリ構造の全ファイル解説。
+description: oh-my-agentインストール後の完全ディレクトリツリー解説。.agents/（config、skills、workflows、agents、state、results、mcp.json）、.claude/（settings、hooks、skillsシンボリックリンク、agents）、.serena/memories/、oh-my-agentソースリポジトリ構造の全ファイルを網羅します。
 ---
 
 # プロジェクト構造
@@ -270,13 +270,13 @@ your-project/
 
 ---
 
-## .agents/ — 信頼できるソース
+## .agents/: 信頼できるソース
 
 すべてのエージェント動作の核心ディレクトリ。他のディレクトリはここから派生します。
 
 ### config/
 
-**`oma-config.yaml`** — 中央設定ファイル。以下を含みます。
+**`oma-config.yaml`**: 中央設定ファイル。以下を含みます。
 - `language`：応答言語コード（en、ko、ja、zh、es、fr、de、pt、ru、nl、pl）
 - `date_format`：タイムスタンプ形式の文字列（デフォルト：`YYYY-MM-DD`）
 - `timezone`：タイムゾーン識別子（デフォルト：`UTC`）
@@ -289,14 +289,14 @@ your-project/
 
 エージェントの専門知識が格納されます。22ディレクトリ：21エージェントスキル + 1共有リソース。
 
-**`_shared/`** — 全エージェント共通リソース：
-- `core/` — ルーティング、コンテキストローディング、プロンプト構造、明確化プロトコル、コンテキスト予算、難易度評価、推論テンプレート、品質原則、ベンダー検出、セッションメトリクス、共通チェックリスト、学び、APIコントラクトテンプレート
-- `runtime/` — CLIサブエージェント用メモリプロトコル、ベンダー固有実行プロトコル
-- `conditional/` — 特定条件下でのみロード（Quality Score、Experiment Ledger、Exploration Loop）
+**`_shared/`**: 全エージェント共通リソース。
+- `core/`: ルーティング、コンテキストローディング、プロンプト構造、明確化プロトコル、コンテキスト予算、難易度評価、推論テンプレート、品質原則、ベンダー検出、セッションメトリクス、共通チェックリスト、学び、APIコントラクトテンプレート
+- `runtime/`: CLIサブエージェント用メモリプロトコル、ベンダー固有実行プロトコル
+- `conditional/`: 特定条件下でのみロード（Quality Score、Experiment Ledger、Exploration Loop）
 
-**`oma-{agent}/`** — エージェントごとのスキルディレクトリ：
-- `SKILL.md`（約800バイト） — レイヤー1：常にロード
-- `resources/` — レイヤー2：オンデマンド
+**`oma-{agent}/`**: エージェントごとのスキルディレクトリ。
+- `SKILL.md`（約800バイト）: レイヤー1、常にロード
+- `resources/`: レイヤー2、オンデマンド
 - 一部エージェントに追加ディレクトリ：`stack/`（oma-backend）、`reference/`（oma-design）、`scripts/`（oma-orchestrator）
 
 ### workflows/
@@ -339,7 +339,7 @@ MCPサーバー設定：サーバー定義、メモリ設定（`memoryConfig`）
 
 ---
 
-## .claude/ — IDE統合
+## .claude/: IDE統合
 
 Claude Codeおよびその他のIDEとoh-my-agentを接続するディレクトリ。
 
@@ -349,24 +349,24 @@ Claude Code用のフックとパーミッション登録。
 
 ### hooks/
 
-- **`triggers.json`** — キーワード-ワークフローマッピング。以下を定義します：
+- **`triggers.json`**: キーワード-ワークフローマッピング。以下を定義します。
   - `workflows`: ワークフロー名から `{ persistent: boolean, keywords: { language: [...] }, patterns?: { language: [...] } }` へのマップ。`keywords` はリテラルなフレーズ、`patterns` は生の正規表現文字列（`iu` フラグでコンパイル）です。
   - `informationalPatterns`: 質問を示すフレーズ（自動検出からフィルタリングされます）
   - `excludedWorkflows`: 明示的な `/command` 呼び出しを必要とするワークフロー
   - `cjkScripts`: CJK スクリプトを使用する言語コード（ko、ja、zh）
 
   `keywords`、`patterns`、`informationalPatterns` 内の言語セクションは次の規約に従います：
-  - `*` — ユニバーサル/英語。`.agents/oma-config.yaml` の `language` 設定に関わらず常にロードされます。
-  - `en` — 後方互換性のためにロードされます。機能的には `*` と等価です。新しい英語コンテンツは `*` に追加してください。
-  - `ko` / `ja` / `zh` など — 言語固有。`.agents/oma-config.yaml` で `language: <code>` が設定されている場合のみロードされます。
-- **`keyword-detector.ts`** — 以下を行う TypeScript フックです：
+  - `*`: ユニバーサル/英語。`.agents/oma-config.yaml` の `language` 設定に関わらず常にロードされます。
+  - `en`: 後方互換性のためにロードされます。機能的には `*` と等価です。新しい英語コンテンツは `*` に追加してください。
+  - `ko` / `ja` / `zh` など: 言語固有。`.agents/oma-config.yaml` で `language: <code>` が設定されている場合のみロードされます。
+- **`keyword-detector.ts`**: 以下を行う TypeScript フックです。
   1. 入力をサニタイズ（コードブロック、引用符付き文字列、貼り付けられたシステムエコーブロックを除去）
   2. クリーンアップされた入力をトリガー `keywords`（リテラル）と `patterns`（正規表現）に対してスキャン
   3. 各マッチの周囲 60 文字のウィンドウで情報パターンを確認
   4. 強化ガードを適用（同じワークフローが 60 秒以内に 2 回以上トリガーされた場合は抑制）
   5. `[OMA WORKFLOW: ...]` または `[OMA PERSISTENT MODE: ...]` をコンテキストに注入
-- **`persistent-mode.ts`** — アクティブ状態ファイル確認と永続モード強制
-- **`hud.ts`** — [OMA]インジケーター表示（モデル名、コンテキスト使用率、ワークフロー状態）
+- **`persistent-mode.ts`**: アクティブ状態ファイル確認と永続モード強制
+- **`hud.ts`**: [OMA]インジケーター表示（モデル名、コンテキスト使用率、ワークフロー状態）
 
 ### skills/
 
@@ -378,7 +378,7 @@ Claude CodeのAgent tool用サブエージェント定義。
 
 ---
 
-## .serena/memories/ — ランタイム状態
+## .serena/memories/: ランタイム状態
 
 オーケストレーションセッション中にエージェントが進捗を書き込む場所。ダッシュボードがリアルタイム監視。
 
@@ -422,8 +422,8 @@ oh-my-agent/
 ソースリポジトリでは`.agents/`の変更が許可されています（ソースリポジトリ自体に対するSSOTの例外）。`.agents/`を変更しないというルールは利用側プロジェクトに適用され、oh-my-agentリポジトリには適用されません。
 
 開発コマンド（リポジトリルートから実行）：
-- `bun run test` — CLIテスト（vitest）
-- `bun run lint` — CLIとwebワークスペースのリント
-- `bun run build` — CLIビルド
-- `bun run typecheck` — CLIとwebの型チェック
+- `bun run test`: CLIテスト（vitest）
+- `bun run lint`: CLIとwebワークスペースのリント
+- `bun run build`: CLIビルド
+- `bun run typecheck`: CLIとwebの型チェック
 - コミットはConventional Commit形式に従う必要があります（commitlintで強制）

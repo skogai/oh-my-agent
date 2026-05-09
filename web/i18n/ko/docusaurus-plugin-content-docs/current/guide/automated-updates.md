@@ -1,6 +1,6 @@
 ---
 title: "가이드: 자동 업데이트"
-description: oh-my-agent용 완전한 GitHub Action 문서 — 설정, 모든 입력과 출력, 상세 예제, 내부 동작 원리.
+description: oh-my-agent용 완전한 GitHub Action 문서입니다. 설정, 모든 입력과 출력, 상세 예제, 내부 동작 원리를 다룹니다.
 ---
 
 # 가이드: 자동 업데이트
@@ -49,7 +49,7 @@ jobs:
 | `force` | string | 아니요 | `"false"` | `oma update`에 `--force`를 전달합니다. `"true"`이면 사용자가 커스터마이즈한 설정 파일(`oma-config.yaml`, `mcp.json`)과 `stack/` 디렉토리를 덮어씁니다. 일반적으로 이들은 보존됩니다. |
 | `pr-title` | string | 아니요 | `"chore(deps): update oh-my-agent skills"` | 풀 리퀘스트의 커스텀 제목. `pr` 모드에서만 사용됩니다. |
 | `pr-labels` | string | 아니요 | `"dependencies,automated"` | PR에 추가할 쉼표로 구분된 라벨. `pr` 모드에서만 사용됩니다. |
-| `commit-message` | string | 아니요 | `"chore(deps): update oh-my-agent skills"` | 커스텀 커밋 메시지. 두 모드 모두에서 사용됩니다 — PR 커밋 메시지 또는 직접 커밋 메시지로. |
+| `commit-message` | string | 아니요 | `"chore(deps): update oh-my-agent skills"` | 커스텀 커밋 메시지. 두 모드 모두에서 사용됩니다(PR 커밋 메시지 또는 직접 커밋 메시지). |
 | `token` | string | 아니요 | `${{ github.token }}` | PR 생성용 GitHub 토큰. PR이 다른 워크플로우를 트리거해야 하는 경우 Personal Access Token(PAT)을 사용하세요 (기본 `GITHUB_TOKEN`은 자신이 생성한 PR에서 워크플로우 실행을 트리거하지 않습니다). |
 
 ---

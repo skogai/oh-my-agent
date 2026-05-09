@@ -1,6 +1,6 @@
 ---
 title: "CLIコマンド"
-description: oh-my-agent CLIの全コマンド完全リファレンス — 構文、オプション、使用例をカテゴリ別に整理。
+description: oh-my-agent CLIの全コマンド完全リファレンス。構文、オプション、使用例をカテゴリ別に整理しています。
 ---
 
 # CLIコマンド

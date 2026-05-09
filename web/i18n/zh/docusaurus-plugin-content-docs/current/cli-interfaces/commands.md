@@ -1,6 +1,6 @@
 ---
 title: "CLI 命令"
-description: oh-my-agent CLI 每个命令的完整参考 —— 语法、选项、示例，按类别组织。
+description: oh-my-agent CLI 每个命令的完整参考。语法、选项、示例，按类别组织。
 ---
 
 # CLI 命令
@@ -325,9 +325,9 @@ oma agent:status <session-id> [agent-ids...] [-r <root>]
 | `-r, --root <path>` | 内存检查的根路径 | 当前目录 |
 
 **状态值：**
-- `completed` —— 结果文件存在（可选带状态头）。
-- `running` —— PID 文件存在且进程存活。
-- `crashed` —— PID 文件存在但进程已死，或无 PID/结果文件。
+- `completed`：结果文件存在（可选带状态头）。
+- `running`：PID 文件存在且进程存活。
+- `crashed`：PID 文件存在但进程已死，或无 PID/结果文件。
 
 **输出格式：** 每行一个智能体：`{agent-id}:{status}`
 
@@ -364,7 +364,7 @@ oma agent:parallel [tasks...] [-m <vendor>] [-i | --inline] [--no-wait]
 |:-----|:-----|
 | `-m, --model <vendor>` | 所有智能体的 CLI 供应商覆盖 |
 | `-i, --inline` | 内联模式：将任务指定为 `agent:task[:workspace]` 参数 |
-| `--no-wait` | 后台模式 —— 启动智能体后立即返回 |
+| `--no-wait` | 后台模式：启动智能体后立即返回 |
 
 **YAML 任务文件格式：**
 ```yaml

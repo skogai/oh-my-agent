@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { downloadAndExtract } from "../../io/tarball.js";
@@ -15,6 +15,11 @@ import {
   isGeminiAuthenticated,
   isQwenAuthenticated,
 } from "../../vendors/index.js";
+
+const OMA_DOCTOR_PROBE_TIMEOUT_MS = Number(
+  process.env.OMA_DOCTOR_PROBE_TIMEOUT_MS ?? 1500,
+);
+const OMA_DOCTOR_PROBE_SIGKILL_GRACE_MS = 200;
 
 const CLI_DEFINITIONS: Array<[string, string, string]> = [
   ["gemini", "gemini", "bun install --global @google/gemini-cli"],
@@ -48,16 +53,63 @@ export interface DoctorReport {
   totalIssues: number;
 }
 
-function checkCLI(name: string, command: string, installCmd: string): CLICheck {
-  try {
-    const version = execSync(`${command} --version`, {
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "ignore"],
-    }).trim();
-    return { name, installed: true, version, installCmd };
-  } catch {
-    return { name, installed: false, installCmd };
-  }
+async function checkCLI(
+  name: string,
+  command: string,
+  installCmd: string,
+): Promise<CLICheck> {
+  return new Promise<CLICheck>((resolve) => {
+    let stdout = "";
+    let killGraceTimer: ReturnType<typeof setTimeout> | undefined;
+    let settled = false;
+
+    const proc = spawn(command, ["--version"], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+
+    proc.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString("utf-8");
+    });
+
+    const settle = (installed: boolean, version?: string) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(killGraceTimer);
+      resolve(
+        installed
+          ? { name, installed: true, version, installCmd }
+          : { name, installed: false, installCmd },
+      );
+    };
+
+    proc.on("close", (exitCode: number | null) => {
+      if (exitCode === 0) {
+        settle(true, stdout.trim());
+      } else {
+        settle(false);
+      }
+    });
+
+    proc.on("error", () => {
+      settle(false);
+    });
+
+    const probeTimer = setTimeout(() => {
+      try {
+        proc.kill("SIGTERM");
+      } catch {}
+      killGraceTimer = setTimeout(() => {
+        try {
+          proc.kill("SIGKILL");
+        } catch {}
+      }, OMA_DOCTOR_PROBE_SIGKILL_GRACE_MS);
+      settle(false);
+    }, OMA_DOCTOR_PROBE_TIMEOUT_MS);
+
+    proc.on("close", () => {
+      clearTimeout(probeTimer);
+    });
+  });
 }
 
 function checkMCPConfig(cliName: string): {
@@ -107,8 +159,10 @@ function checkSkills(): SkillCheck[] {
 
 export async function collectDoctorReport(): Promise<DoctorReport> {
   const cwd = process.cwd();
-  const clis = CLI_DEFINITIONS.map(([name, cmd, installCmd]) =>
-    checkCLI(name, cmd, installCmd),
+  const clis = await Promise.all(
+    CLI_DEFINITIONS.map(([name, cmd, installCmd]) =>
+      checkCLI(name, cmd, installCmd),
+    ),
   );
 
   const mcpChecks: McpCheck[] = clis

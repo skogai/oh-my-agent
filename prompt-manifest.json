@@ -1,7 +1,7 @@
 {
   "name": "oh-my-agent",
   "version": "7.6.0",
-  "releaseDate": "2026-05-11T07:47:30.888Z",
+  "releaseDate": "2026-05-11T10:21:19.816Z",
   "repository": "https://github.com/first-fluke/oh-my-agent",
   "files": [
     {
@@ -85,6 +85,11 @@
       "size": 6152
     },
     {
+      "path": ".agents/hooks/core/constants.ts",
+      "sha256": "58bacf20f5a937e173a67399183ebd6e67792902fc54c2d9d1e757999eeea99c",
+      "size": 1155
+    },
+    {
       "path": ".agents/hooks/core/filter-test-output.sh",
       "sha256": "b03fd019a4ab095f2eaf717d368be00825ce43be39942c5620a7cdf9192355e7",
       "size": 1564
@@ -106,8 +111,8 @@
     },
     {
       "path": ".agents/hooks/core/keyword-detector.ts",
-      "sha256": "7d226c69d4154966afd2d804148255b99eb3cdd5f2b926fdbd06fdf7d37253e6",
-      "size": 24324
+      "sha256": "9fa262730c246eab35c87c6b03e38ba113ecc38342637cea82f938c7814ab626",
+      "size": 25552
     },
     {
       "path": ".agents/hooks/core/persistent-mode.ts",
@@ -131,8 +136,8 @@
     },
     {
       "path": ".agents/hooks/core/types.ts",
-      "sha256": "af35e41ec81a97fa4517bc6f9cf273ff6b2f40abc026f7763bda645fb50215bb",
-      "size": 691
+      "sha256": "7d2be6b7471d7cf9d85528f85fb6755103eebeed0b54e897e62d1eb4a2e4148d",
+      "size": 828
     },
     {
       "path": ".agents/hooks/variants/claude.json",
@@ -1546,6 +1551,6 @@
   "metadata": {
     "skillCount": 27,
     "workflowCount": 20,
-    "totalFiles": 307
+    "totalFiles": 308
   }
 }

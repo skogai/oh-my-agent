@@ -222,6 +222,7 @@ function buildVendorBlock(vendor: string, rules: ParsedRule[]): string {
     "| deepsec | `deepsec.md` | Drive `oma-deepsec` end-to-end (setup / scan / pr-review / matchers / triage) |",
     "| scm | `scm.md` | SCM + Git operations + Conventional Commits |",
     "| docs | `docs.md` | Documentation drift verify + sync |",
+    "| recap | `recap.md` | Daily / period AI conversation recap |",
     "",
     `To execute: read and follow \`.agents/workflows/{name}.md\` step by step.`,
     "",

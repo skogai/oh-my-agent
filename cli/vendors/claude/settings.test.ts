@@ -19,7 +19,7 @@ describe("Claude settings", () => {
           DISABLE_PROMPT_CACHING: "1",
         },
         skipDangerousModePermissionPrompt: true,
-        effortLevel: "high",
+        effortLevel: "xhigh",
         skillListingBudgetFraction: 0.02,
         attribution: {
           commit: "commit",
@@ -29,7 +29,7 @@ describe("Claude settings", () => {
     ).toBe(true);
   });
 
-  it("preserves effortLevel xhigh as above-recommended", () => {
+  it("preserves effortLevel xhigh as recommended", () => {
     const settings = applyRecommendedSettings({
       env: {},
       attribution: {},
@@ -67,7 +67,7 @@ describe("Claude settings", () => {
       attribution: {},
       effortLevel: "max",
     });
-    expect(settings.effortLevel).toBe("high");
+    expect(settings.effortLevel).toBe("xhigh");
   });
 
   it("upgrades below-recommended effortLevel to the recommended level", () => {
@@ -76,7 +76,7 @@ describe("Claude settings", () => {
       attribution: {},
       effortLevel: "medium",
     });
-    expect(settings.effortLevel).toBe("high");
+    expect(settings.effortLevel).toBe("xhigh");
   });
 
   it("removes DISABLE_PROMPT_CACHING while preserving recommended settings", () => {
@@ -133,7 +133,7 @@ describe("Claude settings", () => {
             ENABLE_PROMPT_CACHING_1H: "1",
           },
           skipDangerousModePermissionPrompt: true,
-          effortLevel: "high",
+          effortLevel: "xhigh",
           skillListingBudgetFraction: 0.02,
           attribution: { commit: "c", pr: "p" },
         },
@@ -158,7 +158,7 @@ describe("Claude settings", () => {
             ENABLE_PROMPT_CACHING_1H: "1",
           },
           skipDangerousModePermissionPrompt: true,
-          effortLevel: "high",
+          effortLevel: "xhigh",
           skillListingBudgetFraction: 0.02,
           attribution: { commit: "c", pr: "p" },
         },

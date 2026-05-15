@@ -28,7 +28,7 @@ export type ClaudeSettingsOptions = {
 
 export const RECOMMENDED_TOP_LEVEL = {
   skipDangerousModePermissionPrompt: true,
-  effortLevel: "high",
+  effortLevel: "xhigh",
   skillListingBudgetFraction: 0.02,
 } as const;
 

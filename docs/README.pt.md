@@ -64,6 +64,7 @@ Escolha um preset e pronto:
 
 | Agente | O Que Faz |
 |-------|-------------|
+| **oma-academic-writer** | Redacao, revisao e auditorias por rubrica de prosa academica em nivel de publicacao |
 | **oma-architecture** | Trade-offs de arquitetura, limites, analise com foco em ADR/ATAM/CBAM |
 | **oma-backend** | APIs em Python, Node.js ou Rust |
 | **oma-brainstorm** | Explora ideias antes de voce comecar a construir |
@@ -76,6 +77,7 @@ Escolha um preset e pronto:
 | **oma-frontend** | React/Next.js, TypeScript, Tailwind CSS v4, shadcn/ui |
 | **oma-hwp** | Conversão de HWP/HWPX/HWPML para Markdown |
 | **oma-image** | Geração de imagens IA multi-fornecedor |
+| **oma-market** | Pesquisa de mercado por sinais de comunidade para pain/trend/concorrente/discovery com SWOT/5F/PESTEL |
 | **oma-mobile** | Apps cross-platform com Flutter |
 | **oma-observability** | Roteador de observabilidade para APM/RUM, métricas/logs/traces/profiles, SLO, forense de incidentes e ajuste de transporte |
 | **oma-orchestrator** | Execucao paralela de agentes via CLI |
@@ -89,6 +91,7 @@ Escolha um preset e pronto:
 | **oma-skill-creator** | Cria e audita skills OMA no formato SSL-lite |
 | **oma-tf-infra** | IaC multi-cloud com Terraform (Infrastructure as Code) |
 | **oma-translator** | Traducao multilingual natural |
+| **oma-voice** | TTS/STT local-first via Voicebox MCP para geracao de voz, voiceover e transcricao |
 
 ## Como Funciona
 

@@ -64,6 +64,7 @@ Chọn một preset và bạn đã sẵn sàng:
 
 | Agent | Chức năng |
 |-------|----------|
+| **oma-academic-writer** | Soạn, chỉnh sửa và kiểm tra văn xuôi học thuật cấp xuất bản theo rubric |
 | **oma-architecture** | Đánh đổi kiến trúc, ranh giới, phân tích theo hướng ADR/ATAM/CBAM |
 | **oma-backend** | Xây dựng API bằng Python, Node.js hoặc Rust |
 | **oma-brainstorm** | Khám phá ý tưởng trước khi bắt tay vào xây dựng |
@@ -76,6 +77,7 @@ Chọn một preset và bạn đã sẵn sàng:
 | **oma-frontend** | React/Next.js, TypeScript, Tailwind CSS v4, shadcn/ui |
 | **oma-hwp** | Chuyển đổi HWP/HWPX/HWPML sang Markdown |
 | **oma-image** | Tạo ảnh AI đa nhà cung cấp |
+| **oma-market** | Nghiên cứu thị trường từ tín hiệu cộng đồng cho pain/trend/đối thủ/discovery với SWOT/5F/PESTEL |
 | **oma-mobile** | Ứng dụng đa nền tảng với Flutter |
 | **oma-observability** | Bộ định tuyến observability cho APM/RUM, metrics/logs/traces/profiles, SLO, điều tra sự cố và tinh chỉnh transport |
 | **oma-orchestrator** | Thực thi agent song song qua CLI |
@@ -89,6 +91,7 @@ Chọn một preset và bạn đã sẵn sàng:
 | **oma-skill-creator** | Soạn và kiểm tra skill OMA theo định dạng SSL-lite |
 | **oma-tf-infra** | Terraform IaC đa đám mây (Infrastructure as Code) |
 | **oma-translator** | Dịch thuật đa ngôn ngữ tự nhiên |
+| **oma-voice** | TTS/STT local-first qua Voicebox MCP cho tạo giọng nói, lồng tiếng và gỡ băng |
 
 ## Cách hoạt động
 

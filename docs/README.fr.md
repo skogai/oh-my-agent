@@ -64,6 +64,7 @@ Choisis un preset et c'est parti :
 
 | Agent | Ce Qu'il Fait |
 |-------|-------------|
+| **oma-academic-writer** | Rédaction, révision et audits par rubrique de prose académique de qualité publication |
 | **oma-architecture** | Arbitrages d'architecture, frontières, analyse au regard d'ADR/ATAM/CBAM |
 | **oma-backend** | APIs en Python, Node.js ou Rust |
 | **oma-brainstorm** | Explore les idées avant que tu te lances dans le code |
@@ -76,6 +77,7 @@ Choisis un preset et c'est parti :
 | **oma-frontend** | React/Next.js, TypeScript, Tailwind CSS v4, shadcn/ui |
 | **oma-hwp** | Conversion HWP/HWPX/HWPML vers Markdown |
 | **oma-image** | Génération d'images IA multi-fournisseur |
+| **oma-market** | Étude de marché par signaux communautaires pour pain/trend/concurrent/discovery avec SWOT/5F/PESTEL |
 | **oma-mobile** | Apps multiplateformes avec Flutter |
 | **oma-observability** | Routeur d'observabilité pour APM/RUM, métriques/logs/traces/profils, SLO, forensique d'incidents et tuning du transport |
 | **oma-orchestrator** | Exécution parallèle d'agents via CLI |
@@ -89,6 +91,7 @@ Choisis un preset et c'est parti :
 | **oma-skill-creator** | Rédige et audite les skills OMA au format SSL-lite |
 | **oma-tf-infra** | IaC multi-cloud avec Terraform (Infrastructure as Code) |
 | **oma-translator** | Traduction multilingue naturelle |
+| **oma-voice** | TTS/STT local-first via Voicebox MCP pour génération vocale, voix off et transcription |
 
 ## Comment Ça Marche
 

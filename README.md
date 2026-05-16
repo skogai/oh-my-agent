@@ -64,6 +64,7 @@ Pick a preset and you're ready:
 
 | Agent | What They Do |
 |-------|-------------|
+| **oma-academic-writer** | Publication-grade academic prose drafting, revision, and rubric-based audits |
 | **oma-architecture** | Architectural tradeoffs, boundaries, ADR/ATAM/CBAM-aware analysis |
 | **oma-backend** | APIs in Python, Node.js, or Rust |
 | **oma-brainstorm** | Explores ideas before you commit to building |
@@ -76,6 +77,7 @@ Pick a preset and you're ready:
 | **oma-frontend** | React/Next.js, TypeScript, Tailwind CSS v4, shadcn/ui |
 | **oma-hwp** | HWP/HWPX/HWPML to Markdown conversion |
 | **oma-image** | Multi-vendor AI image generation |
+| **oma-market** | Community-signal market research for pain/trend/competitor/discovery with SWOT/5F/PESTEL |
 | **oma-mobile** | Flutter cross-platform apps |
 | **oma-observability** | Observability router for APM/RUM, metrics/logs/traces/profiles, SLO, incident forensics, transport tuning |
 | **oma-orchestrator** | Parallel agent execution via CLI |
@@ -89,6 +91,7 @@ Pick a preset and you're ready:
 | **oma-skill-creator** | Authors and audits OMA skills in the SSL-lite format |
 | **oma-tf-infra** | Multi-cloud Terraform IaC (Infrastructure as Code) |
 | **oma-translator** | Natural multilingual translation |
+| **oma-voice** | Local-first TTS/STT via Voicebox MCP for voice generation, voiceover, and transcription |
 
 ## How It Works
 

@@ -64,6 +64,7 @@ APM แจกแค่ skill เท่านั้น ส่วน workflow, rul
 
 | Agent | หน้าที่ |
 |-------|-------------|
+| **oma-academic-writer** | ร่าง ปรับปรุง และตรวจสอบงานเขียนเชิงวิชาการระดับตีพิมพ์ตามรูบริก |
 | **oma-architecture** | การวิเคราะห์ความคุ้มค่าด้านสถาปัตยกรรม (tradeoffs), กำหนดขอบเขต, รองรับ ADR/ATAM/CBAM |
 | **oma-backend** | สร้าง API ด้วย Python, Node.js หรือ Rust |
 | **oma-brainstorm** | สำรวจไอเดียก่อนที่จะเริ่มลงมือสร้างจริง |
@@ -76,6 +77,7 @@ APM แจกแค่ skill เท่านั้น ส่วน workflow, rul
 | **oma-frontend** | React/Next.js, TypeScript, Tailwind CSS v4, shadcn/ui |
 | **oma-hwp** | แปลงไฟล์ HWP/HWPX/HWPML เป็น Markdown |
 | **oma-image** | สร้างภาพ AI แบบหลายผู้ให้บริการ |
+| **oma-market** | วิจัยตลาดจากสัญญาณคอมมิวนิตี้ ครอบคลุม pain/trend/competitor/discovery พร้อม SWOT/5F/PESTEL |
 | **oma-mobile** | จัดการ cross platform application ด้วย Flutter |
 | **oma-observability** | เราเตอร์ด้านการสังเกตระบบ (observability) ครอบคลุม APM/RUM, metrics/logs/traces/profiles, SLO, วิเคราะห์สาเหตุเหตุการณ์ และปรับจูน transport |
 | **oma-orchestrator** | รันเอเจนต์แบบ parallel ผ่าน CLI |
@@ -89,6 +91,7 @@ APM แจกแค่ skill เท่านั้น ส่วน workflow, rul
 | **oma-skill-creator** | เขียนและตรวจสอบ OMA skill ในรูปแบบ SSL-lite |
 | **oma-tf-infra** | Multi-cloud Terraform IaC (Infrastructure as Code) |
 | **oma-translator** | การแปลภาษาหลากหลายภาษาอย่างเป็นธรรมชาติ |
+| **oma-voice** | TTS/STT แบบ local-first ผ่าน Voicebox MCP ครอบคลุมการสร้างเสียง, voiceover และถอดเสียง |
 
 ## วิธีการทำงาน
 

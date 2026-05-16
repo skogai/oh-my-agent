@@ -64,6 +64,7 @@ APM 只分发 skill。workflow、规则、`oma-config.yaml`、关键词检测 ho
 
 | Agent | 职责 |
 |-------|------|
+| **oma-academic-writer** | 出版级学术英语文章的撰写、修订与基于评分量表的审计 |
 | **oma-architecture** | 架构权衡、边界划分，以及 ADR/ATAM/CBAM 视角下的分析 |
 | **oma-backend** | 用 Python、Node.js 或 Rust 开发 API |
 | **oma-brainstorm** | 动手之前先探索想法 |
@@ -76,6 +77,7 @@ APM 只分发 skill。workflow、规则、`oma-config.yaml`、关键词检测 ho
 | **oma-frontend** | React/Next.js、TypeScript、Tailwind CSS v4、shadcn/ui |
 | **oma-hwp** | HWP/HWPX/HWPML 转 Markdown |
 | **oma-image** | 多供应商 AI 图像生成 |
+| **oma-market** | 基于社区信号的市场调研，覆盖 pain/trend/竞品/discovery 意图，自动套用 SWOT/5F/PESTEL |
 | **oma-mobile** | Flutter 跨平台应用 |
 | **oma-observability** | 涵盖 APM/RUM、指标/日志/追踪/Profile、SLO、事故取证、传输层调优的可观测性路由器 |
 | **oma-orchestrator** | 通过 CLI 并行执行 agent |
@@ -89,6 +91,7 @@ APM 只分发 skill。workflow、规则、`oma-config.yaml`、关键词检测 ho
 | **oma-skill-creator** | 以 SSL-lite 格式编写和审计 OMA skill |
 | **oma-tf-infra** | 多云 Terraform IaC（Infrastructure as Code，基础设施即代码） |
 | **oma-translator** | 自然的多语言翻译 |
+| **oma-voice** | 基于 Voicebox MCP 的本地优先 TTS/STT，覆盖语音生成、配音与转写 |
 
 ## 工作原理
 

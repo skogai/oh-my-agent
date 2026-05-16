@@ -64,6 +64,7 @@ APM поставляет только скилы. Для workflow, правил,
 
 | Агент | Что делает |
 |-------|-------------|
+| **oma-academic-writer** | Академическая проза публикационного уровня: написание, редактирование и аудит по рубрикам |
 | **oma-architecture** | Архитектурные компромиссы, границы модулей, анализ с опорой на ADR/ATAM/CBAM |
 | **oma-backend** | API на Python, Node.js или Rust |
 | **oma-brainstorm** | Исследует идеи, прежде чем вы начнете строить |
@@ -76,6 +77,7 @@ APM поставляет только скилы. Для workflow, правил,
 | **oma-frontend** | React/Next.js, TypeScript, Tailwind CSS v4, shadcn/ui |
 | **oma-hwp** | Конвертация HWP/HWPX/HWPML в Markdown |
 | **oma-image** | Мультивендорная AI-генерация изображений |
+| **oma-market** | Исследование рынка по сигналам сообществ для pain/trend/конкурентов/discovery с SWOT/5F/PESTEL |
 | **oma-mobile** | Кроссплатформенные приложения на Flutter |
 | **oma-observability** | Маршрутизатор наблюдаемости для APM/RUM, метрик/логов/трейсов/профилей, SLO, форензики инцидентов и тюнинга транспорта |
 | **oma-orchestrator** | Параллельный запуск агентов через CLI |
@@ -89,6 +91,7 @@ APM поставляет только скилы. Для workflow, правил,
 | **oma-skill-creator** | Создаёт и проверяет OMA-скилы в формате SSL-lite |
 | **oma-tf-infra** | Мультиоблачный IaC на Terraform (Infrastructure as Code) |
 | **oma-translator** | Естественный мультиязычный перевод |
+| **oma-voice** | Локальный TTS/STT через Voicebox MCP для генерации голоса, озвучки и транскрипции |
 
 ## Как это работает
 

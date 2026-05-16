@@ -64,6 +64,7 @@ Kies een preset en je bent klaar:
 
 | Agent | Wat ze doen |
 |-------|-------------|
+| **oma-academic-writer** | Academisch proza op publicatieniveau: schrijven, herzien en rubric-audits |
 | **oma-architecture** | Architectuur-trade-offs, grenzen, ADR/ATAM/CBAM-bewuste analyse |
 | **oma-backend** | API's in Python, Node.js of Rust |
 | **oma-brainstorm** | Verkent ideeen voordat je begint met bouwen |
@@ -76,6 +77,7 @@ Kies een preset en je bent klaar:
 | **oma-frontend** | React/Next.js, TypeScript, Tailwind CSS v4, shadcn/ui |
 | **oma-hwp** | HWP/HWPX/HWPML naar Markdown conversie |
 | **oma-image** | Multi-vendor AI-beeldgeneratie |
+| **oma-market** | Marktonderzoek op basis van community-signalen voor pain/trend/concurrent/discovery met SWOT/5F/PESTEL |
 | **oma-mobile** | Cross-platform apps met Flutter |
 | **oma-observability** | Observability-router voor APM/RUM, metrics/logs/traces/profiles, SLO, incident forensics en transport-tuning |
 | **oma-orchestrator** | Parallelle agent-uitvoering via CLI |
@@ -89,6 +91,7 @@ Kies een preset en je bent klaar:
 | **oma-skill-creator** | Schrijft en auditeert OMA-skills in het SSL-lite-formaat |
 | **oma-tf-infra** | Multi-cloud Terraform IaC (Infrastructure as Code) |
 | **oma-translator** | Natuurlijke meertalige vertaling |
+| **oma-voice** | Local-first TTS/STT via Voicebox MCP voor spraakgeneratie, voice-over en transcriptie |
 
 ## Hoe het werkt
 

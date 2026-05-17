@@ -86,11 +86,13 @@ describe.skipIf(process.platform === "win32")("install.sh", () => {
 
   it("executes main when piped to bash", () => {
     const script = readFileSync(installScript, "utf-8");
-    // Replace exec bunx with a printf to avoid actually running the installer
-    const testScript = script.replace(
-      /exec bunx.*$/m,
-      'printf "main-executed"; exit 0',
-    );
+    const stubBody = (name: string) =>
+      new RegExp(`^${name}\\(\\)\\s*\\{[\\s\\S]*?^\\}`, "m");
+    const testScript = script
+      .replace(stubBody("install_bun"), "install_bun() { :; }")
+      .replace(stubBody("install_uv"), "install_uv() { :; }")
+      .replace(stubBody("install_serena"), "install_serena() { :; }")
+      .replace(/exec bunx.*$/m, 'printf "main-executed"; exit 0');
 
     const result = spawnSync("bash", [], {
       input: testScript,

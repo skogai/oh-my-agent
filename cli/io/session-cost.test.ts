@@ -35,6 +35,17 @@ const mockFs = vi.hoisted(() => {
     appendFileSync: vi.fn((p: string, data: string, _enc: string) => {
       store[p] = (store[p] ?? "") + data;
     }),
+    readdirSync: vi.fn((p: string) => {
+      const prefix = p.endsWith("/") ? p : `${p}/`;
+      const entries = new Set<string>();
+      for (const key of Object.keys(store)) {
+        if (!key.startsWith(prefix)) continue;
+        const rest = key.slice(prefix.length);
+        const firstSegment = rest.split("/")[0];
+        if (firstSegment) entries.add(firstSegment);
+      }
+      return Array.from(entries);
+    }),
   };
 });
 
@@ -50,18 +61,22 @@ vi.mock("node:fs", async (importOriginal) => {
   };
   return {
     ...defaultObj,
-    default: defaultObj,
+    default: { ...defaultObj, readdirSync: mockFs.readdirSync },
     // Named exports used by session-cost.ts imports
     existsSync: mockFs.existsSync,
     mkdirSync: mockFs.mkdirSync,
     readFileSync: mockFs.readFileSync,
     appendFileSync: mockFs.appendFileSync,
+    readdirSync: mockFs.readdirSync,
   };
 });
 
 import {
   checkCap,
+  DEFAULT_VENDOR_PRICING,
+  estimateUsd,
   formatPromptMessage,
+  listAllSessionUsage,
   loadSessionUsage,
   type QuotaCap,
   recordUsage,
@@ -106,6 +121,17 @@ beforeEach(() => {
       mockFs.store[p] = (mockFs.store[p] ?? "") + data;
     },
   );
+  mockFs.readdirSync.mockImplementation((p: string) => {
+    const prefix = p.endsWith("/") ? p : `${p}/`;
+    const entries = new Set<string>();
+    for (const key of Object.keys(mockFs.store)) {
+      if (!key.startsWith(prefix)) continue;
+      const rest = key.slice(prefix.length);
+      const firstSegment = rest.split("/")[0];
+      if (firstSegment) entries.add(firstSegment);
+    }
+    return Array.from(entries);
+  });
 });
 
 afterEach(() => {
@@ -368,3 +394,100 @@ describe("sessionId validation — security hardening", () => {
     });
   }
 });
+
+describe("estimateUsd", () => {
+  it("computes USD using vendor rate for known vendor", () => {
+    expect(estimateUsd(1_000_000, "claude")).toBeCloseTo(3, 6);
+    expect(estimateUsd(2_000_000, "codex")).toBeCloseTo(10, 6);
+    expect(estimateUsd(500_000, "gemini")).toBeCloseTo(0.15, 6);
+  });
+
+  it("falls back to claude rate for unknown vendor", () => {
+    const claudeRate = DEFAULT_VENDOR_PRICING.claude ?? 3;
+    expect(estimateUsd(1_000_000, "totally-unknown")).toBeCloseTo(
+      claudeRate,
+      6,
+    );
+  });
+
+  it("returns 0 for zero tokens regardless of vendor", () => {
+    for (const vendor of Object.keys(DEFAULT_VENDOR_PRICING)) {
+      expect(estimateUsd(0, vendor)).toBe(0);
+    }
+  });
+
+  it("honors caller-supplied pricing override", () => {
+    expect(
+      estimateUsd(1_000_000, "claude", { claude: 99, codex: 99, gemini: 99 }),
+    ).toBeCloseTo(99, 6);
+  });
+});
+
+describe("listAllSessionUsage", () => {
+  it("returns empty array when memories dir does not exist", () => {
+    expect(listAllSessionUsage("/some/nonexistent/cwd")).toEqual([]);
+  });
+
+  it("aggregates records across multiple session-cost files", () => {
+    // Seed the in-memory FS with two session files in the same cwd
+    const cwd = "/fake/cwd";
+    const baseDir = `${cwd}/.serena/memories`;
+
+    // Touch the dir so existsSync reports true
+    mockFs.store[baseDir] = "<dir-sentinel>";
+
+    recordUsageInDir(baseDir, "alpha", {
+      vendor: "claude",
+      agentId: "oma-backend",
+      tokens: 1000,
+    });
+    recordUsageInDir(baseDir, "alpha", {
+      vendor: "codex",
+      agentId: "oma-frontend",
+      tokens: 2000,
+    });
+    recordUsageInDir(baseDir, "beta", {
+      vendor: "gemini",
+      agentId: "oma-db",
+      tokens: 500,
+    });
+
+    const all = listAllSessionUsage(cwd);
+    expect(all).toHaveLength(3);
+    expect(all.map((r) => r.vendor).sort()).toEqual([
+      "claude",
+      "codex",
+      "gemini",
+    ]);
+  });
+
+  it("ignores non session-cost files in memories dir", () => {
+    const cwd = "/fake/cwd2";
+    const baseDir = `${cwd}/.serena/memories`;
+    mockFs.store[baseDir] = "<dir-sentinel>";
+    mockFs.store[`${baseDir}/task-board.md`] = "# unrelated";
+    mockFs.store[`${baseDir}/other-file.txt`] = "not json";
+    expect(listAllSessionUsage(cwd)).toEqual([]);
+  });
+});
+
+// Helper for listAllSessionUsage tests: write a record to a specific
+// memories dir (bypassing process.cwd()) by reusing the json-block format.
+function recordUsageInDir(
+  baseDir: string,
+  sessionId: string,
+  record: Omit<UsageRecord, "sessionId" | "recordedAt">,
+): void {
+  const filePath = `${baseDir}/session-cost-${sessionId}.md`;
+  const full: UsageRecord = {
+    ...record,
+    sessionId,
+    recordedAt: new Date().toISOString(),
+  };
+  const existing = mockFs.store[filePath] ?? "";
+  const header = existing
+    ? ""
+    : `---\nsession: ${sessionId}\ncreated: ${new Date().toISOString()}\n---\n\n# Session Cost\n\n`;
+  const block = `\`\`\`json\n${JSON.stringify(full)}\n\`\`\`\n\n`;
+  mockFs.store[filePath] = existing + header + block;
+}

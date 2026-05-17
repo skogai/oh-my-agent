@@ -19,6 +19,7 @@ import fs, {
   appendFileSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
 } from "node:fs";
 import path, { join } from "node:path";
@@ -247,6 +248,57 @@ export function loadSessionUsage(sessionId: string): UsageRecord[] {
   const content = readFileContent(filePath);
   if (!content) return [];
   return parseRecords(content);
+}
+
+/**
+ * Per-vendor input-token pricing in USD per 1M tokens.
+ *
+ * Conservative midpoints across each vendor's coding-tier model lineup as
+ * of 2026-05 (Claude Sonnet 4.6, GPT-5.5, Gemini Flash, Qwen Studio).
+ * recordUsage only captures prompt-input character estimates, so the
+ * resulting USD figure is a floor, not a billing-accurate amount.
+ */
+export const DEFAULT_VENDOR_PRICING: Record<string, number> = {
+  claude: 3,
+  codex: 5,
+  gemini: 0.3,
+  qwen: 0,
+  antigravity: 0.3,
+  cursor: 5,
+};
+
+/**
+ * Estimate input-token cost in USD for a vendor.
+ * Unknown vendors fall back to the Claude rate.
+ */
+export function estimateUsd(
+  tokens: number,
+  vendor: string,
+  pricing: Record<string, number> = DEFAULT_VENDOR_PRICING,
+): number {
+  const rate = pricing[vendor] ?? pricing.claude ?? 3;
+  return (tokens / 1_000_000) * rate;
+}
+
+/**
+ * Load usage records from every session-cost-*.md file under
+ * {cwd}/.serena/memories. Used by `oma stats` to surface cumulative cost
+ * telemetry. Missing directory or unreadable files are skipped silently.
+ */
+export function listAllSessionUsage(
+  cwd: string = process.cwd(),
+): UsageRecord[] {
+  const baseDir = path.join(cwd, MEMORIES_BASE);
+  if (!existsSync(baseDir)) return [];
+
+  const all: UsageRecord[] = [];
+  for (const entry of readdirSync(baseDir)) {
+    if (!entry.startsWith("session-cost-") || !entry.endsWith(".md")) continue;
+    const content = readFileContent(path.join(baseDir, entry));
+    if (!content) continue;
+    all.push(...parseRecords(content));
+  }
+  return all;
 }
 
 /**

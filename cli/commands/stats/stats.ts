@@ -10,7 +10,51 @@ import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { getGitStats } from "../../io/git.js";
 import { getCompletedTasksCount, getSessionMeta } from "../../io/memory.js";
+import { estimateUsd, listAllSessionUsage } from "../../io/session-cost.js";
 import type { Metrics } from "../../types/index.js";
+
+interface CostSummary {
+  totalTokens: number;
+  totalSpawns: number;
+  estimatedUsd: number;
+  byVendor: Record<string, { tokens: number; spawns: number; usd: number }>;
+}
+
+function aggregateCost(cwd: string): CostSummary {
+  const records = listAllSessionUsage(cwd);
+  const byVendor: CostSummary["byVendor"] = {};
+  let totalTokens = 0;
+  let estimatedUsd = 0;
+
+  for (const r of records) {
+    totalTokens += r.tokens;
+    const usd = estimateUsd(r.tokens, r.vendor);
+    estimatedUsd += usd;
+    if (!byVendor[r.vendor]) {
+      byVendor[r.vendor] = { tokens: 0, spawns: 0, usd: 0 };
+    }
+    byVendor[r.vendor].tokens += r.tokens;
+    byVendor[r.vendor].spawns += 1;
+    byVendor[r.vendor].usd += usd;
+  }
+
+  return {
+    totalTokens,
+    totalSpawns: records.length,
+    estimatedUsd,
+    byVendor,
+  };
+}
+
+function formatNumber(n: number): string {
+  return n.toLocaleString("en-US");
+}
+
+function formatUsd(n: number): string {
+  if (n === 0) return "$0.00";
+  if (n < 0.01) return "<$0.01";
+  return `$${n.toFixed(2)}`;
+}
 
 function getMetricsPath(cwd: string): string {
   return join(cwd, ".serena", "metrics.json");
@@ -157,6 +201,8 @@ export async function stats(
       ? Math.round(metrics.totalSessionTime / metrics.sessions)
       : 0;
 
+  const cost = aggregateCost(cwd);
+
   if (jsonMode) {
     console.log(
       JSON.stringify(
@@ -165,6 +211,7 @@ export async function stats(
           gitStats,
           daysSinceStart,
           avgSessionTime,
+          cost,
         },
         null,
         2,
@@ -190,6 +237,36 @@ export async function stats(
   ].join("\n");
 
   p.note(statsTable, "Overview");
+
+  if (cost.totalSpawns > 0) {
+    const vendorLines = Object.entries(cost.byVendor)
+      .sort(([, a], [, b]) => b.tokens - a.tokens)
+      .map(
+        ([vendor, v]) =>
+          `  ${vendor.padEnd(12)} ${formatNumber(v.tokens).padStart(12)} tokens · ${String(v.spawns).padStart(3)} spawns · ${formatUsd(v.usd).padStart(7)}`,
+      );
+
+    const costTable = [
+      pc.bold("💰 Cost Telemetry (all sessions)"),
+      "┌─────────────────────┬──────────────┐",
+      `│ ${pc.bold("Metric")}              │ ${pc.bold("Value")}        │`,
+      "├─────────────────────┼──────────────┤",
+      `│ Total tokens (est.) │ ${formatNumber(cost.totalTokens).padEnd(12)} │`,
+      `│ Total spawns        │ ${String(cost.totalSpawns).padEnd(12)} │`,
+      `│ Estimated USD       │ ${formatUsd(cost.estimatedUsd).padEnd(12)} │`,
+      "└─────────────────────┴──────────────┘",
+      pc.dim("By vendor (sorted by tokens):"),
+      ...vendorLines,
+      pc.dim(
+        "Estimate is input-only (prompt char approximation); output tokens not yet tracked.",
+      ),
+      pc.dim(
+        "Configure session.quota_cap in .agents/oma-config.yaml to enforce budgets.",
+      ),
+    ].join("\n");
+
+    p.note(costTable, "Cost");
+  }
 
   const sortedSkills = Object.entries(metrics.skillsUsed)
     .sort(([, a], [, b]) => b - a)

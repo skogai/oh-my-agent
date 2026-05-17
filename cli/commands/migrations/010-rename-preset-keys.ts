@@ -62,6 +62,9 @@ export const migrateRenamePresetKeys: Migration = {
     }
 
     const currentPreset = match[2];
+    if (!currentPreset) {
+      return actions;
+    }
 
     // Idempotency: skip when already a canonical key
     if (!LEGACY_KEYS.has(currentPreset)) {

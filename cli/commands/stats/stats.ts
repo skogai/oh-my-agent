@@ -56,6 +56,10 @@ function formatUsd(n: number): string {
 }
 
 function getMetricsPath(cwd: string): string {
+  return join(cwd, ".agents", "state", "metrics.json");
+}
+
+function getLegacyMetricsPath(cwd: string): string {
   return join(cwd, ".serena", "metrics.json");
 }
 
@@ -78,6 +82,14 @@ function loadMetrics(cwd: string): Metrics {
   if (existsSync(metricsPath)) {
     try {
       return JSON.parse(readFileSync(metricsPath, "utf-8"));
+    } catch {
+      return createEmptyMetrics();
+    }
+  }
+  const legacyPath = getLegacyMetricsPath(cwd);
+  if (existsSync(legacyPath)) {
+    try {
+      return JSON.parse(readFileSync(legacyPath, "utf-8"));
     } catch {
       return createEmptyMetrics();
     }

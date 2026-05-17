@@ -57,7 +57,7 @@
   "scripts": {
     "sync:readme": "node ./scripts/sync-readme.mjs",
     "generate:skill-data": "node ./scripts/generate-skill-data.mjs",
-    "build": "bun run generate:skill-data && bun run sync:readme && bun build cli.ts --outfile bin/cli.js --target node --minify",
+    "build": "bun run generate:skill-data && bun run sync:readme && bun build cli.ts --outfile bin/cli.js --target node --minify --external @napi-rs/keyring",
     "dev": "bun run generate:skill-data && bun run cli.ts",
     "lint": "biome check --write --unsafe .",
     "check:boundaries": "node ./scripts/check-boundaries.mjs",
@@ -68,6 +68,7 @@
   "dependencies": {
     "@clack/prompts": "^1.1.0",
     "@date-fns/tz": "^1.4.1",
+    "@napi-rs/keyring": "^1.3.0",
     "axios": "^1.15.0",
     "better-sqlite3": "^12.9.0",
     "chokidar": "^5.0.0",

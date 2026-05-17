@@ -13,9 +13,20 @@ export const RECOMMENDED_GEMINI_EXPERIMENTAL = {
 
 export const RECOMMENDED_GEMINI_MCP = {
   serena: {
-    url: "http://localhost:12341/mcp",
+    command: "serena",
+    args: ["start-mcp-server", "--context", "ide", "--project", "."],
+    env: {
+      SERENA_LOG_LEVEL: "info",
+    },
   },
-} as const;
+};
+
+/**
+ * Legacy bridge URL that oma previously wrote for Gemini. We detect it on
+ * upgrade and replace with the stdio recommendation above. Custom user URLs
+ * (anything else) are left alone so power users keep their own bridge setup.
+ */
+export const LEGACY_GEMINI_BRIDGE_URL = "http://localhost:12341/mcp";
 
 // `privacy.usageStatisticsEnabled` (default true) controls anonymized usage
 // stats sent to Google. Gated on the `telemetry` flag from oma-config.yaml

@@ -11,17 +11,8 @@ import type { EffortLevel } from "../../platform/model-registry.js";
 
 export const RECOMMENDED_CODEX_MCP = {
   serena: {
-    command: "uvx",
-    args: [
-      "--from",
-      "git+https://github.com/oraios/serena",
-      "serena",
-      "start-mcp-server",
-      "--context",
-      "codex",
-      "--project",
-      ".",
-    ],
+    command: "serena",
+    args: ["start-mcp-server", "--context", "codex", "--project", "."],
     env: {
       SERENA_LOG_LEVEL: "info",
     },

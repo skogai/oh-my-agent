@@ -226,9 +226,8 @@ describe("bridge command", () => {
       await vi.advanceTimersByTimeAsync(2000);
 
       expect(child_process.spawn).toHaveBeenCalledWith(
-        "uvx",
+        "serena",
         expect.arrayContaining([
-          "serena",
           "start-mcp-server",
           "--transport",
           "streamable-http",

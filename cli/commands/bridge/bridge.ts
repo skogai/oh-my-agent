@@ -143,9 +143,6 @@ export async function bridge(mcpUrlArg?: string) {
     console.error(`Starting Serena server on ${host}:${port}...`);
 
     const args = [
-      "--from",
-      "git+https://github.com/oraios/serena",
-      "serena",
       "start-mcp-server",
       "--transport",
       "streamable-http",
@@ -159,7 +156,7 @@ export async function bridge(mcpUrlArg?: string) {
       "false",
     ];
 
-    serenaProcess = spawn("uvx", args, {
+    serenaProcess = spawn("serena", args, {
       stdio: "pipe",
       detached: false,
     });

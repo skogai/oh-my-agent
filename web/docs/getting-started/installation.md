@@ -9,7 +9,8 @@ description: Complete installation guide for oh-my-agent, covering three install
 
 - **An AI-powered IDE or CLI**: at least one of Claude Code, Gemini CLI, Codex CLI, Qwen CLI, Antigravity IDE, Cursor, or OpenCode
 - **bun**: JavaScript runtime and package manager (auto-installed by the install script if missing)
-- **uv**: Python package manager for Serena MCP (auto-installed if missing)
+- **uv**: Python package manager (auto-installed if missing)
+- **serena-agent**: Serena MCP binary, installed globally via `uv tool install -p 3.13 serena-agent@latest --prerelease=allow` (auto-installed by the install script if missing)
 
 ---
 
@@ -19,11 +20,11 @@ description: Complete installation guide for oh-my-agent, covering three install
 curl -fsSL https://raw.githubusercontent.com/first-fluke/oh-my-agent/main/cli/install.sh | bash
 ```
 
-This bootstrap script supports macOS and Linux only. On Windows, install `bun` and `uv` manually, then run `bunx oh-my-agent@latest`.
+This bootstrap script supports macOS and Linux only. On Windows, install `bun`, `uv`, and serena manually (`uv tool install -p 3.13 serena-agent@latest --prerelease=allow`), then run `bunx oh-my-agent@latest`.
 
 This script:
 1. Detects your platform (macOS, Linux)
-2. Checks for bun and uv, installing them if missing
+2. Checks for bun, uv, and serena — installing them if missing
 3. Runs the interactive installer with preset selection
 4. Creates `.agents/` with your selected skills
 5. Sets up `.claude/` integration layer (hooks, symlinks, settings)

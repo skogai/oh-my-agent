@@ -79,3 +79,36 @@ export function loadTimezone(cwd?: string): string {
   }
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
+
+/**
+ * Serena transport configuration. Default `stdio` — each vendor spawns its
+ * own `serena start-mcp-server` process via stdio. Opt-in `bridge` mode means
+ * a single shared serena instance runs as an HTTP server (started via
+ * `oma bridge`), and the vendor named in `bridge_host` receives a `{url}` MCP
+ * entry instead of stdio. Other vendors stay on stdio unless explicitly added
+ * to a future `bridge_clients` list.
+ */
+export interface SerenaConfig {
+  mode: "stdio" | "bridge";
+  bridgeHost?: string;
+  bridgeUrl: string;
+}
+
+const DEFAULT_BRIDGE_URL = "http://localhost:12341/mcp";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function loadSerenaConfig(cwd?: string): SerenaConfig {
+  const config = loadOmaConfig(cwd) as unknown as {
+    serena?: { mode?: unknown; bridge_host?: unknown; bridge_url?: unknown };
+  } | null;
+  const raw = isRecord(config?.serena) ? config.serena : undefined;
+  const mode = raw?.mode === "bridge" ? "bridge" : "stdio";
+  const bridgeHost =
+    typeof raw?.bridge_host === "string" ? raw.bridge_host : undefined;
+  const bridgeUrl =
+    typeof raw?.bridge_url === "string" ? raw.bridge_url : DEFAULT_BRIDGE_URL;
+  return { mode, bridgeHost, bridgeUrl };
+}

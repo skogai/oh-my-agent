@@ -2,9 +2,10 @@
  * Recommended Qwen Code settings managed by oh-my-agent.
  * Applies to project-local `.qwen/settings.json`.
  *
- * Qwen Code is a fork of Gemini CLI and shares the `mcpServers` schema,
- * but we register serena via stdio (uvx) rather than the HTTP bridge used
- * by Gemini for subagent fan-out.
+ * Qwen Code is a fork of Gemini CLI and shares the `mcpServers` schema.
+ * Serena is registered via direct stdio with --context=ide; switching to
+ * bridge mode is an opt-in via oma-config `serena.mode: bridge` (handled
+ * in `oma link`).
  */
 
 // `privacy.usageStatisticsEnabled` (default true) controls anonymized usage
@@ -18,17 +19,8 @@ export interface QwenSettingsOptions {
 
 export const RECOMMENDED_QWEN_MCP = {
   serena: {
-    command: "uvx",
-    args: [
-      "--from",
-      "git+https://github.com/oraios/serena",
-      "serena",
-      "start-mcp-server",
-      "--context",
-      "agent",
-      "--project",
-      ".",
-    ],
+    command: "serena",
+    args: ["start-mcp-server", "--context", "ide", "--project", "."],
     env: {
       SERENA_LOG_LEVEL: "info",
     },

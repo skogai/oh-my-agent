@@ -113,6 +113,29 @@ install_uv() {
   fi
 }
 
+check_serena() {
+  if command_exists serena; then
+    ok "serena found"
+    return 0
+  fi
+  return 1
+}
+
+install_serena() {
+  info "Installing serena-agent via uv tool..."
+  if uv tool install -p 3.13 serena-agent@latest --prerelease=allow; then
+    # Ensure ~/.local/bin (where uv tool installs binaries) is on PATH for this session
+    export PATH="${HOME}/.local/bin:${PATH}"
+    if command_exists serena; then
+      ok "serena installed"
+    else
+      fail "serena binary not on PATH after install. Run: uv tool update-shell"
+    fi
+  else
+    fail "serena-agent install failed. Please install manually: uv tool install -p 3.13 serena-agent@latest --prerelease=allow"
+  fi
+}
+
 # ── Main ────────────────────────────────────────────────────────────
 main() {
   printf "\n${BOLD}${MAGENTA} 🛸 oh-my-agent installer ${RESET}\n\n"
@@ -130,6 +153,11 @@ main() {
   # ── uv (required for Serena MCP) ──
   if ! check_uv; then
     install_uv
+  fi
+
+  # ── serena (Serena MCP binary, installed via uv tool) ──
+  if ! check_serena; then
+    install_serena
   fi
 
   echo ""

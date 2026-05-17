@@ -73,6 +73,8 @@ const skillsState = vi.hoisted(() => ({
     ) => { created: string[]; skipped: string[] }
   >(() => ({ created: [], skipped: [] })),
   ensureCursorMcpSymlink: vi.fn(),
+  ensureCursorMcpConfig: vi.fn(),
+  readVendorsFromConfig: vi.fn(() => []),
   vendorRequiresHomeConsent: vi.fn((cli: string) => cli === "hermes"),
   getVendorDisplayPath: vi.fn((cli: string) =>
     cli === "hermes" ? "~/.hermes/skills/oma" : `.${cli}/skills`,

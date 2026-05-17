@@ -9,7 +9,7 @@ import {
 import {
   createCliSymlinks,
   detectExistingCliSymlinkDirs,
-  ensureCursorMcpSymlink,
+  ensureCursorMcpConfig,
   getInstalledSkillNames,
   installCodexWorkflowSkills,
   installCopilotWorkflowPrompts,
@@ -19,6 +19,11 @@ import {
   vendorRequiresHomeConsent,
 } from "../../platform/skills-installer.js";
 import type { CliVendor } from "../../types/index.js";
+import { loadSerenaConfig } from "../../utils/config.js";
+import {
+  applyRecommendedClaudeMcp,
+  needsClaudeMcpUpdate,
+} from "../../vendors/claude/mcp.js";
 import {
   applyRecommendedCodexSettings,
   needsCodexSettingsUpdate,
@@ -73,7 +78,13 @@ export function link(vendorFilter?: string[]): void {
   // 1. Install vendor-specific adaptations (agents, hooks, settings)
   installVendorAdaptations(cwd, cwd, hookVendors);
 
-  // 2. Gemini-specific settings
+  const serenaCfg = loadSerenaConfig(cwd);
+
+  // 2. Gemini-specific settings — serena MCP follows oma-config serena.mode.
+  //    stdio (default): direct `serena start-mcp-server --context=ide`.
+  //    bridge + bridge_host=gemini: `{url: bridge_url}` so Gemini shares the
+  //    HTTP serena started by `oma bridge` (used when subagent fan-out
+  //    matters or when paired with Antigravity).
   if (configuredVendors.includes("gemini")) {
     const geminiSettingsPath = join(cwd, ".gemini", "settings.json");
     let geminiSettings: unknown = {};
@@ -90,6 +101,24 @@ export function link(vendorFilter?: string[]): void {
         geminiSettingsPath,
         `${JSON.stringify(geminiSettings, null, 2)}\n`,
       );
+    }
+    // Override serena entry for bridge mode (settings.ts only knows stdio).
+    if (serenaCfg.mode === "bridge" && serenaCfg.bridgeHost === "gemini") {
+      let parsed: Record<string, unknown> = {};
+      try {
+        parsed = JSON.parse(readFileSync(geminiSettingsPath, "utf-8"));
+      } catch {
+        parsed = {};
+      }
+      const mcpServers =
+        parsed.mcpServers &&
+        typeof parsed.mcpServers === "object" &&
+        !Array.isArray(parsed.mcpServers)
+          ? (parsed.mcpServers as Record<string, unknown>)
+          : {};
+      mcpServers.serena = { url: serenaCfg.bridgeUrl };
+      parsed.mcpServers = mcpServers;
+      writeFileSync(geminiSettingsPath, `${JSON.stringify(parsed, null, 2)}\n`);
     }
   }
 
@@ -131,9 +160,44 @@ export function link(vendorFilter?: string[]): void {
     }
   }
 
-  // 3. Cursor-specific: MCP symlink + rules
+  // 2e. Claude Code project-level MCP (`.mcp.json` at project root, serena
+  //     with --context=claude-code, shared via version control). When the
+  //     file is missing, seed mcpServers from the SSOT `.agents/mcp.json` so
+  //     other servers (chrome-devtools, context7, etc.) are also exposed to
+  //     Claude. Existing user customizations in `.mcp.json` are preserved.
+  if (configuredVendors.includes("claude")) {
+    const claudeMcpPath = join(cwd, ".mcp.json");
+    const claudeMcpExists = existsSync(claudeMcpPath);
+    let claudeMcp: unknown = {};
+    if (claudeMcpExists) {
+      try {
+        claudeMcp = JSON.parse(readFileSync(claudeMcpPath, "utf-8"));
+      } catch {
+        claudeMcp = {};
+      }
+    } else {
+      // Seed from SSOT so Claude sees the same MCP server set as Cursor.
+      const agentsMcpPath = join(cwd, ".agents", "mcp.json");
+      if (existsSync(agentsMcpPath)) {
+        try {
+          const ssot = JSON.parse(readFileSync(agentsMcpPath, "utf-8"));
+          if (ssot && typeof ssot === "object" && ssot.mcpServers) {
+            claudeMcp = { mcpServers: ssot.mcpServers };
+          }
+        } catch {
+          claudeMcp = {};
+        }
+      }
+    }
+    if (!claudeMcpExists || needsClaudeMcpUpdate(claudeMcp)) {
+      const next = applyRecommendedClaudeMcp(claudeMcp);
+      writeFileSync(claudeMcpPath, `${JSON.stringify(next, null, 2)}\n`);
+    }
+  }
+
+  // 3. Cursor-specific: MCP config (regular file, serena with --context=ide) + rules
   if (configuredVendors.includes("cursor")) {
-    ensureCursorMcpSymlink(cwd);
+    ensureCursorMcpConfig(cwd);
     generateCursorRules(cwd);
   }
 

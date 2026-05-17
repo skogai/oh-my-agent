@@ -14,6 +14,7 @@ import type {
   VendorType,
 } from "../types/index.js";
 import { clearNonDirectory } from "../utils/fs-utils.js";
+import { applyRecommendedCursorSettings } from "../vendors/cursor/settings.js";
 import { createLink } from "./fs-link.js";
 
 export * from "../constants/index.js";
@@ -324,66 +325,57 @@ export function getAllSkills(): SkillInfo[] {
 }
 
 /**
- * Point Cursor's MCP config at the SSOT `.agents/mcp.json` via symlink.
- * Skips if `.agents/mcp.json` is missing, or `.cursor/mcp.json` is a real file.
+ * Generate Cursor's `.cursor/mcp.json` from the SSOT `.agents/mcp.json`, but
+ * with the serena entry overridden to `--context=ide` (Cursor is an IDE
+ * extension client per serena upstream docs). Replaces legacy symlinks that
+ * previously pointed at `.agents/mcp.json`.
+ *
+ * Skips if `.agents/mcp.json` is missing.
  */
-export function ensureCursorMcpSymlink(targetDir: string): void {
+export function ensureCursorMcpConfig(targetDir: string): void {
   const agentsMcp = join(targetDir, ".agents", "mcp.json");
   if (!fs.existsSync(agentsMcp)) return;
 
   const cursorDir = join(targetDir, ".cursor");
-  const linkPath = join(cursorDir, "mcp.json");
-  const relTarget = relative(cursorDir, agentsMcp);
+  const cursorMcp = join(cursorDir, "mcp.json");
 
+  let baseConfig: Record<string, unknown> = {};
   try {
-    const stat = fs.lstatSync(linkPath);
-    if (stat.isSymbolicLink()) {
-      const existing = resolve(dirname(linkPath), fs.readlinkSync(linkPath));
-      if (existing === resolve(agentsMcp)) return;
-      fs.unlinkSync(linkPath);
-    } else {
-      // Regular file. On Windows this may be a hardlink (createLink fallback);
-      // hardlinks share an inode with the SSOT so content stays in sync — no-op.
-      // For genuine copies (cross-volume fallback) or user-owned files we leave
-      // the file alone, but warn loudly if its content has drifted from SSOT
-      // so the user can refresh by deleting and re-running install.
-      if (process.platform === "win32" && stat.isFile()) {
-        warnIfWindowsCopyDrift(linkPath, agentsMcp, stat);
-      }
-      return;
+    const raw = fs.readFileSync(agentsMcp, "utf-8");
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      baseConfig = parsed as Record<string, unknown>;
     }
   } catch {
-    // link missing
+    return;
+  }
+
+  // Cursor reads only `mcpServers`; strip oma-only keys (memoryConfig, toolGroups).
+  const cursorOnly: Record<string, unknown> = {};
+  if (baseConfig.mcpServers) cursorOnly.mcpServers = baseConfig.mcpServers;
+
+  const next = applyRecommendedCursorSettings(cursorOnly);
+
+  // If a legacy symlink exists, replace it with a real file.
+  try {
+    const stat = fs.lstatSync(cursorMcp);
+    if (stat.isSymbolicLink()) {
+      fs.unlinkSync(cursorMcp);
+    }
+  } catch {
+    // missing — no-op
   }
 
   fs.mkdirSync(cursorDir, { recursive: true });
-  createLink(relTarget, linkPath, "file");
+  fs.writeFileSync(cursorMcp, `${JSON.stringify(next, null, 2)}\n`);
 }
 
-function warnIfWindowsCopyDrift(
-  linkPath: string,
-  ssotPath: string,
-  linkStat: fs.Stats,
-): void {
-  try {
-    const ssotStat = fs.statSync(ssotPath);
-    if (
-      linkStat.ino !== 0 &&
-      linkStat.ino === ssotStat.ino &&
-      linkStat.dev === ssotStat.dev
-    ) {
-      return; // hardlink: content auto-syncs
-    }
-    const linkContent = fs.readFileSync(linkPath);
-    const ssotContent = fs.readFileSync(ssotPath);
-    if (!linkContent.equals(ssotContent)) {
-      console.warn(
-        `note: ${linkPath} differs from ${ssotPath}. If oh-my-agent created it via copy fallback, delete it and re-run install to refresh.`,
-      );
-    }
-  } catch {
-    // best-effort warning only
-  }
+/**
+ * @deprecated Replaced by `ensureCursorMcpConfig`. Kept as a thin alias for
+ * any external consumers; will be removed in a future major.
+ */
+export function ensureCursorMcpSymlink(targetDir: string): void {
+  ensureCursorMcpConfig(targetDir);
 }
 
 /**

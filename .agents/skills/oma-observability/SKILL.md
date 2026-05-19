@@ -310,6 +310,7 @@ Before submitting, run `resources/checklist.md`.
   - `resources/layers/L7-application/web-rum.md`
   - `resources/layers/L7-application/mobile-rum.md`
   - `resources/layers/L7-application/crash-analytics.md`
+  - `resources/layers/L7-application/waf.md`
 - Boundaries:
   - `resources/boundaries/multi-tenant.md`
   - `resources/boundaries/cross-application.md`

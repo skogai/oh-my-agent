@@ -1,7 +1,7 @@
 {
   "name": "oh-my-agent",
   "version": "8.0.0",
-  "releaseDate": "2026-05-20T01:41:55.322Z",
+  "releaseDate": "2026-05-20T02:03:27.517Z",
   "repository": "https://github.com/first-fluke/oh-my-agent",
   "files": [
     {
@@ -61,8 +61,8 @@
     },
     {
       "path": ".agents/agents/variants/claude.json",
-      "sha256": "f954a584735d4dfdfc50c27316e6f902a0651c145216ba409967127dd93f8a82",
-      "size": 1034
+      "sha256": "5d4eb4338611b359c0c86b7a2efcf6c434efbb45fee88cbd080e9c9ff22b76b4",
+      "size": 1011
     },
     {
       "path": ".agents/agents/variants/codex.json",
@@ -106,8 +106,8 @@
     },
     {
       "path": ".agents/hooks/core/hud.ts",
-      "sha256": "6dece44c94d0d50dfe5e7184375b5cc9eb3d404ec9ebb3eed0e3891d6e20b94d",
-      "size": 5715
+      "sha256": "7c28378fa66ad77d9e67494fd935538b6e32cfc71db0116c28eef8aa88d26ed7",
+      "size": 11862
     },
     {
       "path": ".agents/hooks/core/keyword-detector.ts",
@@ -156,8 +156,8 @@
     },
     {
       "path": ".agents/hooks/variants/gemini.json",
-      "sha256": "483a516ac2a4df24ce56468cfbc745b62e6aea4a460cf1afbe385310f54c774d",
-      "size": 679
+      "sha256": "e3d8e2748bc4572bdefecba3251f4a6b65c787678bb8acc98a38c2c4c4b7bde6",
+      "size": 983
     },
     {
       "path": ".agents/hooks/variants/hook-variant.schema.json",

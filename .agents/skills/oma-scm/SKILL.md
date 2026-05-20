@@ -1,6 +1,6 @@
 ---
 name: oma-scm
-description: SCM (software configuration management) and Git: branching, merges, conflicts, worktrees, baselines, audit readiness, plus Conventional Commits and safe staging.
+description: "SCM (software configuration management) and Git: branching, merges, conflicts, worktrees, baselines, audit readiness, plus Conventional Commits and safe staging."
 ---
 
 # Software configuration management: SCM (`oma-scm`)

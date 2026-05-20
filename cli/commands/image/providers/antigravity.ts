@@ -8,7 +8,6 @@ import {
 } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { ImageConfig } from "../config.js";
 import { buildOutputFilename, shortId } from "../naming.js";
 import type {
   GenerateInput,
@@ -23,8 +22,6 @@ import { runCapture } from "./codex.js";
 
 export class AntigravityProvider implements VendorProvider {
   readonly name = "antigravity";
-
-  constructor(_config?: ImageConfig) {}
 
   async health(): Promise<HealthResult> {
     const versionCheck = await runCapture("agy", ["--version"]);

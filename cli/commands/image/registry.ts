@@ -46,7 +46,7 @@ export function defaultRegistry(config?: ImageConfig): Registry {
   cached = new Registry();
   const enabled = (name: string) => config?.vendors[name]?.enabled !== false;
   if (enabled("codex")) cached.register(new CodexProvider(config));
-  if (enabled("antigravity")) cached.register(new AntigravityProvider(config));
+  if (enabled("antigravity")) cached.register(new AntigravityProvider());
   if (enabled("pollinations"))
     cached.register(new PollinationsProvider(config));
   return cached;

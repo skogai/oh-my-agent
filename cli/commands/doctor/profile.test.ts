@@ -18,6 +18,7 @@ import type { DeprecatedOAuthSessionResult } from "../../vendors/qwen/auth.js";
 // ---------------------------------------------------------------------------
 
 vi.mock("../../vendors/index.js", () => ({
+  isAntigravityAuthenticated: vi.fn(() => false),
   isClaudeAuthenticated: vi.fn(() => false),
   isCodexAuthenticated: vi.fn(() => false),
   isGeminiAuthenticated: vi.fn(() => false),
@@ -72,6 +73,7 @@ import * as profileModule from "./profile.js";
 
 beforeEach(() => {
   // Default: all CLIs logged out, no legacy OAuth, claude runtime
+  vi.mocked(vendorsMock.isAntigravityAuthenticated).mockReturnValue(false);
   vi.mocked(vendorsMock.isClaudeAuthenticated).mockReturnValue(false);
   vi.mocked(vendorsMock.isCodexAuthenticated).mockReturnValue(false);
   vi.mocked(vendorsMock.isGeminiAuthenticated).mockReturnValue(false);

@@ -58,7 +58,8 @@ export function qwenThinkingFlag(plan: AgentPlan): string | null {
  * - gemini: --model {cliModel}  + optional --thinking-budget flag
  * - qwen:   -m {cliModel}  + optional --thinking / --no-thinking flag
  * - cursor: [] (model flag injected before trailing prompt by injectCursorModelBeforeTrailingPrompt)
- * - antigravity: [] (external only; no model flag on top-level CLI)
+ * - antigravity: [] (agy 1.0 has no `--model` or `--thinking-budget` flag — model selection
+ *                    is config-driven; effort/thinking are dropped silently)
  */
 export function buildAgentPlanArgs(plan: AgentPlan): string[] {
   const args: string[] = [];
@@ -93,7 +94,7 @@ export function buildAgentPlanArgs(plan: AgentPlan): string[] {
       break;
     }
     case "antigravity": {
-      // antigravity has no CLI-level model flag in external subprocess mode
+      // agy 1.0 exposes no model or thinking-budget flag — model is config-driven.
       break;
     }
     default: {

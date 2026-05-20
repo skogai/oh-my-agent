@@ -10,6 +10,7 @@ const AUTH_HINTS: Record<string, string> = {
   codex: "codex login",
   cursor: "cursor agent login",
   qwen: "qwen /auth",
+  antigravity: "agy auth",
 };
 
 export async function checkAuthStatus(jsonMode = false): Promise<void> {

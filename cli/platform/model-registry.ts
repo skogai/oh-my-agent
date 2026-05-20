@@ -39,8 +39,7 @@ export type EffortSpec =
   | null;
 
 export type ModelSpec = {
-  // antigravity has no Registry entries — uses built-in models only
-  cli: Exclude<RuntimeId, "antigravity">;
+  cli: RuntimeId;
   cli_model: string;
   supports: {
     effort: EffortSpec;
@@ -294,6 +293,49 @@ const RAW_REGISTRY: ReadonlyMap<string, ModelSpec> = new Map([
       },
       pricing_note: "$0.25/$1.50 per Mtok (reference only)",
       auth_hint: "Requires Google AI Pro subscription ($20/mo)",
+      subscription_tier: "google_ai_pro",
+    } satisfies ModelSpec,
+  ],
+
+  // -------------------------------------------------------------------------
+  // Antigravity (agy CLI) (2)
+  // -------------------------------------------------------------------------
+  // agy 1.0 has no `--model` flag — these entries are nominal: they let users
+  // declare intent in oma-config.yaml and surface the right auth hint in
+  // `oma doctor`, but at dispatch time the CLI uses its config-driven default.
+  [
+    "antigravity/gemini-3.1-pro",
+    {
+      cli: "antigravity",
+      cli_model: "gemini-3.1-pro",
+      supports: {
+        effort: null,
+        apply_patch: false,
+        task_budget: false,
+        prompt_cache: true,
+        computer_use: false,
+        native_dispatch_from: ["antigravity"],
+        api_only: false,
+      },
+      auth_hint: "Requires Antigravity CLI sign-in (Google AI Pro tier)",
+      subscription_tier: "google_ai_pro",
+    } satisfies ModelSpec,
+  ],
+  [
+    "antigravity/gemini-3.5-flash",
+    {
+      cli: "antigravity",
+      cli_model: "gemini-3.5-flash",
+      supports: {
+        effort: null,
+        apply_patch: false,
+        task_budget: false,
+        prompt_cache: true,
+        computer_use: false,
+        native_dispatch_from: ["antigravity"],
+        api_only: false,
+      },
+      auth_hint: "Requires Antigravity CLI sign-in (Google AI Pro tier)",
       subscription_tier: "google_ai_pro",
     } satisfies ModelSpec,
   ],

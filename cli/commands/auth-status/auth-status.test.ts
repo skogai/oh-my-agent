@@ -77,6 +77,7 @@ describe("auth:status command", () => {
         codex: true,
         cursor: true,
         qwen: true,
+        antigravity: false,
       });
     });
   });
@@ -101,6 +102,7 @@ describe("auth:status command", () => {
         codex: false,
         cursor: false,
         qwen: false,
+        antigravity: false,
       });
     });
   });

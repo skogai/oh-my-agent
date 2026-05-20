@@ -13,7 +13,14 @@ export const INSTALLED_SKILLS_DIR = ".agents/skills";
  * Sites that require a fully implemented runtime (doctor probe, agent
  * review, native dispatch) keep their own narrower lists.
  */
-export const VENDORS = ["claude", "codex", "cursor", "gemini", "qwen"] as const;
+export const VENDORS = [
+  "antigravity",
+  "claude",
+  "codex",
+  "cursor",
+  "gemini",
+  "qwen",
+] as const;
 
 /**
  * All CLI tools including non-hook vendors (skill-install only).

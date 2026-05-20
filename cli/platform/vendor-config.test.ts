@@ -38,6 +38,7 @@ describe("readVendorsFromConfig", () => {
     const dir = createTemp();
     const vendors = readVendorsFromConfig(dir);
     expect(vendors).toEqual([
+      "antigravity",
       "claude",
       "codex",
       "copilot",
@@ -52,6 +53,7 @@ describe("readVendorsFromConfig", () => {
     const dir = createTemp("language: en\ntimezone: Asia/Seoul\n");
     const vendors = readVendorsFromConfig(dir);
     expect(vendors).toEqual([
+      "antigravity",
       "claude",
       "codex",
       "copilot",

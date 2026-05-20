@@ -7,10 +7,13 @@
  *   gemini-only  → gemini
  *   qwen-only    → qwen
  *   cursor-only  → cursor
- *   antigravity  → mixed
  *
  * Idempotent: skips when model_preset is already a canonical key or absent.
  * Creates a .bak backup of oma-config.yaml before writing.
+ *
+ * Historical note: `antigravity` previously aliased to `mixed`. As of the agy
+ * CLI launch (Antigravity 2.0), `antigravity` is a first-class preset that
+ * targets the agy binary directly — no rename is performed for it.
  */
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -26,7 +29,6 @@ const LEGACY_TO_CANONICAL: Record<string, string> = {
   "gemini-only": "gemini",
   "qwen-only": "qwen",
   "cursor-only": "cursor",
-  antigravity: "mixed",
 };
 
 const LEGACY_KEYS = new Set(Object.keys(LEGACY_TO_CANONICAL));

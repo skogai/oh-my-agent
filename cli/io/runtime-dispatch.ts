@@ -4,6 +4,7 @@ import { ConfigError } from "./runtime-dispatch/config-error.js";
 import { detectRuntimeVendor } from "./runtime-dispatch/detect.js";
 import { buildExternalInvocation } from "./runtime-dispatch/invocations/external.js";
 import {
+  buildAntigravityNativeInvocation,
   buildClaudeNativeInvocation,
   buildCodexNativeInvocation,
   buildCursorAgentPrintInvocation,
@@ -136,8 +137,8 @@ export function planDispatch(
     persistCodexEffortToToml(process.cwd(), activePlan.effort);
   }
 
-  // Runtimes without parallel native subagent support → force external
-  if (runtimeVendor === "antigravity" || runtimeVendor === "qwen") {
+  // Qwen has no native parallel subagent dispatch → force external
+  if (runtimeVendor === "qwen") {
     console.warn(
       `[runtime-dispatch] ${runtimeVendor} runtime: all agents dispatched as external subprocess`,
     );
@@ -153,6 +154,22 @@ export function planDispatch(
       runtimeVendor,
       targetVendor,
       reason: `${runtimeVendor} runtime has no native parallel dispatch`,
+      invocation: inv,
+    };
+  }
+
+  if (runtimeVendor === "antigravity" && targetVendor === "antigravity") {
+    const inv = buildAntigravityNativeInvocation(
+      agentId,
+      promptContent,
+      effectiveVendorConfig,
+    );
+    if (activePlan) applyResolvedPlan(inv, activePlan, targetVendor);
+    return {
+      mode: "native",
+      runtimeVendor,
+      targetVendor,
+      reason: "same-vendor Antigravity (agy) runtime detected",
       invocation: inv,
     };
   }

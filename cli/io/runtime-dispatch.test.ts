@@ -87,8 +87,7 @@ describe("planDispatch — forced-external runtimes", () => {
     warnSpy.mockRestore();
   });
 
-  it("returns mode:'external' for antigravity runtime", () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("antigravity runtime + cross-vendor target → mode:'external'", () => {
     const plan = planDispatch(
       "test-agent",
       "claude",
@@ -99,10 +98,30 @@ describe("planDispatch — forced-external runtimes", () => {
     );
     expect(plan.mode).toBe("external");
     expect(plan.runtimeVendor).toBe("antigravity");
-    expect(plan.reason).toBe(
-      "antigravity runtime has no native parallel dispatch",
+    expect(plan.reason).toBe("cross-vendor or unsupported native path");
+  });
+
+  it("antigravity runtime + antigravity target → mode:'native' (agy)", () => {
+    const plan = planDispatch(
+      "test-agent",
+      "antigravity",
+      { prompt_flag: "-p" },
+      "-p",
+      "hello",
+      { OMA_RUNTIME_VENDOR: "antigravity" },
     );
-    warnSpy.mockRestore();
+    expect(plan.mode).toBe("native");
+    expect(plan.runtimeVendor).toBe("antigravity");
+    expect(plan.invocation.command).toBe("agy");
+    // agy 1.0 invocation: `agy --dangerously-skip-permissions -p "<prompt>"`
+    expect(plan.invocation.args).toContain("--dangerously-skip-permissions");
+    // -p is a value flag; its argument must follow immediately.
+    const pIdx = plan.invocation.args.indexOf("-p");
+    expect(pIdx).toBeGreaterThanOrEqual(0);
+    expect(plan.invocation.args[pIdx + 1]).toMatch(/hello/);
+    // No `--model` or `--thinking-budget` — those flags do not exist in agy 1.0.
+    expect(plan.invocation.args).not.toContain("--model");
+    expect(plan.invocation.args).not.toContain("--thinking-budget");
   });
 
   it("prints a WARN message when forced to external for qwen", () => {
@@ -112,17 +131,6 @@ describe("planDispatch — forced-external runtimes", () => {
     });
     expect(warnSpy).toHaveBeenCalledWith(
       "[runtime-dispatch] qwen runtime: all agents dispatched as external subprocess",
-    );
-    warnSpy.mockRestore();
-  });
-
-  it("prints a WARN message when forced to external for antigravity", () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    planDispatch("test-agent", "claude", minimalVendorConfig, "-p", "hello", {
-      OMA_RUNTIME_VENDOR: "antigravity",
-    });
-    expect(warnSpy).toHaveBeenCalledWith(
-      "[runtime-dispatch] antigravity runtime: all agents dispatched as external subprocess",
     );
     warnSpy.mockRestore();
   });
@@ -483,6 +491,23 @@ describe("buildExternalInvocation — vendor branches", () => {
       "hi",
     );
     expect(inv.args).toContain("--yolo");
+  });
+
+  it("antigravity: command defaults to `agy` binary, auto_approve_flag falls back to --dangerously-skip-permissions", () => {
+    const inv = buildExternalInvocation("antigravity", {}, "-p", "hi");
+    expect(inv.command).toBe("agy");
+    expect(inv.args).toContain("--dangerously-skip-permissions");
+  });
+
+  it("antigravity: stale `model_flag` in vendorConfig is dropped (agy 1.0 has no --model)", () => {
+    const inv = buildExternalInvocation(
+      "antigravity",
+      { model_flag: "--model", default_model: "gemini-3.1-pro" },
+      "-p",
+      "hi",
+    );
+    expect(inv.args).not.toContain("--model");
+    expect(inv.args).not.toContain("gemini-3.1-pro");
   });
 
   it("isolation_flags split into argv tokens", () => {

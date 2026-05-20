@@ -13,6 +13,7 @@ import assert from "node:assert/strict";
 import { describe, expect, it } from "vitest";
 
 const EXPECTED_PRESET_KEYS = [
+  "antigravity",
   "claude",
   "codex",
   "gemini",

@@ -307,8 +307,13 @@ export async function install(options: InstallOptions = {}): Promise<void> {
       hint: "Qwen Code subscription holders",
     },
     {
+      value: "antigravity",
+      label: "Antigravity CLI (agy)",
+      hint: "Gemini 3.1 Pro impl + Gemini 3.5 Flash orchestration",
+    },
+    {
       value: "mixed",
-      label: "Mixed (Antigravity IDE)",
+      label: "Mixed (cross-vendor)",
       hint: "Claude orchestrator + cross-vendor subagents",
     },
   ];

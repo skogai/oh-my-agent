@@ -15,7 +15,6 @@ const LEGACY_PRESET_KEYS = new Set([
   "gemini-only",
   "qwen-only",
   "cursor-only",
-  "antigravity",
 ]);
 
 /** Maps legacy key → canonical replacement. */
@@ -25,13 +24,15 @@ const LEGACY_TO_CANONICAL: Record<string, string> = {
   "gemini-only": "gemini",
   "qwen-only": "qwen",
   "cursor-only": "cursor",
-  antigravity: "mixed",
 };
 
 /**
  * Throw a ConfigError with an actionable message when the user's oma-config.yaml
  * still contains a legacy preset name (claude-only, codex-only, gemini-only,
- * qwen-only, cursor-only, antigravity). Run `oma update` to auto-migrate.
+ * qwen-only, cursor-only). Run `oma update` to auto-migrate.
+ *
+ * `antigravity` was previously a legacy alias for `mixed`; with the agy CLI
+ * launch it is now a first-class preset and is no longer rejected.
  */
 function assertNotLegacyPreset(modelPreset: string, filePath: string): void {
   if (LEGACY_PRESET_KEYS.has(modelPreset)) {
@@ -39,7 +40,7 @@ function assertNotLegacyPreset(modelPreset: string, filePath: string): void {
     throw new ConfigError(
       `Legacy preset name "${modelPreset}" is no longer valid in ${filePath}.\n` +
         `  Rename it to "${canonical}" — or run \`oma update\` for automatic migration.\n` +
-        `  Built-in presets: claude | codex | gemini | qwen | cursor | mixed`,
+        `  Built-in presets: antigravity | claude | codex | gemini | qwen | cursor | mixed`,
     );
   }
 }
@@ -62,7 +63,7 @@ function findFileUp(startDir: string, relativePath: string): string | null {
  *
  * Throws ConfigError with file:line:col when the file exists but contains
  * invalid YAML, so the user gets an actionable error message.
- * Throws ConfigError when model_preset is a legacy key (claude-only, antigravity, etc.)
+ * Throws ConfigError when model_preset is a legacy key (claude-only, codex-only, etc.)
  * to prompt the user to run `oma update`.
  */
 export function loadUserConfig(cwd: string): Partial<OmaConfig> {

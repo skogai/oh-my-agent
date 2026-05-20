@@ -30,6 +30,7 @@ export type AgentId =
 // ---------------------------------------------------------------------------
 
 export type BuiltInPresetKey =
+  | "antigravity"
   | "claude"
   | "codex"
   | "gemini"

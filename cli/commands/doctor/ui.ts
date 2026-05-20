@@ -349,7 +349,7 @@ export async function renderProfileReport(
   }
 
   // ── Antigravity runtime fallback warning ────────────────────────────────
-  if (report.isAntigravity) {
+  if (report.isAntigravity && report.antigravityFallbackRoles.length > 0) {
     const fallbackList = report.antigravityFallbackRoles.join(", ");
     p.log.warn(
       [
@@ -357,7 +357,7 @@ export async function renderProfileReport(
           `${report.profileName} impl agents (${fallbackList}) will fall back to external subprocess.`,
         ),
         pc.dim(
-          "Antigravity runtime has no native parallel dispatch for impl agents.",
+          "These roles resolve to a non-agy CLI; switch to the `antigravity` preset for native dispatch.",
         ),
       ].join("\n"),
     );

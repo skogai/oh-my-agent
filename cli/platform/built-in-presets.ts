@@ -16,6 +16,25 @@ import { getModelSpec } from "./model-registry.js";
 // ---------------------------------------------------------------------------
 
 export const BUILT_IN_PRESETS: Record<BuiltInPresetKey, ModelPreset> = {
+  antigravity: {
+    description:
+      "Antigravity CLI (agy) — nominal Gemini 3.1 Pro for impl/architecture, Gemini 3.5 Flash for orchestration & retrieval (agy 1.0 has no `--model` flag, so the model is selected by agy's own config)",
+    agent_defaults: {
+      orchestrator: { model: "antigravity/gemini-3.5-flash" },
+      architecture: { model: "antigravity/gemini-3.1-pro" },
+      qa: { model: "antigravity/gemini-3.1-pro" },
+      pm: { model: "antigravity/gemini-3.5-flash" },
+      backend: { model: "antigravity/gemini-3.1-pro" },
+      frontend: { model: "antigravity/gemini-3.1-pro" },
+      mobile: { model: "antigravity/gemini-3.1-pro" },
+      db: { model: "antigravity/gemini-3.1-pro" },
+      debug: { model: "antigravity/gemini-3.1-pro" },
+      docs: { model: "antigravity/gemini-3.5-flash" },
+      "tf-infra": { model: "antigravity/gemini-3.1-pro" },
+      retrieval: { model: "antigravity/gemini-3.5-flash" },
+    },
+  },
+
   claude: {
     description: "Claude — Max subscription holders",
     agent_defaults: {
@@ -128,8 +147,9 @@ export const BUILT_IN_PRESETS: Record<BuiltInPresetKey, ModelPreset> = {
 };
 
 // ---------------------------------------------------------------------------
-// Aliases — redirect old preset keys to canonical names.
-// Maps legacy "-only" names and "antigravity" to the new canonical keys.
+// Aliases — redirect legacy "-only" preset keys to canonical names.
+// `antigravity` is no longer aliased: it is now a first-class preset that
+// targets the agy CLI directly (see BUILT_IN_PRESETS above).
 // ---------------------------------------------------------------------------
 
 export const BUILT_IN_PRESET_ALIASES: Record<string, BuiltInPresetKey> = {
@@ -138,7 +158,6 @@ export const BUILT_IN_PRESET_ALIASES: Record<string, BuiltInPresetKey> = {
   "gemini-only": "gemini",
   "qwen-only": "qwen",
   "cursor-only": "cursor",
-  antigravity: "mixed",
 };
 
 // ---------------------------------------------------------------------------

@@ -735,9 +735,13 @@ describe("buildAgentPlanArgs — Qwen", () => {
 // ---------------------------------------------------------------------------
 
 describe("buildAgentPlanArgs — antigravity & unknown", () => {
-  it("antigravity cli yields empty args (no top-level model flag)", () => {
+  it("antigravity cli yields empty args — agy 1.0 has no --model or --thinking-budget flag", () => {
     const basePlan = resolveAgentPlanFromConfig("backend", CODEX_ONLY_CONFIG);
-    const antigravityPlan = { ...basePlan, cli: "antigravity" as const };
+    const antigravityPlan = {
+      ...basePlan,
+      cli: "antigravity" as const,
+      cliModel: "gemini-3.1-pro",
+    };
     expect(buildAgentPlanArgs(antigravityPlan)).toEqual([]);
   });
 

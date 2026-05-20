@@ -125,14 +125,14 @@ describe("checkCLI via collectDoctorReport", () => {
 
     // Let the Promise constructors run so spawn() is called for all 4 CLIs
     await vi.advanceTimersByTimeAsync(0);
-    expect(spawnState.lastProcs).toHaveLength(4);
+    expect(spawnState.lastProcs).toHaveLength(5);
 
     settleProcs(0, "1.2.3\n");
     await vi.advanceTimersByTimeAsync(0);
 
     const report = await reportPromise;
 
-    expect(report.clis).toHaveLength(4);
+    expect(report.clis).toHaveLength(5);
     for (const cli of report.clis) {
       expect(cli.installed).toBe(true);
       expect(cli.version).toBe("1.2.3");
@@ -143,7 +143,7 @@ describe("checkCLI via collectDoctorReport", () => {
     const reportPromise = collectDoctorReport();
 
     await vi.advanceTimersByTimeAsync(0);
-    expect(spawnState.lastProcs).toHaveLength(4);
+    expect(spawnState.lastProcs).toHaveLength(5);
 
     settleProcs(1);
     await vi.advanceTimersByTimeAsync(0);
@@ -159,7 +159,7 @@ describe("checkCLI via collectDoctorReport", () => {
     const reportPromise = collectDoctorReport();
 
     await vi.advanceTimersByTimeAsync(0);
-    expect(spawnState.lastProcs).toHaveLength(4);
+    expect(spawnState.lastProcs).toHaveLength(5);
 
     errorProcs();
     await vi.advanceTimersByTimeAsync(0);
@@ -176,7 +176,7 @@ describe("checkCLI via collectDoctorReport", () => {
     const reportPromise = collectDoctorReport();
 
     await vi.advanceTimersByTimeAsync(0);
-    expect(spawnState.lastProcs).toHaveLength(4);
+    expect(spawnState.lastProcs).toHaveLength(5);
 
     // Advance past the 1500ms probe timeout + 200ms SIGKILL grace
     await vi.advanceTimersByTimeAsync(1700);

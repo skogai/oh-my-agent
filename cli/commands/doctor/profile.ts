@@ -21,6 +21,7 @@ import {
 } from "../../platform/built-in-presets.js";
 import { getModelSpec } from "../../platform/model-registry.js";
 import {
+  isAntigravityAuthenticated,
   isClaudeAuthenticated,
   isCodexAuthenticated,
   isGeminiAuthenticated,
@@ -53,8 +54,13 @@ export const ROLE_ORDER = [
 
 export type Role = (typeof ROLE_ORDER)[number];
 
-/** Impl roles that fall back to external subprocess under Antigravity. */
-const ANTIGRAVITY_FALLBACK_ROLES: readonly string[] = [
+/**
+ * Impl roles that fall back to external subprocess under Antigravity when the
+ * resolved per-row CLI differs from `antigravity` (the agy CLI). Computed
+ * dynamically at collect time so an `antigravity` preset under the Antigravity
+ * runtime no longer surfaces a fallback warning.
+ */
+const IMPL_ROLES: readonly string[] = [
   "backend",
   "frontend",
   "mobile",
@@ -72,6 +78,7 @@ export const CLI_AUTH_CHECKERS: Record<string, () => boolean> = {
   codex: isCodexAuthenticated,
   gemini: isGeminiAuthenticated,
   qwen: isQwenAuthenticated,
+  antigravity: () => isAntigravityAuthenticated(),
 };
 
 export type AuthStatus = "logged_in" | "not_logged_in" | "unknown";
@@ -173,6 +180,8 @@ const OWNER_TO_CLI: Record<string, string> = {
   openai: "codex",
   google: "gemini",
   qwen: "qwen",
+  cursor: "cursor",
+  antigravity: "antigravity",
 };
 
 function cliFromModelSlug(slug: string): string {
@@ -278,12 +287,23 @@ export async function collectProfileReport(
   // T9: Qwen OAuth detection
   const qwenOAuth = detectDeprecatedOAuthSession();
 
+  // Under the Antigravity runtime, only impl roles whose resolved CLI is NOT
+  // antigravity (e.g. inherited from a non-antigravity preset) actually fall
+  // back to an external subprocess.
+  const antigravityFallbackRoles: readonly string[] = isAntigravity
+    ? rows
+        .filter(
+          (row) => IMPL_ROLES.includes(row.role) && row.cli !== "antigravity",
+        )
+        .map((row) => row.role)
+    : [];
+
   return {
     profileName,
     rows,
     qwenOAuth,
     isAntigravity,
-    antigravityFallbackRoles: ANTIGRAVITY_FALLBACK_ROLES,
+    antigravityFallbackRoles,
     missingPreset,
     allFromPreset: !missingPreset && !hasAnyOverride,
   };

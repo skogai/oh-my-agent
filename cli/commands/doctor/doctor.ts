@@ -10,6 +10,7 @@ import {
 } from "../../platform/skills-installer.js";
 import type { CLICheck, SkillCheck } from "../../types/index.js";
 import {
+  isAntigravityAuthenticated,
   isClaudeAuthenticated,
   isCodexAuthenticated,
   isGeminiAuthenticated,
@@ -26,6 +27,11 @@ const CLI_DEFINITIONS: Array<[string, string, string]> = [
   ["claude", "claude", "bun install --global @anthropic-ai/claude-code"],
   ["codex", "codex", "bun install --global @openai/codex"],
   ["qwen", "qwen", "bun install --global @qwen-code/qwen-code"],
+  [
+    "antigravity",
+    "agy",
+    "curl -fsSL https://antigravity.google/cli/install.sh | bash",
+  ],
 ];
 
 export const AUTH_CHECKERS: Record<string, () => boolean> = {
@@ -33,6 +39,7 @@ export const AUTH_CHECKERS: Record<string, () => boolean> = {
   claude: isClaudeAuthenticated,
   codex: isCodexAuthenticated,
   qwen: isQwenAuthenticated,
+  antigravity: () => isAntigravityAuthenticated(),
 };
 
 export interface McpCheck extends CLICheck {

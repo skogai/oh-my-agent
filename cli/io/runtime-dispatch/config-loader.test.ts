@@ -79,7 +79,6 @@ describe("loadUserConfig", () => {
     ["gemini-only", "gemini"],
     ["qwen-only", "qwen"],
     ["cursor-only", "cursor"],
-    ["antigravity", "mixed"],
   ];
 
   for (const [legacy, canonical] of legacyCases) {

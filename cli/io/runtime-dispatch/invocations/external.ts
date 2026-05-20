@@ -48,7 +48,11 @@ export function buildExternalInvocation(
     return buildExternalCursorInvocation(vendorConfig, promptContent);
   }
 
-  const command = vendorConfig.command || vendor;
+  // Vendors whose CLI binary name differs from the vendor identifier.
+  const binaryByVendor: Record<string, string> = {
+    antigravity: "agy",
+  };
+  const command = vendorConfig.command || binaryByVendor[vendor] || vendor;
   const args: string[] = [];
   const optionArgs: string[] = [];
 
@@ -65,7 +69,13 @@ export function buildExternalInvocation(
     optionArgs.push(vendorConfig.output_format_flag);
   }
 
-  if (vendorConfig.model_flag && vendorConfig.default_model) {
+  // agy 1.0 has no `--model` flag — defensively skip emitting one for the
+  // antigravity vendor even when a stale vendorConfig carries it.
+  if (
+    vendor !== "antigravity" &&
+    vendorConfig.model_flag &&
+    vendorConfig.default_model
+  ) {
     optionArgs.push(vendorConfig.model_flag, vendorConfig.default_model);
   }
 
@@ -80,6 +90,7 @@ export function buildExternalInvocation(
       gemini: "--approval-mode=yolo",
       codex: "--full-auto",
       qwen: "--yolo",
+      antigravity: "--dangerously-skip-permissions",
     };
     const fallbackFlag = defaultAutoApprove[vendor];
     if (fallbackFlag) {

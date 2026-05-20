@@ -77,8 +77,9 @@ function vendorToPresetKey(vendor: string): BuiltInPresetKey | null {
     case "qwen-only":
       return "qwen";
     case "mixed":
-    case "antigravity":
       return "mixed";
+    case "antigravity":
+      return "antigravity";
     default:
       return null;
   }
@@ -143,10 +144,10 @@ function isDefaultsCustomized(userDefaults: LegacyDefaultsYaml): boolean {
 
   // Also check top-level agent_defaults vs mixed (which is the "default profile")
   const topLevel = userDefaults.agent_defaults ?? {};
-  const antigravity = BUILT_IN_PRESETS.mixed.agent_defaults;
+  const baseline = BUILT_IN_PRESETS.mixed.agent_defaults;
   for (const agentId of ALL_AGENT_IDS) {
     const userEntry = topLevel[agentId];
-    const builtInEntry = antigravity[agentId];
+    const builtInEntry = baseline[agentId];
     if (!userEntry || !builtInEntry) continue;
     if (
       userEntry.model !== builtInEntry.model ||

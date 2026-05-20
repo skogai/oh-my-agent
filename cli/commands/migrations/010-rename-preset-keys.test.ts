@@ -2,7 +2,7 @@
 // 010-rename-preset-keys.test.ts
 //
 // Verifies migration 010: rename legacy model_preset values
-// (claude-only → claude, …, antigravity → mixed) in .agents/oma-config.yaml.
+// (claude-only → claude, …) in .agents/oma-config.yaml.
 // ---------------------------------------------------------------------------
 
 import {
@@ -54,7 +54,6 @@ describe("migration 010 — rename-preset-keys", () => {
     ["gemini-only", "gemini"],
     ["qwen-only", "qwen"],
     ["cursor-only", "cursor"],
-    ["antigravity", "mixed"],
   ];
 
   for (const [legacy, canonical] of renameCases) {
@@ -140,17 +139,32 @@ describe("migration 010 — rename-preset-keys", () => {
     tempRoots.push(root);
     scaffoldAgentsDir(root);
 
-    writeOmaConfig(root, "language: en\nmodel_preset: antigravity\n");
+    writeOmaConfig(root, "language: en\nmodel_preset: gemini-only\n");
 
     const first = migrateRenamePresetKeys.up(root);
     expect(first.length).toBeGreaterThan(0);
-    expect(readOmaConfig(root)).toContain("model_preset: mixed");
+    expect(readOmaConfig(root)).toContain("model_preset: gemini");
 
     // remove backup so we can detect whether a second run creates a new one
     rmSync(join(root, ".agents", "oma-config.yaml.bak"));
 
     const second = migrateRenamePresetKeys.up(root);
     expect(second).toEqual([]);
+    expect(backupExists(root)).toBe(false);
+  });
+
+  it("leaves `antigravity` untouched — it is now a first-class preset (agy CLI)", () => {
+    const root = makeTempRoot();
+    tempRoots.push(root);
+    scaffoldAgentsDir(root);
+
+    const original = "language: en\nmodel_preset: antigravity\n";
+    writeOmaConfig(root, original);
+
+    const actions = migrateRenamePresetKeys.up(root);
+
+    expect(actions).toEqual([]);
+    expect(readOmaConfig(root)).toBe(original);
     expect(backupExists(root)).toBe(false);
   });
 });

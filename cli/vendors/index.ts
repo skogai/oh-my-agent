@@ -1,3 +1,4 @@
+import { isAntigravityAuthenticated } from "./antigravity/auth.js";
 import { isClaudeAuthenticated } from "./claude/auth.js";
 import { isCodexAuthenticated } from "./codex/auth.js";
 import { isCursorAuthenticated } from "./cursor/auth.js";
@@ -24,9 +25,15 @@ export const VENDORS: readonly Vendor[] = [
   { id: "codex", label: "Codex CLI", isAuthenticated: isCodexAuthenticated },
   { id: "cursor", label: "Cursor CLI", isAuthenticated: isCursorAuthenticated },
   { id: "qwen", label: "Qwen CLI", isAuthenticated: isQwenAuthenticated },
+  {
+    id: "antigravity",
+    label: "Antigravity CLI (agy)",
+    isAuthenticated: () => isAntigravityAuthenticated(),
+  },
 ];
 
 export {
+  isAntigravityAuthenticated,
   isClaudeAuthenticated,
   isCodexAuthenticated,
   isCursorAuthenticated,

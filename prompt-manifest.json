@@ -1,7 +1,7 @@
 {
   "name": "oh-my-agent",
   "version": "8.4.0",
-  "releaseDate": "2026-05-20T15:09:41.014Z",
+  "releaseDate": "2026-05-20T23:30:29.831Z",
   "repository": "https://github.com/first-fluke/oh-my-agent",
   "files": [
     {
@@ -391,8 +391,8 @@
     },
     {
       "path": ".agents/skills/oma-architecture/SKILL.md",
-      "sha256": "4014023f4c6ba19f54573a9d421add541b06c1da9a4ecc804bb9f771b73e9e38",
-      "size": 8238
+      "sha256": "53ab18dc536ff1d515f524ddff36f1032f0eaf1f4312a2c3ff820bb12c36133a",
+      "size": 8474
     },
     {
       "path": ".agents/skills/oma-architecture/resources/checklist.md",
@@ -656,8 +656,8 @@
     },
     {
       "path": ".agents/skills/oma-design/SKILL.md",
-      "sha256": "91e5a068b1d1a37a1d7defb71bd66e421fb10322b3acc3e7781a9c6077d42a27",
-      "size": 11610
+      "sha256": "bebf85ff001064ec0397f67c94c8aabab612467fcba0de4504dc509489352be5",
+      "size": 11947
     },
     {
       "path": ".agents/skills/oma-design/examples/design-context-example.md",
@@ -1181,8 +1181,8 @@
     },
     {
       "path": ".agents/skills/oma-orchestrator/SKILL.md",
-      "sha256": "ba7d1994d6bf347000b9f393510be0751c4ba86d7e10ecdf834813ba122d15f5",
-      "size": 12326
+      "sha256": "d895e0b036958fd6c7b3aa70f916b63313ec1d6af4d56fadffd7506f3d2248c1",
+      "size": 13833
     },
     {
       "path": ".agents/skills/oma-orchestrator/config/cli-config.yaml",
@@ -1261,8 +1261,8 @@
     },
     {
       "path": ".agents/skills/oma-pm/SKILL.md",
-      "sha256": "143e6d35be024fe9d79130388cdc47b1d2758d3404ddcf360822fc06e90c2042",
-      "size": 6863
+      "sha256": "d44137a44f97c7db68ef16936cc7a51c5c1fd415d6a0c8abb4deecede61050f9",
+      "size": 7032
     },
     {
       "path": ".agents/skills/oma-pm/resources/error-playbook.md",
@@ -1451,18 +1451,18 @@
     },
     {
       "path": ".agents/skills/oma-skill-creator/SKILL.md",
-      "sha256": "e1118bfab2d2648b91fe5c023066d10cc82e4c280219f8af76588106bf4a248e",
-      "size": 9537
+      "sha256": "30a4e864d619572629bb45d6a468c00df8cf8ec9748958964d4727ef43dcee81",
+      "size": 9809
     },
     {
       "path": ".agents/skills/oma-skill-creator/resources/ssl-lite-template.md",
-      "sha256": "2e67796a593740aeae7702c9abd0c099c8c838c88609a2bfeefcb03a3ecbe445",
-      "size": 4235
+      "sha256": "88fe93c03ce11338b2c0c4d14c1c973e78bc0dd408dbb285752a8a44bbc181e8",
+      "size": 4999
     },
     {
       "path": ".agents/skills/oma-skill-creator/resources/validation-checklist.md",
-      "sha256": "683ee53052b0ce37eea2b604219fbb0db98d59e1fedb0d757fa806d84892846a",
-      "size": 2470
+      "sha256": "77a5be4066b6e21787e35cbdf8b278522c84e17e305a6a330c5616e82d04796b",
+      "size": 3027
     },
     {
       "path": ".agents/skills/oma-tf-infra/SKILL.md",

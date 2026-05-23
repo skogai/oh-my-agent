@@ -12,10 +12,11 @@ summaries to spot which persona is churning.
 <!-- unstars-end -->
 
 <!-- current-start -->
-## Current (1003)
+## Current (1006)
 
 - @05hhh35 — 2026-03-07
 - @0cherry — 2026-04-02
+- @0dot77 — 2026-05-22
 - @0xSeb — 2026-04-30
 - @1wos — 2026-04-15
 - @201411108 — 2026-05-07
@@ -67,6 +68,7 @@ summaries to spot which persona is churning.
 - @alpoxdev — 2026-04-19
 - @alzkdpf — 2026-03-17
 - @amanvishnani — 2026-01-31
+- @amazingguni — 2026-05-22
 - @Amir2244 — 2026-03-19
 - @anchapin — 2026-05-10
 - @anderson — 2026-02-12
@@ -184,6 +186,7 @@ summaries to spot which persona is churning.
 - @croogie — 2026-03-18
 - @crowdshifter — 2026-05-02
 - @cryptaliac — 2026-04-28
+- @cst20 — 2026-05-22
 - @cuiyuan — 2026-04-22
 - @CustomJH — 2026-02-02
 - @Cybecho — 2026-02-02

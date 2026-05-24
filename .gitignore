@@ -45,6 +45,7 @@ docs/generated/
 # Serena Memory (runtime state)
 .serena/memories/*
 !.serena/memories/.gitkeep
+.serena/metrics.json
 
 # Serena runtime (nested workspaces)
 cli/.serena/
@@ -53,6 +54,10 @@ web/.serena/
 # OMA runtime state (hook persistent mode)
 .agents/state/
 .agents/results/
+
+# Nested oma artifacts (when build/tests run from cli/ with OMA_HOME unset
+# they may write a stray .agents/ under cli/ — never tracked)
+cli/.agents/
 
 # IDE
 .vscode/

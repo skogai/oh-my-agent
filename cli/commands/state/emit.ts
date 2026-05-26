@@ -1,5 +1,9 @@
 import type { Command } from "commander";
-import { emitEvent, getActiveSid, readIndex } from "../../state/events.js";
+import {
+  emitEventWithMemory,
+  getActiveSid,
+  readIndex,
+} from "../../state/events.js";
 import {
   addOutputOptions,
   resolveJsonMode,
@@ -59,7 +63,7 @@ export function registerEmit(program: Command): void {
         const jsonMode = resolveJsonMode(options);
         const emitOptions = options as EmitOptions;
         const sid = resolveEmitSid(process.cwd(), emitOptions);
-        const event = emitEvent(process.cwd(), sid, {
+        const event = await emitEventWithMemory(process.cwd(), sid, {
           kind,
           ts: emitOptions.ts,
           vendor: emitOptions.vendor,

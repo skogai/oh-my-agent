@@ -2,6 +2,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -25,6 +26,11 @@ function writeSsotMcp(root: string, servers: Record<string, unknown>): string {
   const p = join(dir, "mcp.json");
   writeFileSync(p, `${JSON.stringify({ mcpServers: servers }, null, 2)}\n`);
   return p;
+}
+
+function expectPath(value: string | null): string {
+  if (value === null) throw new Error("expected path");
+  return value;
 }
 
 afterEach(() => {
@@ -76,7 +82,7 @@ describe("applyAntigravityMcpConfig", () => {
     const out = applyAntigravityMcpConfig(root, "project");
     expect(out).toBe(join(root, ".agents", "mcp_config.json"));
 
-    const written = JSON.parse(readFileSync(out!, "utf-8"));
+    const written = JSON.parse(readFileSync(expectPath(out), "utf-8"));
     expect(written.mcpServers.serena.command).toBe("serena");
     expect(written.mcpServers.serena.args).toEqual([
       "start-mcp-server",
@@ -93,7 +99,7 @@ describe("applyAntigravityMcpConfig", () => {
     });
 
     const out = applyAntigravityMcpConfig(root, "project");
-    const written = JSON.parse(readFileSync(out!, "utf-8"));
+    const written = JSON.parse(readFileSync(expectPath(out), "utf-8"));
     expect(written.mcpServers.remote.serverUrl).toBe(
       "https://mcp.example.com/sse",
     );
@@ -107,7 +113,7 @@ describe("applyAntigravityMcpConfig", () => {
     });
 
     const out = applyAntigravityMcpConfig(root, "project");
-    const written = JSON.parse(readFileSync(out!, "utf-8"));
+    const written = JSON.parse(readFileSync(expectPath(out), "utf-8"));
     expect(written.mcpServers.remote.serverUrl).toBe("https://x.example/mcp");
   });
 
@@ -148,23 +154,25 @@ describe("applyAntigravityMcpConfig", () => {
     // path covers the mkdirSync code path.
 
     const out = applyAntigravityMcpConfig(root, "project");
-    expect(out).not.toBeNull();
-    expect(existsSync(out!)).toBe(true);
+    expect(existsSync(expectPath(out))).toBe(true);
   });
 
-  it("idempotent across multiple runs — final content identical (backups may rotate)", () => {
+  it("skips idempotent runs without creating backups", () => {
     const root = makeTmp();
     writeSsotMcp(root, { serena: { command: "serena", args: ["x"] } });
 
     const out1 = applyAntigravityMcpConfig(root, "project");
-    const content1 = readFileSync(out1!, "utf-8");
+    const target = expectPath(out1);
+    const content1 = readFileSync(target, "utf-8");
 
-    // Run twice more — final content unchanged. safeWriteJson backups may
-    // rotate (.<name>.backup-<ts>-<pid>) but the canonical file is stable.
-    applyAntigravityMcpConfig(root, "project");
-    const out3 = applyAntigravityMcpConfig(root, "project");
-    const content3 = readFileSync(out3!, "utf-8");
+    const out2 = applyAntigravityMcpConfig(root, "project");
+    const content2 = readFileSync(target, "utf-8");
+    const backups = readdirSync(join(root, ".agents")).filter((entry) =>
+      entry.startsWith(".mcp_config.json.backup-"),
+    );
 
-    expect(content3).toBe(content1);
+    expect(out2).toBeNull();
+    expect(content2).toBe(content1);
+    expect(backups).toEqual([]);
   });
 });

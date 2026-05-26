@@ -10,9 +10,21 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
+import type { MemoryProvider } from "../types/memory.js";
+import { createAgentMemoryProvider } from "./memory-provider.js";
 
 export const STATE_ROOT = join(".agents", "state", "sessions");
+export const RETRY_ROOT = join(".agents", "state", "retry");
 export const INDEX_SCHEMA_VERSION = 1;
+export const SEMANTIC_EVENT_KINDS = new Set([
+  "workflow.phase",
+  "gate.passed",
+  "gate.failed",
+  "blocker.raised",
+  "session.ended",
+  "decision.made",
+  "decision.missing",
+]);
 
 export type EventKind =
   | "boundary"
@@ -80,6 +92,10 @@ export function eventsPath(projectDir: string, sid: string): string {
 
 export function metaPath(projectDir: string, sid: string): string {
   return join(sessionDir(projectDir, sid), "meta.json");
+}
+
+export function retryObservePath(projectDir: string): string {
+  return join(projectDir, RETRY_ROOT, "observe.jsonl");
 }
 
 export function defaultIndex(): StateIndex {
@@ -217,6 +233,30 @@ export function emitEvent(
   ) {
     refreshMeta(projectDir, sid);
   }
+  return enriched;
+}
+
+function enqueueObserveRetry(projectDir: string, event: OmaEvent): void {
+  const path = retryObservePath(projectDir);
+  ensureParent(path);
+  appendFileSync(path, `${JSON.stringify(event)}\n`, "utf-8");
+}
+
+export async function emitEventWithMemory(
+  projectDir: string,
+  sid: string,
+  event: Omit<Partial<OmaEvent>, "sid"> & { kind: string },
+  provider: MemoryProvider = createAgentMemoryProvider(),
+): Promise<OmaEvent> {
+  const enriched = emitEvent(projectDir, sid, event);
+  if (!SEMANTIC_EVENT_KINDS.has(enriched.kind)) return enriched;
+
+  const observed = await provider.observe({
+    sessionId: sid,
+    content: `${JSON.stringify(enriched)}\n`,
+    source: "oma-workflow",
+  });
+  if (!observed) enqueueObserveRetry(projectDir, enriched);
   return enriched;
 }
 

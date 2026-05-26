@@ -24,7 +24,7 @@ describe("required decision verifier", () => {
     rmSync(projectDir, { recursive: true, force: true });
   });
 
-  it("passes when the required decision.made subject exists", () => {
+  it("passes when the required decision.made subject exists", async () => {
     activateWorkflowSession({
       projectDir,
       sid: "oma-ultra",
@@ -39,7 +39,7 @@ describe("required decision verifier", () => {
       },
     });
 
-    const result = verifyRequiredDecisions({
+    const result = await verifyRequiredDecisions({
       projectDir,
       sid: "oma-ultra",
       workflow: "ultrawork",
@@ -50,14 +50,14 @@ describe("required decision verifier", () => {
     expect(result.missing).toEqual([]);
   });
 
-  it("emits decision.missing when a required decision is absent", () => {
+  it("emits decision.missing when a required decision is absent", async () => {
     activateWorkflowSession({
       projectDir,
       sid: "oma-work",
       workflow: "work",
     });
 
-    const result = verifyRequiredDecisions({
+    const result = await verifyRequiredDecisions({
       projectDir,
       sid: "oma-work",
       workflow: "work",
@@ -94,14 +94,14 @@ describe("required decision verifier", () => {
     expect(resolveDecisionVerifierSid({ projectDir })).toBe("oma-main");
   });
 
-  it("rejects unknown checkpoints", () => {
-    expect(() =>
+  it("rejects unknown checkpoints", async () => {
+    await expect(
       verifyRequiredDecisions({
         projectDir,
         sid: "oma-unknown",
         workflow: "ultrawork",
         checkpoint: "unknown",
       }),
-    ).toThrow(/Unknown required decision checkpoint/);
+    ).rejects.toThrow(/Unknown required decision checkpoint/);
   });
 });

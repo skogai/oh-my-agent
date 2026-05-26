@@ -31,6 +31,21 @@ type McpConfig = {
   mcpServers?: Record<string, McpServerEntry>;
 };
 
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((entry) => stableJson(entry)).join(",")}]`;
+  }
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value).sort(([a], [b]) =>
+      a.localeCompare(b),
+    );
+    return `{${entries
+      .map(([key, entry]) => `${JSON.stringify(key)}:${stableJson(entry)}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
 /**
  * Resolve where agy reads its MCP config.
  *
@@ -108,11 +123,8 @@ export function applyAntigravityMcpConfig(
     mcpServers: mergedServers,
   };
 
-  // Always write — safeWriteJson handles atomicity (tmp+rename), EXDEV
-  // fallback, and 3-tier backup rotation. Skipping when content matches
-  // would require deep equality (JSON.stringify comparison is O(n) on the
-  // whole tree and quadratic for repeated calls); the per-call cost of one
-  // backup rotation is cheaper than that bookkeeping on every call.
+  if (stableJson(existing) === stableJson(next)) return null;
+
   safeWriteJson(targetPath, next);
   return targetPath;
 }

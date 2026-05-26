@@ -12,12 +12,14 @@ import {
   activateWorkflowSession,
   deriveMeta,
   emitEvent,
+  emitEventWithMemory,
   eventsPath,
   getActiveSid,
   indexPath,
   metaPath,
   readEvents,
   readIndex,
+  retryObservePath,
   setActiveSession,
   sortEvents,
 } from "./events.js";
@@ -188,5 +190,86 @@ describe("L1 state events", () => {
     writeFileSync(path, "{not json}\n", { flag: "a" });
 
     expect(readEvents(projectDir, "oma-bad")).toHaveLength(1);
+  });
+
+  it("observes semantic events through the optional memory provider", async () => {
+    const observed: unknown[] = [];
+    const event = await emitEventWithMemory(
+      projectDir,
+      "oma-memory",
+      {
+        kind: "decision.made",
+        payload: { subject: "work.remediation-choice" },
+      },
+      {
+        name: "agentmemory",
+        async status() {
+          return { provider: "agentmemory", reachable: true };
+        },
+        async observe(payload) {
+          observed.push(payload);
+          return true;
+        },
+      },
+    );
+
+    expect(event.kind).toBe("decision.made");
+    expect(observed).toEqual([
+      {
+        sessionId: "oma-memory",
+        content: `${JSON.stringify(event)}\n`,
+        source: "oma-workflow",
+      },
+    ]);
+    expect(existsSync(retryObservePath(projectDir))).toBe(false);
+  });
+
+  it("queues semantic event retry when memory observe fails", async () => {
+    const event = await emitEventWithMemory(
+      projectDir,
+      "oma-retry",
+      {
+        eventId: "retry-event",
+        ts: "2026-05-25T00:00:00.000Z",
+        kind: "gate.passed",
+      },
+      {
+        name: "agentmemory",
+        async status() {
+          return { provider: "agentmemory", reachable: false };
+        },
+        async observe() {
+          return false;
+        },
+      },
+    );
+
+    expect(readFileSync(retryObservePath(projectDir), "utf-8")).toBe(
+      `${JSON.stringify(event)}\n`,
+    );
+  });
+
+  it("does not observe non-semantic events", async () => {
+    let calls = 0;
+    await emitEventWithMemory(
+      projectDir,
+      "oma-boundary",
+      {
+        kind: "boundary",
+      },
+      {
+        name: "agentmemory",
+        async status() {
+          return { provider: "agentmemory", reachable: true };
+        },
+        async observe() {
+          calls += 1;
+          return true;
+        },
+      },
+    );
+
+    expect(calls).toBe(0);
+    expect(existsSync(retryObservePath(projectDir))).toBe(false);
   });
 });

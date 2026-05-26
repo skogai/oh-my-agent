@@ -109,7 +109,7 @@ export function registerState(program: Command): void {
           sid: options.sid as string | undefined,
           category: options.category as string | undefined,
         });
-        const result = verifyRequiredDecisions({
+        const result = await verifyRequiredDecisions({
           projectDir: process.cwd(),
           sid,
           workflow,

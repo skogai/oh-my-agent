@@ -1,4 +1,9 @@
-import { emitEvent, getActiveSid, readEvents, readIndex } from "./events.js";
+import {
+  emitEventWithMemory,
+  getActiveSid,
+  readEvents,
+  readIndex,
+} from "./events.js";
 
 export interface RequiredDecision {
   subject: string;
@@ -93,13 +98,13 @@ export function resolveDecisionVerifierSid(args: {
   return sid;
 }
 
-export function verifyRequiredDecisions(args: {
+export async function verifyRequiredDecisions(args: {
   projectDir: string;
   sid: string;
   workflow: string;
   checkpoint: string;
   emitMissing?: boolean;
-}): DecisionVerificationResult {
+}): Promise<DecisionVerificationResult> {
   const required = REQUIRED_DECISIONS[args.workflow]?.[args.checkpoint];
   if (!required) {
     throw new Error(
@@ -125,7 +130,7 @@ export function verifyRequiredDecisions(args: {
   };
 
   if (!result.ok && args.emitMissing !== false) {
-    emitEvent(args.projectDir, args.sid, {
+    await emitEventWithMemory(args.projectDir, args.sid, {
       kind: "decision.missing",
       payload: {
         workflow: args.workflow,

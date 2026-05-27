@@ -174,32 +174,28 @@ describe("checkCLI via collectDoctorReport", () => {
     }
   });
 
-  it(
-    "unresponsive binary: kill signal sent after timeout, returns installed: false",
-    async () => {
-      // Never emit close — simulates a hung process
-      const reportPromise = collectDoctorReport();
+  it("unresponsive binary: kill signal sent after timeout, returns installed: false", async () => {
+    // Never emit close — simulates a hung process
+    const reportPromise = collectDoctorReport();
 
-      await vi.advanceTimersByTimeAsync(0);
-      expect(spawnState.lastProcs).toHaveLength(6);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(spawnState.lastProcs).toHaveLength(6);
 
-      // Advance past the 5000ms probe timeout + 200ms SIGKILL grace
-      await vi.advanceTimersByTimeAsync(5200);
+    // Advance past the 5000ms probe timeout + 200ms SIGKILL grace
+    await vi.advanceTimersByTimeAsync(5200);
 
-      const report = await reportPromise;
+    const report = await reportPromise;
 
-      // Behavioral assertion: all probes timed out → not installed
-      for (const cli of report.clis) {
-        expect(cli.installed).toBe(false);
-      }
+    // Behavioral assertion: all probes timed out → not installed
+    for (const cli of report.clis) {
+      expect(cli.installed).toBe(false);
+    }
 
-      // At least one kill signal was sent on each proc (SIGTERM at minimum)
-      for (const proc of spawnState.lastProcs) {
-        expect(proc.kill).toHaveBeenCalled();
-      }
-    },
-    10_000,
-  );
+    // At least one kill signal was sent on each proc (SIGTERM at minimum)
+    for (const proc of spawnState.lastProcs) {
+      expect(proc.kill).toHaveBeenCalled();
+    }
+  }, 10_000);
 });
 
 async function settleInstalledClis(

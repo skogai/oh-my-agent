@@ -7,6 +7,7 @@ const SUPPORTED_RUNTIME_VENDORS = new Set<RuntimeVendor>([
   "cursor",
   "antigravity",
   "qwen",
+  "grok",
 ]);
 
 export function detectRuntimeVendor(
@@ -43,6 +44,10 @@ export function detectRuntimeVendor(
     env.QWEN_CODE === "1"
   ) {
     return "qwen";
+  }
+
+  if (env.GROK_WORKSPACE_ROOT || env.GROK_SESSION_ID || env.GROK_BUILD) {
+    return "grok";
   }
 
   /**

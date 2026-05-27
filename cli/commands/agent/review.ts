@@ -11,7 +11,7 @@ import { registerSignalCleanup } from "../../utils/process-signals.js";
 import { isProcessRunning, resolveSessionId } from "./common.js";
 
 const REVIEW_FALLBACK_VENDOR = "codex";
-const REVIEW_SUPPORTED_VENDORS = ["codex", "claude", "gemini", "qwen"];
+const REVIEW_SUPPORTED_VENDORS = ["codex", "claude", "gemini", "qwen", "grok"];
 
 function buildReviewDiffPrompt(
   prompt: string,

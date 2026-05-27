@@ -10,7 +10,7 @@ export function registerAgentCommands(program: Command): void {
     .description("Spawn a subagent (prompt can be inline text or a file path)")
     .option(
       "-m, --model <vendor>",
-      "CLI vendor override (antigravity/claude/codex/cursor/qwen)",
+      "CLI vendor override (antigravity/claude/codex/cursor/qwen/grok)",
     )
     .option(
       "-w, --workspace <path>",
@@ -49,7 +49,7 @@ export function registerAgentCommands(program: Command): void {
     .description("Run multiple sub-agents in parallel")
     .option(
       "-m, --model <vendor>",
-      "CLI vendor override (antigravity/claude/codex/cursor/qwen)",
+      "CLI vendor override (antigravity/claude/codex/cursor/qwen/grok)",
     )
     .option(
       "-i, --inline",
@@ -68,8 +68,8 @@ export function registerAgentCommands(program: Command): void {
 
   program
     .command("agent:review")
-    .description("Run code review using external CLI (codex/claude/gemini)")
-    .option("-m, --model <vendor>", "CLI vendor (codex/claude/gemini)")
+    .description("Run code review using external CLI (codex/claude/gemini/grok)")
+    .option("-m, --model <vendor>", "CLI vendor (codex/claude/gemini/grok)")
     .option("-p, --prompt <prompt>", "Custom review prompt")
     .option("-w, --workspace <path>", "Working directory (default: current)")
     .option("--no-uncommitted", "Review committed changes only")

@@ -37,7 +37,15 @@ import {
   setNeedsReconcile,
   snapshotArtifacts,
 } from "../../platform/manifest.js";
-import { REPO } from "../../platform/skills-installer.js";
+import {
+  ALL_CLI_VENDORS,
+  CLI_SKILLS_DIR,
+  createVendorSymlinks,
+  getInstalledSkillNames,
+  REPO,
+  vendorRequiresHomeConsent,
+} from "../../platform/skills-installer.js";
+import type { CliTool, CliVendor } from "../../types/index.js";
 import { promptUninstallCompetitors } from "../../utils/competitors.js";
 import {
   isTelemetryEnabled,
@@ -148,10 +156,80 @@ export type UpdateOptions = {
   force?: boolean;
   ci?: boolean;
   global?: boolean;
+  yes?: boolean;
+  all?: boolean;
+  vendor?: string;
 };
 
+const VENDOR_ROOTS: Record<CliVendor, string[]> = {
+  antigravity: [".gemini/antigravity-cli"],
+  claude: [".claude"],
+  codex: [".codex"],
+  copilot: [".github"],
+  cursor: [".cursor"],
+  gemini: [".gemini"],
+  grok: [".grok"],
+  hermes: [".hermes"],
+  qwen: [".qwen"],
+};
+
+function isCliTool(vendor: CliVendor): vendor is CliTool {
+  return vendor in CLI_SKILLS_DIR;
+}
+
+function parseVendorList(raw: string): CliVendor[] {
+  const validVendors = new Set<string>(ALL_CLI_VENDORS);
+  const vendors = raw
+    .split(",")
+    .map((v) => v.trim().toLowerCase())
+    .filter(Boolean);
+  const invalid = vendors.filter((v) => !validVendors.has(v));
+
+  if (invalid.length > 0) {
+    throw new Error(
+      `Unsupported vendor(s): ${invalid.join(", ")}. Supported vendors: ${ALL_CLI_VENDORS.join(", ")}`,
+    );
+  }
+
+  return [...new Set(vendors)] as CliVendor[];
+}
+
+function hasExistingVendorRoot(cwd: string, vendor: CliVendor): boolean {
+  const roots = [...VENDOR_ROOTS[vendor]];
+  if (isCliTool(vendor)) roots.push(CLI_SKILLS_DIR[vendor].projectPath);
+  return roots.some((rel) => existsSync(join(cwd, rel)));
+}
+
+function supportedProjectVendors(): CliVendor[] {
+  return ALL_CLI_VENDORS.filter((vendor) => {
+    if (!isCliTool(vendor)) return true;
+    return !vendorRequiresHomeConsent(vendor);
+  });
+}
+
+export function resolveUpdateVendors(
+  cwd: string,
+  options: Pick<UpdateOptions, "all" | "vendor"> = {},
+): CliVendor[] {
+  if (options.vendor) return parseVendorList(options.vendor);
+  if (options.all) return supportedProjectVendors();
+
+  return ALL_CLI_VENDORS.filter((vendor) => hasExistingVendorRoot(cwd, vendor));
+}
+
+function toCliTools(vendors: CliVendor[]): CliTool[] {
+  return vendors.filter(isCliTool);
+}
+
 export async function update(options: UpdateOptions = {}): Promise<void> {
-  const { force = false, ci = false } = options;
+  const { force = false, ci = false, yes = false } = options;
+  const nonInteractive =
+    ci ||
+    yes ||
+    process.env.OMA_YES === "1" ||
+    process.env.OMA_YES === "true" ||
+    process.env.CI === "true" ||
+    process.env.CI === "1";
 
   if (!ci && process.stdout.isTTY) console.clear();
 
@@ -225,7 +303,7 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
     }
 
     // Detect and offer to remove competing tools (skip in CI — no stdin)
-    if (!ci) {
+    if (!nonInteractive) {
       await promptUninstallCompetitors(cwd);
     }
 
@@ -379,10 +457,21 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
         // Codex telemetry-aware), Cursor MCP + rules, doc merging, and CLI
         // skill symlinks are all owned by link() — adding a new vendor only
         // requires changes in cli/commands/link/link.ts.
-        const linkResult = link({
+        const updateVendors = resolveUpdateVendors(cwd, options);
+        link({
+          vendorFilter: updateVendors,
           quiet: true,
           telemetry: isTelemetryEnabled(cwd),
+          refreshSymlinks: false,
         });
+        const cliSymlinks =
+          updateVendors.length > 0
+            ? createVendorSymlinks(
+                cwd,
+                toCliTools(updateVendors),
+                getInstalledSkillNames(cwd),
+              )
+            : { created: [], skipped: [] };
 
         // Vendor adaptations complete — clear reconcile flag
         if (needsReconcile) {
@@ -481,11 +570,9 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
           ui.note(lines.join("\n"), "What's new");
         }
 
-        if (linkResult.symlinksCreated.length > 0) {
+        if (cliSymlinks.created.length > 0) {
           ui.note(
-            linkResult.symlinksCreated
-              .map((s) => `${pc.green("→")} ${s}`)
-              .join("\n"),
+            cliSymlinks.created.map((s) => `${pc.green("→")} ${s}`).join("\n"),
             "Symlinks updated",
           );
         }
@@ -502,7 +589,7 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
         );
 
         if (
-          !ci &&
+          !nonInteractive &&
           isGhInstalled() &&
           isGhAuthenticated() &&
           !isAlreadyStarred()

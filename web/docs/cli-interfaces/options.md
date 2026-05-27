@@ -101,13 +101,16 @@ oma doctor [--json] [--output <format>] [--profile]
 ### update
 
 ```
-oma update [-f | --force] [--ci]
+oma update [-f | --force] [--ci] [-y | --yes] [--all] [--vendor <vendors>]
 ```
 
 | Flag | Short | Description | Default |
 |:-----|:------|:-----------|:--------|
 | `--force` | `-f` | Overwrite user-customized config files during update. Affects: `oma-config.yaml`, `mcp.json`, `stack/` directories. Without this flag, these files are backed up before the update and restored afterward. | `false` |
 | `--ci` | | Run in non-interactive CI mode. Skips all confirmation prompts, uses plain console output instead of spinners and animations. Required for CI/CD pipelines where stdin is not available. | `false` |
+| `--yes` | `-y` | Skip prompts. Does not create missing vendor directories unless paired with `--all` or `--vendor`. | `false` |
+| `--all` | | Create/update all supported project-scoped vendors. | `false` |
+| `--vendor <vendors>` | | Create/update a comma-separated vendor list, for example `claude,qwen`. | Existing vendor directories only |
 
 **Behavior with --force:**
 - `oma-config.yaml` is replaced with the registry default.
@@ -120,6 +123,12 @@ oma update [-f | --force] [--ci]
 - `@clack/prompts` is replaced with plain `console.log`.
 - Competitor detection prompts are skipped.
 - Errors throw instead of calling `process.exit(1)`.
+
+**Vendor scope:**
+- `oma update` updates only vendor directories that already exist.
+- `oma update --yes` uses the same vendor scope, without prompts.
+- `oma update --all` creates/updates all supported project-scoped vendors.
+- `oma update --vendor claude,qwen` creates/updates only the listed vendors.
 
 ### stats
 

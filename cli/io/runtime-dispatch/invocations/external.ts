@@ -48,6 +48,27 @@ export function buildExternalInvocation(
     return buildExternalCursorInvocation(vendorConfig, promptContent);
   }
 
+  // Grok: supports `grok --yolo -p "prompt"` for headless execution.
+  if (vendor === "grok") {
+    const command = vendorConfig.command || "grok";
+    const args: string[] = [];
+
+    if (vendorConfig.auto_approve_flag) {
+      args.push(vendorConfig.auto_approve_flag);
+    } else {
+      args.push("--yolo");
+    }
+
+    if (vendorConfig.model_flag && vendorConfig.default_model) {
+      args.push(vendorConfig.model_flag, vendorConfig.default_model);
+    }
+
+    // Grok uses -p for the prompt (positional after flags in practice).
+    args.push("-p", promptContent);
+
+    return { command, args, env: { ...process.env } };
+  }
+
   // Vendors whose CLI binary name differs from the vendor identifier.
   const binaryByVendor: Record<string, string> = {
     antigravity: "agy",
@@ -91,6 +112,7 @@ export function buildExternalInvocation(
       codex: "--full-auto",
       qwen: "--yolo",
       antigravity: "--dangerously-skip-permissions",
+      grok: "--yolo",
     };
     const fallbackFlag = defaultAutoApprove[vendor];
     if (fallbackFlag) {

@@ -3,6 +3,7 @@ import { filterParsers, getAvailableParsers } from "./registry.js";
 import type { RecapOutput, ToolName } from "./schema.js";
 
 // Side-effect imports: register all parsers
+import "./parsers/grok.js";
 import "./parsers/claude.js";
 import "./parsers/codex.js";
 import "./parsers/gemini.js";

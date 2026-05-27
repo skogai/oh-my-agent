@@ -185,13 +185,16 @@ function patchVendorDetection(hooksDest: string): void {
   if (path.includes(\`\${join(".claude", "hooks")}\`)) return "claude";
   if (path.includes(\`\${join(".gemini", "hooks")}\`)) return "gemini";
   if (path.includes(\`\${join(".codex", "hooks")}\`)) return "codex";
+  if (path.includes(\`\${join(".grok", "hooks")}\`)) return "grok";
   return null;
 }
 
 function detectVendor(input: Record<string, unknown>): Vendor {
   const event = input.hook_event_name as string | undefined;
+  const hookEventName = input.hookEventName as string | undefined;
   const byScriptPath = inferVendorFromScriptPath();
   if (byScriptPath) return byScriptPath;
+  if (process.env.GROK_WORKSPACE_ROOT) return "grok";
   if (event === "BeforeTool") return "gemini";
   if (event === "PreToolUse" && "session_id" in input) return "codex";
   if (process.env.QWEN_PROJECT_DIR) return "qwen";
@@ -220,13 +223,16 @@ function detectVendor(input: Record<string, unknown>): Vendor {
   if (path.includes(\`\${join(".claude", "hooks")}\`)) return "claude";
   if (path.includes(\`\${join(".gemini", "hooks")}\`)) return "gemini";
   if (path.includes(\`\${join(".codex", "hooks")}\`)) return "codex";
+  if (path.includes(\`\${join(".grok", "hooks")}\`)) return "grok";
   return null;
 }
 
 function detectVendor(input: Record<string, unknown>): Vendor {
   const event = input.hook_event_name as string | undefined;
+  const hookEventName = input.hookEventName as string | undefined;
   const byScriptPath = inferVendorFromScriptPath();
   if (byScriptPath) return byScriptPath;
+  if (process.env.GROK_WORKSPACE_ROOT || hookEventName?.includes("stop")) return "grok";
   if (event === "AfterAgent") return "gemini";
   if (event === "Stop" && "session_id" in input) return "codex";
   if (process.env.QWEN_PROJECT_DIR) return "qwen";
@@ -381,12 +387,21 @@ export function installHooksFromVariant(
   }
   if (variant.extra) Object.assign(extra, variant.extra);
 
-  // 4. Merge into settings file
-  mergeIntoSettings(
-    join(targetDir, variant.settingsFile),
-    hookEntries,
-    Object.keys(extra).length > 0 ? extra : undefined,
-  );
+  // 4. Merge into settings file (or write Grok-native hook file)
+  if (variant.vendor === "grok") {
+    // Grok discovers hooks from .grok/hooks/*.json files (directory-based).
+    // Write a single well-named file with the double-nested shape Grok expects.
+    const grokHookFile = join(targetDir, variant.settingsFile);
+    mkdirSync(dirname(grokHookFile), { recursive: true });
+    const grokPayload = { hooks: hookEntries };
+    writeFileSync(grokHookFile, `${JSON.stringify(grokPayload, null, 2)}\n`);
+  } else {
+    mergeIntoSettings(
+      join(targetDir, variant.settingsFile),
+      hookEntries,
+      Object.keys(extra).length > 0 ? extra : undefined,
+    );
+  }
 
   // 5. Vendor-specific feature flags (e.g., Codex config.toml)
   if (variant.featureFlags) {

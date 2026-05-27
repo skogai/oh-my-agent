@@ -84,10 +84,15 @@ APM แจกแค่ skill เท่านั้น ส่วน workflow, rul
 <strong>Cursor</strong><br/>
 <sub>เนทีฟ + อะแดปเตอร์</sub>
 </td>
-<td align="center" width="20%">
+<td align="center" width="16%">
 <a href="https://github.com/QwenLM/qwen-code"><img src="https://github.com/QwenLM.png?size=120" alt="Qwen Code" width="48" height="48" /></a><br/>
 <strong>Qwen Code</strong><br/>
 <sub>dispatch เนทีฟ</sub>
+</td>
+<td align="center" width="16%">
+<a href="https://grok.x.ai"><img src="./assets/agents/grok.png" alt="Grok" width="48" height="48" /></a><br/>
+<strong>Grok</strong><br/>
+<sub>native hooks + agents</sub>
 </td>
 </tr>
 <tr>

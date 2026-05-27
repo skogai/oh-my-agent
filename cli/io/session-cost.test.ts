@@ -414,6 +414,7 @@ describe("estimateUsd", () => {
     expect(estimateUsd(1_000_000, "claude")).toBeCloseTo(3, 6);
     expect(estimateUsd(2_000_000, "codex")).toBeCloseTo(10, 6);
     expect(estimateUsd(500_000, "gemini")).toBeCloseTo(0.15, 6);
+    expect(estimateUsd(1_000_000, "grok")).toBeCloseTo(1.25, 6);
   });
 
   it("falls back to claude rate for unknown vendor", () => {

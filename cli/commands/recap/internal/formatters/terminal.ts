@@ -5,6 +5,7 @@ import pc from "picocolors";
 import type { RecapOutput, ToolName } from "../schema.js";
 
 const TOOL_COLORS: Record<ToolName, (s: string) => string> = {
+  grok: pc.cyan,
   claude: pc.yellow,
   gemini: pc.blue,
   codex: pc.green,

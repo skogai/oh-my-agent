@@ -10,6 +10,7 @@ function makeRecap(overrides: Partial<RecapOutput> = {}): RecapOutput {
     stats: {
       totalPrompts: 0,
       byTool: {
+        grok: 0,
         gemini: 0,
         claude: 0,
         codex: 0,

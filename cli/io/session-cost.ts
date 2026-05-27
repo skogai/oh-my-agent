@@ -32,7 +32,7 @@ import { parse as parseYaml } from "yaml";
 /** A single usage event recorded by an agent during a session. */
 export interface UsageRecord {
   sessionId: string;
-  vendor: string; // claude | codex | gemini | qwen | antigravity
+  vendor: string; // claude | codex | gemini | qwen | antigravity | grok
   agentId: string;
   tokens: number;
   estimatedCostNote?: string; // e.g. "codex_plus_quota_30pct"
@@ -254,7 +254,12 @@ export function loadSessionUsage(sessionId: string): UsageRecord[] {
  * Per-vendor input-token pricing in USD per 1M tokens.
  *
  * Conservative midpoints across each vendor's coding-tier model lineup as
- * of 2026-05 (Claude Sonnet 4.6, GPT-5.5, Gemini Flash, Qwen Studio).
+ * of 2026-05.
+ *
+ * Sources:
+ * - xAI: https://docs.x.ai/developers/pricing (grok-4.3 = $1.25/M input)
+ * - Others: internal midpoints for coding models.
+ *
  * recordUsage only captures prompt-input character estimates, so the
  * resulting USD figure is a floor, not a billing-accurate amount.
  */
@@ -265,6 +270,7 @@ export const DEFAULT_VENDOR_PRICING: Record<string, number> = {
   qwen: 0,
   antigravity: 0.3,
   cursor: 5,
+  grok: 1.25, // xAI Grok-4.3 / grok-4.20 series (May 2026) — see https://docs.x.ai/developers/pricing
 };
 
 /**

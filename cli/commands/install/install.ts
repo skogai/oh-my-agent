@@ -587,6 +587,7 @@ export async function install(options: InstallOptions = {}): Promise<void> {
         hint: ".cursor/rules/ export + prompt hooks",
       },
       { value: "gemini", label: "Gemini CLI", hint: "hooks + Serena MCP" },
+      { value: "grok", label: "Grok", hint: "hooks + project MCP + .grok/agents/" },
       ...(allowHomeWriteVendors
         ? [
             {

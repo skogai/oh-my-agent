@@ -68,30 +68,35 @@ Pick a preset and you're ready:
 
 <table>
 <tr>
-<td align="center" width="20%">
+<td align="center" width="16%">
 <a href="https://claude.com/product/claude-code"><img src="https://github.com/anthropics.png?size=120" alt="Claude Code" width="48" height="48" /></a><br/>
 <strong>Claude Code</strong><br/>
 <sub>native + adapter</sub>
 </td>
-<td align="center" width="20%">
+<td align="center" width="16%">
 <a href="https://github.com/openai/codex"><img src="https://github.com/openai.png?size=120" alt="Codex CLI" width="48" height="48" /></a><br/>
 <strong>Codex CLI</strong><br/>
 <sub>native + adapter</sub>
 </td>
-<td align="center" width="20%">
+<td align="center" width="16%">
 <a href="https://github.com/google-gemini/gemini-cli"><img src="https://github.com/google-gemini.png?size=120" alt="Gemini CLI" width="48" height="48" /></a><br/>
 <strong>Gemini CLI</strong><br/>
 <sub>native + adapter</sub>
 </td>
-<td align="center" width="20%">
+<td align="center" width="16%">
 <a href="https://cursor.com"><img src="https://github.com/cursor.png?size=120" alt="Cursor" width="48" height="48" /></a><br/>
 <strong>Cursor</strong><br/>
 <sub>native + adapter</sub>
 </td>
-<td align="center" width="20%">
+<td align="center" width="16%">
 <a href="https://github.com/QwenLM/qwen-code"><img src="https://github.com/QwenLM.png?size=120" alt="Qwen Code" width="48" height="48" /></a><br/>
 <strong>Qwen Code</strong><br/>
 <sub>native dispatch</sub>
+</td>
+<td align="center" width="16%">
+<a href="https://grok.x.ai"><img src="./docs/assets/agents/grok.png" alt="Grok" width="48" height="48" /></a><br/>
+<strong>Grok</strong><br/>
+<sub>native hooks</sub>
 </td>
 </tr>
 <tr>

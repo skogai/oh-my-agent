@@ -98,7 +98,7 @@ oma doctor --profile
 Update skills to the latest version from the registry.
 
 ```
-oma update [-f | --force] [--ci]
+oma update [-f | --force] [--ci] [-y | --yes] [--all] [--vendor <vendors>]
 ```
 
 **Options:**
@@ -107,6 +107,9 @@ oma update [-f | --force] [--ci]
 |:-----|:-----------|
 | `-f, --force` | Overwrite user-customized config files (`oma-config.yaml`, `mcp.json`, `stack/` directories) |
 | `--ci` | Run in non-interactive CI mode (skip prompts, plain text output) |
+| `-y, --yes` | Skip prompts. Vendor scope is unchanged: only existing vendor directories are updated unless `--all` or `--vendor` is provided. |
+| `--all` | Create/update all supported project-scoped vendors. |
+| `--vendor <vendors>` | Create/update specific vendors. Accepts a comma-separated list such as `claude,qwen`. |
 
 **What it does:**
 1. Fetches `prompt-manifest.json` from the registry to check the latest version.
@@ -116,7 +119,7 @@ oma update [-f | --force] [--ci]
 5. Preserves user-customized files (unless `--force`).
 6. Copies new files over `.agents/`.
 7. Restores preserved files.
-8. Updates vendor adaptations and refreshes symlinks.
+8. Updates vendor adaptations and refreshes symlinks. By default this only touches vendor directories that already exist in the project.
 
 **Examples:**
 ```bash
@@ -131,6 +134,15 @@ oma update --ci
 
 # CI mode with force
 oma update --ci --force
+
+# Update existing vendors without prompts
+oma update --yes
+
+# Create/update every supported project-scoped vendor
+oma update --all
+
+# Create/update only Claude and Qwen integrations
+oma update --vendor claude,qwen
 ```
 
 ### link
@@ -281,7 +293,7 @@ oma recap [--window <period>] [--date <date>] [--tool <tools>] [--top <n>] [--so
 |:-----|:-----------|:--------|
 | `--window <period>` | Time window: `1d`, `3d`, `7d`, `2w`, `30d` | `1d` |
 | `--date <date>` | Specific date (`YYYY-MM-DD`); takes precedence over `--window` | |
-| `--tool <tools>` | Comma-separated filter: `claude,codex,qwen,cursor,antigravity` | all |
+| `--tool <tools>` | Comma-separated filter: `grok,claude,codex,qwen,cursor,antigravity` | all |
 | `--top <n>` | Show top N projects/topics | |
 | `--sort <metric>` | Sort by `count` or `duration` | `count` |
 | `--mermaid` | Output as Mermaid Gantt chart | |
@@ -293,7 +305,7 @@ oma recap [--window <period>] [--date <date>] [--tool <tools>] [--top <n>] [--so
 ```bash
 oma recap                                     # Today (1d)
 oma recap --window 7d                         # Last week
-oma recap --date 2026-04-20 --tool claude,codex
+oma recap --date 2026-04-20 --tool grok,claude
 oma recap --window 7d --mermaid > week.mmd
 oma recap --window 30d --graph                # Interactive browser graph
 ```

@@ -10,14 +10,31 @@ export function registerUpdate(program: Command): void {
     .description("Update skills to latest version from registry")
     .option("-f, --force", "Overwrite user-customized config files")
     .option("--ci", "Run in non-interactive CI mode (skip prompts)")
+    .option("-y, --yes", "Skip prompts")
+    .option("--all", "Create/update all supported project-scoped vendors")
+    .option(
+      "--vendor <vendors>",
+      "Create/update specific vendors (comma-separated, e.g. claude,qwen)",
+    )
     .action(
-      runAction(async (options: { force?: boolean; ci?: boolean }) => {
-        const globalFlag = program.opts<{ global?: boolean }>().global;
-        await update({
-          force: options.force,
-          ci: options.ci,
-          global: globalFlag,
-        });
-      }),
+      runAction(
+        async (options: {
+          force?: boolean;
+          ci?: boolean;
+          yes?: boolean;
+          all?: boolean;
+          vendor?: string;
+        }) => {
+          const globalFlag = program.opts<{ global?: boolean }>().global;
+          await update({
+            force: options.force,
+            ci: options.ci,
+            yes: options.yes,
+            global: globalFlag,
+            all: options.all,
+            vendor: options.vendor,
+          });
+        },
+      ),
     );
 }

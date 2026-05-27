@@ -16,6 +16,7 @@ The installer can then project compatibility to other tool-specific directories 
 | Amp | `.agents/skills/` | First-class | Native-compatible | Shares the same project-level source |
 | Cursor | `.cursor/skills/` + `.cursor/rules/*.mdc` | First-class | Native + Adapter | `oma install` / `oma link cursor` materializes skills, rules, MCP symlink, and AGENTS.md from `.agents/`; `cursor-agent` is dispatched natively via the `cursor` preset |
 | GitHub Copilot | `.github/skills/` | Supported | Optional symlink | Created when selected during install |
+| Grok | `.agents/skills/` (direct) + `.grok/hooks/` + `.grok/agents/` | Native + Hooks + Agents | Supported (hooks + agent variant) |
 
 ## Vendor Adaptation
 
@@ -29,6 +30,7 @@ Abstract agent definitions in `.agents/agents/` are vendor-neutral (name, descri
 | Codex CLI | `.codex/agents/*.toml` | TOML | Native |
 | Gemini CLI | `.gemini/agents/*.md` | Markdown | Native |
 | Antigravity | (reads `.agents/agents/` directly) | YAML | Not supported (no custom subagents) |
+| Grok | `.grok/agents/` (generated) + `.grok/hooks/` | Markdown + JSON | Supported via variant |
 
 ## What “First-class” Means
 

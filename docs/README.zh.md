@@ -84,10 +84,15 @@ APM 只分发 skill。workflow、规则、`oma-config.yaml`、关键词检测 ho
 <strong>Cursor</strong><br/>
 <sub>原生 + 适配器</sub>
 </td>
-<td align="center" width="20%">
+<td align="center" width="16%">
 <a href="https://github.com/QwenLM/qwen-code"><img src="https://github.com/QwenLM.png?size=120" alt="Qwen Code" width="48" height="48" /></a><br/>
 <strong>Qwen Code</strong><br/>
 <sub>原生派发</sub>
+</td>
+<td align="center" width="16%">
+<a href="https://grok.x.ai"><img src="./assets/agents/grok.png" alt="Grok" width="48" height="48" /></a><br/>
+<strong>Grok</strong><br/>
+<sub>native hooks + agents</sub>
 </td>
 </tr>
 <tr>

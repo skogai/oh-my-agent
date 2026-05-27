@@ -16,7 +16,10 @@ import {
 } from "../../platform/manifest.js";
 import * as skills from "../../platform/skills-installer.js";
 import { runMigrations } from "../migrations/index.js";
-import { classifyUpdateTarget } from "../update/update.js";
+import {
+  classifyUpdateTarget,
+  resolveUpdateVendors,
+} from "../update/update.js";
 
 describe("whitelist-based skill filtering", () => {
   it("getAllSkills should return only registered skills", () => {
@@ -166,6 +169,60 @@ describe("classifyUpdateTarget", () => {
 
   it("treats directories without an install as missing", () => {
     expect(classifyUpdateTarget(null, false)).toBe("missing");
+  });
+});
+
+describe("resolveUpdateVendors", () => {
+  const tempRoots: string[] = [];
+
+  afterEach(() => {
+    for (const root of tempRoots) {
+      rmSync(root, { recursive: true, force: true });
+    }
+    tempRoots.length = 0;
+  });
+
+  it("defaults to vendors with existing project roots only", () => {
+    const root = mkdtempSync(join(tmpdir(), "oma-update-vendors-"));
+    tempRoots.push(root);
+
+    mkdirSync(join(root, ".claude"), { recursive: true });
+    mkdirSync(join(root, ".qwen"), { recursive: true });
+
+    expect(resolveUpdateVendors(root)).toEqual(["claude", "qwen"]);
+  });
+
+  it("--vendor explicitly targets vendors even when directories do not exist", () => {
+    const root = mkdtempSync(join(tmpdir(), "oma-update-vendors-"));
+    tempRoots.push(root);
+
+    expect(resolveUpdateVendors(root, { vendor: "claude,qwen" })).toEqual([
+      "claude",
+      "qwen",
+    ]);
+  });
+
+  it("--all targets all project-scoped vendors without HOME-only exports", () => {
+    const root = mkdtempSync(join(tmpdir(), "oma-update-vendors-"));
+    tempRoots.push(root);
+
+    const vendors = resolveUpdateVendors(root, { all: true });
+
+    expect(vendors).toContain("claude");
+    expect(vendors).toContain("gemini");
+    expect(vendors).toContain("grok");
+    expect(vendors).toContain("qwen");
+    expect(vendors).not.toContain("antigravity");
+    expect(vendors).not.toContain("hermes");
+  });
+
+  it("rejects unsupported --vendor values", () => {
+    const root = mkdtempSync(join(tmpdir(), "oma-update-vendors-"));
+    tempRoots.push(root);
+
+    expect(() =>
+      resolveUpdateVendors(root, { vendor: "claude,unknown" }),
+    ).toThrow("Unsupported vendor(s): unknown");
   });
 });
 

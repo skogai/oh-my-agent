@@ -64,6 +64,11 @@ vi.mock("../../../vendors/gemini/settings.js", () => ({
   needsGeminiSettingsUpdate: vi.fn(() => false),
 }));
 
+vi.mock("../../../vendors/grok/settings.js", () => ({
+  applyGrokTelemetryConfig: vi.fn(),
+  needsGrokTelemetryUpdate: vi.fn(() => false),
+}));
+
 vi.mock("../../../vendors/qwen/settings.js", () => ({
   applyQwenSettings: vi.fn((s: unknown) => s),
   needsQwenSettingsUpdate: vi.fn(() => false),
@@ -74,6 +79,7 @@ import * as safeWrite from "../../../utils/safe-write.js";
 import * as antigravity from "../../../vendors/antigravity/hud.js";
 import * as claudeMcp from "../../../vendors/claude/mcp.js";
 import * as gemini from "../../../vendors/gemini/settings.js";
+import * as grok from "../../../vendors/grok/settings.js";
 import * as qwen from "../../../vendors/qwen/settings.js";
 import { link } from "../link.js";
 
@@ -180,6 +186,16 @@ describe("link kernel", () => {
 
       expect(result.vendors).toEqual(["codex", "cursor"]);
     });
+
+    it("treats an empty vendorFilter as an explicit empty selection", () => {
+      const projectDir = makeProject(["claude", "codex"]);
+      process.chdir(projectDir);
+
+      const result = link({ quiet: true, vendorFilter: [] });
+
+      expect(result.vendors).toEqual([]);
+      expect(skills.installVendorAdaptations).not.toHaveBeenCalled();
+    });
   });
 
   describe("antigravity HOME wiring", () => {
@@ -247,6 +263,16 @@ describe("link kernel", () => {
         expect.anything(),
         { telemetry: false },
       );
+    });
+
+    it("skips Grok telemetry writes unless grok is selected", () => {
+      const projectDir = makeProject(["claude"]);
+      process.chdir(projectDir);
+
+      link({ quiet: true, telemetry: false });
+
+      expect(grok.needsGrokTelemetryUpdate).not.toHaveBeenCalled();
+      expect(grok.applyGrokTelemetryConfig).not.toHaveBeenCalled();
     });
   });
 

@@ -86,8 +86,8 @@ ${TW_HEAD}
 <svg class="w-screen h-[calc(100vh-60px)]"></svg>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script>
-const TC={claude:'#f0a030',gemini:'#4a90d9',codex:'#3fb950',qwen:'#a371f7',cursor:'#768390'};
-const TOOLS=['claude','gemini','codex','qwen','cursor'];
+const TC={claude:'#f0a030',gemini:'#4a90d9',codex:'#3fb950',qwen:'#a371f7',cursor:'#768390',grok:'#00d4ff'};
+const TOOLS=['claude','gemini','codex','qwen','cursor','grok'];
 const activeTools=new Set(TOOLS);
 let rawData=null;
 const AUTH_TOKEN=window.__OMA_DASHBOARD_TOKEN__||'';

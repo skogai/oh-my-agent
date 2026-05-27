@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { VENDORS } from "../constants/vendors.js";
+import { ALL_CLI_VENDORS } from "../constants/vendors.js";
 
 const JSON_OUTPUT_ENV = "OH_MY_AG_OUTPUT_FORMAT";
 const OUTPUT_FORMATS = ["text", "json"] as const;
@@ -193,11 +193,17 @@ function validationModeForName(name: string): "text" | "identifier" | "url" {
 
 function validateKnownOptionValues(options: Record<string, unknown>): void {
   const vendor = options.vendor;
-  if (
-    typeof vendor === "string" &&
-    !VENDORS.includes(vendor as (typeof VENDORS)[number])
-  ) {
-    failValidation(`vendor must be one of ${VENDORS.join(", ")}`);
+  if (typeof vendor === "string") {
+    const requested = vendor
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const invalid = requested.filter(
+      (v) => !ALL_CLI_VENDORS.includes(v as (typeof ALL_CLI_VENDORS)[number]),
+    );
+    if (invalid.length > 0) {
+      failValidation(`vendor must be one of ${ALL_CLI_VENDORS.join(", ")}`);
+    }
   }
 
   const output = options.output;

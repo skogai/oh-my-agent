@@ -84,10 +84,15 @@ O `oh-my-agent` mantém `.agents/` como única fonte de verdade (SSOT) e o proje
 <strong>Cursor</strong><br/>
 <sub>nativo + adaptador</sub>
 </td>
-<td align="center" width="20%">
+<td align="center" width="16%">
 <a href="https://github.com/QwenLM/qwen-code"><img src="https://github.com/QwenLM.png?size=120" alt="Qwen Code" width="48" height="48" /></a><br/>
 <strong>Qwen Code</strong><br/>
 <sub>dispatch nativo</sub>
+</td>
+<td align="center" width="16%">
+<a href="https://grok.x.ai"><img src="./assets/agents/grok.png" alt="Grok" width="48" height="48" /></a><br/>
+<strong>Grok</strong><br/>
+<sub>native hooks + agents</sub>
 </td>
 </tr>
 <tr>

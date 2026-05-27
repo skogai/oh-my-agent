@@ -43,6 +43,15 @@ export const TOOL_MAPPING: Record<string, Record<string, string>> = {
     grep: "grep_search",
     glob: "glob",
   },
+  grok: {
+    read: "read_file",
+    write: "write_file",
+    edit: "search_replace",
+    bash: "run_terminal_cmd",
+    grep: "grep",
+    glob: "list_dir",
+    ask: "ask_user",
+  },
 };
 
 export interface AgentConfig {

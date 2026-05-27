@@ -43,6 +43,12 @@ import {
   needsGeminiSettingsUpdate,
 } from "../../vendors/gemini/settings.js";
 import {
+  applyGrokProjectMcp,
+  applyGrokTelemetryConfig,
+  needsGrokProjectMcpUpdate,
+  needsGrokTelemetryUpdate,
+} from "../../vendors/grok/settings.js";
+import {
   applyQwenSettings,
   needsQwenSettingsUpdate,
 } from "../../vendors/qwen/settings.js";
@@ -135,7 +141,7 @@ export function link(opts: LinkOptions = {}): LinkResult {
 
   // 1. Resolve vendor list
   const configuredVendors: CliVendor[] =
-    opts.vendorFilter && opts.vendorFilter.length > 0
+    opts.vendorFilter !== undefined
       ? (opts.vendorFilter as CliVendor[])
       : readVendorsFromConfig(cwd);
   const hookVendors = configuredVendors.filter(isHookVendor);
@@ -253,6 +259,22 @@ export function link(opts: LinkOptions = {}): LinkResult {
       mkdirSync(dirname(codexConfigPath), { recursive: true });
       writeFileSync(codexConfigPath, `${serializeCodexConfig(next)}\n`);
     }
+  }
+
+  // 4e. Grok global ~/.grok/config.toml — telemetry/privacy respect.
+  // This is global (not per-project), so we apply it whenever we run link
+  // so that oma's telemetry preference is honored for Grok.
+  if (
+    configuredVendors.includes("grok") &&
+    needsGrokTelemetryUpdate(telemetryOptions)
+  ) {
+    applyGrokTelemetryConfig(telemetryOptions);
+  }
+
+  // Grok project-level MCP servers in `.grok/config.toml` (only [mcp_servers] supported).
+  // Registers Serena (and potentially others) so Grok can use the same MCPs as other vendors.
+  if (configuredVendors.includes("grok") && needsGrokProjectMcpUpdate(cwd)) {
+    applyGrokProjectMcp(cwd);
   }
 
   // 4f. Claude Code project-level MCP (`.mcp.json` at project root, serena

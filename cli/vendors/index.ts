@@ -3,6 +3,7 @@ import { isClaudeAuthenticated } from "./claude/auth.js";
 import { isCodexAuthenticated } from "./codex/auth.js";
 import { isCursorAuthenticated } from "./cursor/auth.js";
 import { isGeminiAuthenticated } from "./gemini/auth.js";
+import { isGrokAuthenticated } from "./grok/auth.js";
 import { isQwenAuthenticated } from "./qwen/auth.js";
 
 export type VendorId =
@@ -11,7 +12,8 @@ export type VendorId =
   | "codex"
   | "cursor"
   | "qwen"
-  | "antigravity";
+  | "antigravity"
+  | "grok";
 
 export interface Vendor {
   id: VendorId;
@@ -30,6 +32,11 @@ export const VENDORS: readonly Vendor[] = [
     label: "Antigravity CLI (agy)",
     isAuthenticated: () => isAntigravityAuthenticated(),
   },
+  {
+    id: "grok",
+    label: "Grok",
+    isAuthenticated: isGrokAuthenticated,
+  },
 ];
 
 export {
@@ -38,5 +45,6 @@ export {
   isCodexAuthenticated,
   isCursorAuthenticated,
   isGeminiAuthenticated,
+  isGrokAuthenticated,
   isQwenAuthenticated,
 };

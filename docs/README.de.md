@@ -79,15 +79,20 @@ Wähl ein Preset und los geht's:
 <strong>Gemini CLI</strong><br/>
 <sub>nativ + Adapter</sub>
 </td>
-<td align="center" width="20%">
+<td align="center" width="16%">
 <a href="https://cursor.com"><img src="https://github.com/cursor.png?size=120" alt="Cursor" width="48" height="48" /></a><br/>
 <strong>Cursor</strong><br/>
 <sub>nativ + Adapter</sub>
 </td>
-<td align="center" width="20%">
+<td align="center" width="16%">
 <a href="https://github.com/QwenLM/qwen-code"><img src="https://github.com/QwenLM.png?size=120" alt="Qwen Code" width="48" height="48" /></a><br/>
 <strong>Qwen Code</strong><br/>
 <sub>natives Dispatch</sub>
+</td>
+<td align="center" width="16%">
+<a href="https://grok.x.ai"><img src="./assets/agents/grok.png" alt="Grok" width="48" height="48" /></a><br/>
+<strong>Grok</strong><br/>
+<sub>native hooks + agents</sub>
 </td>
 </tr>
 <tr>

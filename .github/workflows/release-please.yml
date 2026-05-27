@@ -24,9 +24,22 @@ permissions:
   pull-requests: write
   id-token: write
 
+# Serialize Release Please runs.
+# With separate-pull-requests: true + monorepo (cli/action/web), concurrent
+# push-triggered runs fight over the same release-please--* shadow branches
+# and cause "Error updating ref" failures (the 1m28s failure).
+# This makes pushes queue instead of running in parallel.
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    env:
+      # Opt into Node 24 for the release-please-action (avoids the
+      # deprecation warning for Node 20 actions).
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     outputs:
       cli_release_created: ${{ steps.release.outputs.release_created }}
       cli_tag_name: ${{ steps.release.outputs.tag_name }}
@@ -62,7 +75,7 @@ jobs:
           if [ -n "$MANUAL_TAG" ]; then
             echo "value=$MANUAL_TAG" >> "$GITHUB_OUTPUT"
           else
-            echo "value=cli-v$(node -p "require('./cli/package.json').version")" >> "$GITHUB_OUTPUT"
+            echo "value=cli-v$(jq -r '.version' cli/package.json)" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Regenerate prompt-manifest.json

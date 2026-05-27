@@ -1,7 +1,7 @@
 {
   "name": "oh-my-agent",
   "version": "8.10.2",
-  "releaseDate": "2026-05-27T10:07:59.187Z",
+  "releaseDate": "2026-05-27T10:13:50.200Z",
   "repository": "https://github.com/first-fluke/oh-my-agent",
   "files": [
     {
@@ -1541,8 +1541,8 @@
     },
     {
       "path": ".agents/skills/oma-slide/SKILL.md",
-      "sha256": "64d67f2d3498a386e4d00787945164affa1fc2fad1d92259f55ec34982fe4da2",
-      "size": 15458
+      "sha256": "8a2e973361cc5822b5d63a693b7b63876072413c658d6c4896b110873f3606b5",
+      "size": 15598
     },
     {
       "path": ".agents/skills/oma-slide/resources/animation-patterns.md",
@@ -1576,8 +1576,8 @@
     },
     {
       "path": ".agents/skills/oma-slide/resources/generation-protocol.md",
-      "sha256": "2dea90c9db071fcd2d46808c5c9169a50ff53082ab020b7116704fb3cb794c1d",
-      "size": 16294
+      "sha256": "c6b2223cb40a108c0a2b3b357f75227a78644fe9c452417da1f118010896b380",
+      "size": 16630
     },
     {
       "path": ".agents/skills/oma-slide/resources/selection-index.json",

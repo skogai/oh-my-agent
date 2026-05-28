@@ -127,6 +127,7 @@ export function registerMemory(program: Command): void {
     service
       .command("install")
       .description("Install AgentMemory launchd/systemd service integration")
+      .option("--port <port>", "Loopback REST port", "3111")
       .option("--dry-run", "Preview service install without writing files"),
   ).action(
     runAction(
@@ -134,6 +135,7 @@ export function registerMemory(program: Command): void {
         printAgentMemoryServiceInstall(
           resolveJsonMode(options),
           options.dryRun,
+          options.port,
         );
       },
       { supportsJsonOutput: true },

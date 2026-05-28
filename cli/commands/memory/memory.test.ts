@@ -127,6 +127,7 @@ describe("memory commands", () => {
     const result = await setupAgentMemory({
       homeDir: projectDir,
       env: { OMA_NO_AGENTMEMORY: "1" },
+      platform: "darwin",
       dryRun: false,
       install: true,
       async installer() {
@@ -139,8 +140,19 @@ describe("memory commands", () => {
     expect(result).toMatchObject({
       installRequested: true,
       installExitCode: 0,
+      service: {
+        supported: true,
+        wroteFile: true,
+      },
       startRequested: false,
     });
+    expect(result.service?.servicePath).toContain("LaunchAgents");
+    const serviceFile = readFileSync(
+      result.service?.servicePath ?? "",
+      "utf-8",
+    );
+    expect(serviceFile).toContain("III_REST_PORT");
+    expect(serviceFile).toContain("/usr/bin/env");
   });
 
   it("skips install command in setup dry-run mode", async () => {
@@ -148,6 +160,7 @@ describe("memory commands", () => {
     const result = await setupAgentMemory({
       homeDir: projectDir,
       env: { OMA_NO_AGENTMEMORY: "1" },
+      platform: "darwin",
       dryRun: true,
       install: true,
       async installer() {
@@ -161,7 +174,38 @@ describe("memory commands", () => {
       installRequested: true,
       installSkipped: true,
       dryRun: true,
+      service: {
+        supported: true,
+        dryRun: true,
+        wroteFile: false,
+      },
     });
+    expect(result.service?.content).toContain("agentmemory");
+  });
+
+  it("does not install the service when setup package install fails", async () => {
+    await expect(
+      setupAgentMemory({
+        homeDir: projectDir,
+        env: { OMA_NO_AGENTMEMORY: "1" },
+        platform: "darwin",
+        install: true,
+        async installer() {
+          return { status: 1, error: "install failed" };
+        },
+      }),
+    ).rejects.toThrow("install failed");
+
+    expect(
+      existsSync(
+        join(
+          projectDir,
+          "Library",
+          "LaunchAgents",
+          "dev.oma.agentmemory.plist",
+        ),
+      ),
+    ).toBe(false);
   });
 
   it("previews AgentMemory daemon start without writing endpoint or pid files", async () => {
@@ -183,18 +227,21 @@ describe("memory commands", () => {
     expect(existsSync(result.pidPath)).toBe(false);
   });
 
-  it("returns deferred service install surface for supported platforms", () => {
+  it("previews service install files for supported platforms", () => {
     expect(
       installAgentMemoryService({
         homeDir: projectDir,
         platform: "darwin",
         dryRun: true,
+        port: 3444,
       }),
     ).toMatchObject({
       action: "install",
       platform: "darwin",
       supported: true,
       dryRun: true,
+      wroteFile: false,
+      content: expect.stringContaining("3444"),
     });
   });
 

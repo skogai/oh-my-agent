@@ -38,6 +38,7 @@ const AGENTMEMORY_INSTALL_COMMAND = "bun install -g @agentmemory/agentmemory";
 const AGENTMEMORY_START_COMMAND = "agentmemory";
 const DEFAULT_AGENTMEMORY_PORT = 3111;
 const OMA_AGENTMEMORY_PID_FILE = "oma-agentmemory.pid";
+const LAUNCHD_AGENTMEMORY_LABEL = "dev.oma.agentmemory";
 
 type AgentMemoryInstaller = () => Promise<{
   status: number | null;
@@ -135,6 +136,69 @@ function writeOwnedPid(homeDir: string, pid: number): void {
   writeFileSync(pidPath, `${pid}\n`, { encoding: "utf-8", mode: 0o600 });
 }
 
+function servicePathEnvironment(homeDir: string): string {
+  return [
+    join(homeDir, ".bun", "bin"),
+    join(homeDir, ".local", "bin"),
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    "/usr/bin",
+    "/bin",
+    "/usr/sbin",
+    "/sbin",
+  ].join(":");
+}
+
+function renderLaunchdService(args: { homeDir: string; port: number }): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>${LAUNCHD_AGENTMEMORY_LABEL}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/env</string>
+    <string>agentmemory</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>${servicePathEnvironment(args.homeDir)}</string>
+    <key>III_REST_PORT</key>
+    <string>${args.port}</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/oma-agentmemory.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/oma-agentmemory.err.log</string>
+</dict>
+</plist>
+`;
+}
+
+function renderSystemdService(args: { homeDir: string; port: number }): string {
+  return `[Unit]
+Description=OMA AgentMemory daemon
+After=network.target
+
+[Service]
+Type=simple
+Environment=PATH=${servicePathEnvironment(args.homeDir)}
+Environment=III_REST_PORT=${args.port}
+ExecStart=/usr/bin/env agentmemory
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target
+`;
+}
+
 export async function initMemory(
   jsonMode = false,
   forceMode = false,
@@ -189,6 +253,7 @@ export async function setupAgentMemory(
     dryRun?: boolean;
     install?: boolean;
     start?: boolean;
+    platform?: NodeJS.Platform;
     installer?: AgentMemoryInstaller;
   } = {},
 ): Promise<MemorySetupResult> {
@@ -200,6 +265,7 @@ export async function setupAgentMemory(
   let installExitCode: number | null | undefined;
   let installSkipped: boolean | undefined;
   let installError: string | undefined;
+  let service: MemoryServiceResult | undefined;
   let daemon: MemoryDaemonResult | undefined;
 
   const nextConfig: AgentMemoryEndpointConfig | null = args.endpoint
@@ -231,6 +297,14 @@ export async function setupAgentMemory(
             `AgentMemory install failed with exit code ${installExitCode}`,
         );
       }
+    }
+    if (args.dryRun || installExitCode === 0) {
+      service = installAgentMemoryService({
+        homeDir,
+        platform: args.platform ?? process.platform,
+        dryRun: args.dryRun,
+        port: port ?? DEFAULT_AGENTMEMORY_PORT,
+      });
     }
   }
 
@@ -265,6 +339,7 @@ export async function setupAgentMemory(
     installExitCode,
     installSkipped,
     installError,
+    service,
     startRequested: args.start === true,
     daemon,
     installCommand: AGENTMEMORY_INSTALL_COMMAND,
@@ -431,16 +506,35 @@ export async function controlAgentMemoryDaemon(args: {
 }
 
 export function installAgentMemoryService(
-  args: { homeDir?: string; platform?: NodeJS.Platform; dryRun?: boolean } = {},
+  args: {
+    homeDir?: string;
+    platform?: NodeJS.Platform;
+    dryRun?: boolean;
+    port?: number | string;
+  } = {},
 ): MemoryServiceResult {
   const homeDir = args.homeDir ?? homedir();
   const platform = args.platform ?? process.platform;
+  const port = parsePositivePort(args.port) ?? DEFAULT_AGENTMEMORY_PORT;
   const servicePath =
     platform === "darwin"
       ? join(homeDir, "Library", "LaunchAgents", "dev.oma.agentmemory.plist")
       : platform === "linux"
         ? join(homeDir, ".config", "systemd", "user", "oma-agentmemory.service")
         : undefined;
+  const content =
+    platform === "darwin"
+      ? renderLaunchdService({ homeDir, port })
+      : platform === "linux"
+        ? renderSystemdService({ homeDir, port })
+        : undefined;
+
+  let wroteFile = false;
+  if (servicePath && content && !args.dryRun) {
+    mkdirSync(dirname(servicePath), { recursive: true, mode: 0o700 });
+    writeFileSync(servicePath, content, { encoding: "utf-8", mode: 0o600 });
+    wroteFile = true;
+  }
 
   return {
     action: "install",
@@ -448,10 +542,14 @@ export function installAgentMemoryService(
     supported: servicePath !== undefined,
     dryRun: args.dryRun === true,
     servicePath,
+    wroteFile,
+    content: args.dryRun ? content : undefined,
     message:
       servicePath === undefined
         ? `AgentMemory service install is not supported on ${platform}`
-        : "AgentMemory service file generation is deferred to PR6; use memory:daemon start for now",
+        : args.dryRun
+          ? "AgentMemory service file would be written"
+          : "AgentMemory service file installed",
   };
 }
 
@@ -598,6 +696,12 @@ export async function printAgentMemorySetup(
         : pc.red(String(result.installExitCode ?? "unknown"));
     lines.push(`Install result: ${installState}`);
   }
+  if (result.service?.servicePath) {
+    lines.push(`Service: ${pc.cyan(result.service.servicePath)}`);
+    lines.push(
+      `Service file: ${result.service.wroteFile ? pc.green("installed") : pc.yellow(result.service.dryRun ? "preview" : "not written")}`,
+    );
+  }
   lines.push(`Start: ${pc.cyan(result.startCommand)}`);
   if (result.daemon?.startedPid)
     lines.push(`Started PID: ${result.daemon.startedPid}`);
@@ -645,8 +749,9 @@ export async function printAgentMemoryDaemon(
 export function printAgentMemoryServiceInstall(
   jsonMode = false,
   dryRun = false,
+  port?: number | string,
 ): void {
-  const result = installAgentMemoryService({ dryRun });
+  const result = installAgentMemoryService({ dryRun, port });
   if (jsonMode) {
     console.log(JSON.stringify(result, null, 2));
     return;
@@ -656,7 +761,9 @@ export function printAgentMemoryServiceInstall(
     [
       `Platform: ${result.platform}`,
       result.servicePath ? `Path: ${pc.cyan(result.servicePath)}` : null,
+      `Wrote file: ${result.wroteFile ? pc.green("yes") : "no"}`,
       result.supported ? pc.yellow(result.message) : pc.red(result.message),
+      result.content ? `\n${result.content.trimEnd()}` : null,
     ]
       .filter((line): line is string => line !== null)
       .join("\n"),

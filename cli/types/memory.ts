@@ -45,6 +45,7 @@ export interface MemorySetupResult {
   installExitCode?: number | null;
   installSkipped?: boolean;
   installError?: string;
+  service?: MemoryServiceResult;
   startRequested: boolean;
   daemon?: MemoryDaemonResult;
   installCommand: string;
@@ -74,5 +75,7 @@ export interface MemoryServiceResult {
   supported: boolean;
   dryRun: boolean;
   servicePath?: string;
+  wroteFile: boolean;
+  content?: string;
   message: string;
 }

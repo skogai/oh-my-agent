@@ -1,9 +1,11 @@
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -20,8 +22,10 @@ import {
   drainMemoryRetryQueue,
   getAgentMemoryStatus,
   installAgentMemoryService,
+  maintainAgentMemory,
   setupAgentMemory,
   uninstallAgentMemoryService,
+  upgradeAgentMemory,
 } from "./memory.js";
 
 function providerStub(args: {
@@ -348,5 +352,139 @@ describe("memory commands", () => {
     });
     expect(existsSync(retryPath)).toBe(true);
     expect(readFileSync(retryPath, "utf-8")).toBe(content);
+  });
+
+  it("backs up AgentMemory storage without recursively copying backups", () => {
+    const memoryDir = join(projectDir, ".agentmemory");
+    mkdirSync(join(memoryDir, "data"), { recursive: true });
+    mkdirSync(join(memoryDir, "backups", "oma-agentmemory-old"), {
+      recursive: true,
+    });
+    writeFileSync(join(memoryDir, "data", "memory.db"), "db", "utf-8");
+    writeFileSync(join(memoryDir, "endpoint.json"), "{}", "utf-8");
+    writeFileSync(join(memoryDir, "oma-agentmemory.pid"), "123\n", "utf-8");
+
+    const result = maintainAgentMemory({
+      action: "backup",
+      homeDir: projectDir,
+    });
+
+    expect(result).toMatchObject({
+      action: "backup",
+      copiedFiles: 2,
+      dryRun: false,
+    });
+    expect(existsSync(result.backupPath ?? "")).toBe(true);
+    expect(existsSync(join(result.backupPath ?? "", "data", "memory.db"))).toBe(
+      true,
+    );
+    expect(
+      existsSync(
+        join(result.backupPath ?? "", "backups", "oma-agentmemory-old"),
+      ),
+    ).toBe(false);
+    expect(
+      existsSync(join(result.backupPath ?? "", "oma-agentmemory.pid")),
+    ).toBe(false);
+  });
+
+  it("prunes old OMA-created AgentMemory backups", () => {
+    const backupDir = join(projectDir, ".agentmemory", "backups");
+    const oldBackup = join(backupDir, "oma-agentmemory-old");
+    const newBackup = join(backupDir, "oma-agentmemory-new");
+    mkdirSync(oldBackup, { recursive: true });
+    mkdirSync(newBackup, { recursive: true });
+    utimesSync(oldBackup, new Date(0), new Date(0));
+    utimesSync(newBackup, new Date(10_000), new Date(10_000));
+
+    const result = maintainAgentMemory({
+      action: "prune",
+      homeDir: projectDir,
+      keep: 1,
+    });
+
+    expect(result.prunedBackups).toEqual([oldBackup]);
+    expect(existsSync(oldBackup)).toBe(false);
+    expect(existsSync(newBackup)).toBe(true);
+  });
+
+  it("vacuum dry-run lists SQLite files without running sqlite3", () => {
+    const memoryDir = join(projectDir, ".agentmemory");
+    mkdirSync(join(memoryDir, "backups", "oma-agentmemory-old"), {
+      recursive: true,
+    });
+    writeFileSync(join(memoryDir, "memory.db"), "", "utf-8");
+    writeFileSync(
+      join(memoryDir, "backups", "oma-agentmemory-old", "memory.db"),
+      "",
+      "utf-8",
+    );
+    let commandCount = 0;
+
+    const result = maintainAgentMemory({
+      action: "vacuum",
+      homeDir: projectDir,
+      dryRun: true,
+      runner() {
+        commandCount += 1;
+        return { status: 0 };
+      },
+    });
+
+    expect(result.vacuumTargets).toEqual([join(memoryDir, "memory.db")]);
+    expect(result.vacuumResults).toEqual([]);
+    expect(commandCount).toBe(0);
+  });
+
+  it("previews AgentMemory upgrade without stopping or updating", async () => {
+    let commandCount = 0;
+    const result = await upgradeAgentMemory({
+      homeDir: projectDir,
+      env: { OMA_NO_AGENTMEMORY: "1" },
+      dryRun: true,
+      runner() {
+        commandCount += 1;
+        return { status: 0 };
+      },
+    });
+
+    expect(result).toMatchObject({
+      dryRun: true,
+      upgradeCommand: "bun update -g @agentmemory/agentmemory",
+      upgradeExitCode: undefined,
+    });
+    expect(result.stop.dryRun).toBe(true);
+    expect(result.backup.dryRun).toBe(true);
+    expect(commandCount).toBe(0);
+  });
+
+  it("restarts the existing AgentMemory installation when upgrade fails", async () => {
+    const fakeAgentMemory = join(projectDir, "fake-agentmemory");
+    writeFileSync(fakeAgentMemory, "#!/bin/sh\nsleep 2\n", "utf-8");
+    chmodSync(fakeAgentMemory, 0o755);
+    let upgradeCount = 0;
+    const result = await upgradeAgentMemory({
+      homeDir: projectDir,
+      env: { OMA_NO_AGENTMEMORY: "1", AGENTMEMORY_BIN: fakeAgentMemory },
+      bin: fakeAgentMemory,
+      runner(command) {
+        if (command.bin === "bun") {
+          upgradeCount += 1;
+          return { status: 1, error: "update failed" };
+        }
+        return { status: 0 };
+      },
+    });
+
+    expect(upgradeCount).toBe(1);
+    expect(result).toMatchObject({
+      upgradeExitCode: 1,
+      upgradeError: "update failed",
+      message: "AgentMemory upgrade failed and restart health check failed",
+      start: {
+        action: "start",
+      },
+    });
+    expect(result.start?.startedPid).toBeGreaterThan(0);
   });
 });

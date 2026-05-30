@@ -8,10 +8,12 @@ import { printAgentMemoryImport } from "./import.js";
 import {
   initMemory,
   printAgentMemoryDaemon,
+  printAgentMemoryMaintain,
   printAgentMemoryServiceInstall,
   printAgentMemoryServiceUninstall,
   printAgentMemorySetup,
   printAgentMemoryStatus,
+  printAgentMemoryUpgrade,
   printMemoryRetryDrain,
 } from "./memory.js";
 
@@ -215,6 +217,49 @@ export function registerMemory(program: Command): void {
           since: options.since,
           dryRun: options.dryRun,
           forcePartial: options.forcePartial,
+        });
+      },
+      { supportsJsonOutput: true },
+    ),
+  );
+
+  addOutputOptions(
+    program
+      .command("memory:maintain <action>")
+      .description("Maintain AgentMemory local storage: backup, prune, vacuum")
+      .option("--keep <count>", "Backups to keep when pruning", "5")
+      .option("--dry-run", "Preview maintenance without changing files"),
+  ).action(
+    runAction(
+      async (action, options) => {
+        if (!["backup", "prune", "vacuum"].includes(action)) {
+          throw new Error(
+            "invalid memory maintain action: use backup, prune, or vacuum",
+          );
+        }
+        printAgentMemoryMaintain(action, resolveJsonMode(options), {
+          keep: options.keep,
+          dryRun: options.dryRun,
+        });
+      },
+      { supportsJsonOutput: true },
+    ),
+  );
+
+  addOutputOptions(
+    program
+      .command("memory:upgrade")
+      .description(
+        "Stop, backup, upgrade, restart, and health-check AgentMemory",
+      )
+      .option("--port <port>", "Loopback REST port after restart")
+      .option("--dry-run", "Preview upgrade without changing files"),
+  ).action(
+    runAction(
+      async (options) => {
+        await printAgentMemoryUpgrade(resolveJsonMode(options), {
+          port: options.port,
+          dryRun: options.dryRun,
         });
       },
       { supportsJsonOutput: true },

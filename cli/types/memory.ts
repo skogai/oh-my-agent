@@ -92,6 +92,59 @@ export interface MemoryServiceOptions {
 
 export type MemoryServiceUninstallOptions = Omit<MemoryServiceOptions, "port">;
 
+export type MemoryMaintainAction = "backup" | "prune" | "vacuum";
+
+export interface MemoryMaintainOptions {
+  action: MemoryMaintainAction;
+  homeDir?: string;
+  dryRun?: boolean;
+  keep?: number | string;
+  runner?: MemoryServiceCommandRunner;
+}
+
+export interface MemoryMaintainCommandResult {
+  command: string;
+  status: number | null;
+  error?: string;
+}
+
+export interface MemoryMaintainResult {
+  action: MemoryMaintainAction;
+  homeDir: string;
+  configDir: string;
+  backupDir: string;
+  backupPath?: string;
+  copiedFiles: number;
+  prunedBackups: string[];
+  vacuumTargets: string[];
+  vacuumResults: MemoryMaintainCommandResult[];
+  keep: number;
+  dryRun: boolean;
+  message: string;
+}
+
+export interface MemoryUpgradeOptions {
+  homeDir?: string;
+  env?: NodeJS.ProcessEnv;
+  bin?: string;
+  port?: number | string;
+  dryRun?: boolean;
+  runner?: MemoryServiceCommandRunner;
+}
+
+export interface MemoryUpgradeResult {
+  homeDir: string;
+  dryRun: boolean;
+  stop: MemoryDaemonResult;
+  backup: MemoryMaintainResult;
+  upgradeCommand: string;
+  upgradeExitCode?: number | null;
+  upgradeError?: string;
+  start?: MemoryDaemonResult;
+  status: MemoryProviderStatus;
+  message: string;
+}
+
 export interface MemorySetupResult {
   homeDir: string;
   configDir: string;

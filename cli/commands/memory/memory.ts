@@ -1,14 +1,17 @@
 import { spawn, spawnSync } from "node:child_process";
 import {
+  cpSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   renameSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, relative } from "node:path";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { ensureMemorySchema } from "../../io/memory.js";
@@ -21,12 +24,17 @@ import type {
   AgentMemoryEndpointConfig,
   MemoryCommandStatus,
   MemoryDaemonResult,
+  MemoryMaintainAction,
+  MemoryMaintainCommandResult,
+  MemoryMaintainOptions,
+  MemoryMaintainResult,
   MemoryProvider,
   MemoryProviderStatus,
   MemoryRetryDrainResult,
   MemoryServiceCommand,
   MemoryServiceCommandPlanOptions,
   MemoryServiceCommandResult,
+  MemoryServiceCommandRunner,
   MemoryServiceCommandRunOptions,
   MemoryServiceOptions,
   MemoryServicePresence,
@@ -34,12 +42,18 @@ import type {
   MemoryServiceUninstallOptions,
   MemorySetupOptions,
   MemorySetupResult,
+  MemoryUpgradeOptions,
+  MemoryUpgradeResult,
 } from "../../types/memory.js";
 
 const AGENTMEMORY_INSTALL_COMMAND = "bun install -g @agentmemory/agentmemory";
+const AGENTMEMORY_UPGRADE_COMMAND = "bun update -g @agentmemory/agentmemory";
 const AGENTMEMORY_START_COMMAND = "agentmemory";
 const DEFAULT_AGENTMEMORY_PORT = 3111;
+const DEFAULT_BACKUP_KEEP = 5;
 const OMA_AGENTMEMORY_PID_FILE = "oma-agentmemory.pid";
+const OMA_AGENTMEMORY_BACKUPS_DIR = "backups";
+const OMA_AGENTMEMORY_BACKUP_PREFIX = "oma-agentmemory-";
 const LAUNCHD_AGENTMEMORY_LABEL = "dev.oma.agentmemory";
 
 function defaultAgentMemoryInstaller(): Promise<MemoryCommandStatus> {
@@ -69,9 +83,32 @@ function agentMemoryPidPath(homeDir: string): string {
   return join(agentMemoryConfigDir(homeDir), OMA_AGENTMEMORY_PID_FILE);
 }
 
+function agentMemoryBackupDir(homeDir: string): string {
+  return join(agentMemoryConfigDir(homeDir), OMA_AGENTMEMORY_BACKUPS_DIR);
+}
+
 function endpointFromConfig(config: AgentMemoryEndpointConfig): string | null {
   if (typeof config.port === "number") return `http://127.0.0.1:${config.port}`;
   if (typeof config.url === "string" && config.url.trim()) return config.url;
+  return null;
+}
+
+function portFromEndpointConfig(
+  config: AgentMemoryEndpointConfig | null,
+): number | null {
+  if (typeof config?.port === "number") return config.port;
+  if (typeof config?.url !== "string") return null;
+  try {
+    const url = new URL(config.url);
+    if (
+      (url.hostname === "127.0.0.1" || url.hostname === "localhost") &&
+      url.port
+    ) {
+      return Number(url.port);
+    }
+  } catch {
+    return null;
+  }
   return null;
 }
 
@@ -104,6 +141,22 @@ function parsePositivePort(value: number | string | undefined): number | null {
     throw new Error(`invalid AgentMemory port: ${value}`);
   }
   return port;
+}
+
+function parseNonNegativeInteger(
+  value: number | string | undefined,
+  fallback: number,
+): number {
+  if (value === undefined) return fallback;
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error(`invalid keep count: ${value}`);
+  }
+  return parsed;
+}
+
+function timestampSlug(now = new Date()): string {
+  return now.toISOString().replace(/[:.]/g, "-");
 }
 
 function readOwnedPid(homeDir: string): number | undefined {
@@ -317,6 +370,243 @@ function runServiceCommands(
   }
 
   return { activated: true };
+}
+
+function isInsidePath(path: string, parent: string): boolean {
+  const child = relative(parent, path);
+  return child === "" || (!child.startsWith("..") && !isAbsolute(child));
+}
+
+function isBackupSourcePath(path: string, configDir: string): boolean {
+  const backupDir = join(configDir, OMA_AGENTMEMORY_BACKUPS_DIR);
+  if (isInsidePath(path, backupDir)) return false;
+  if (path === join(configDir, OMA_AGENTMEMORY_PID_FILE)) return false;
+  return true;
+}
+
+function countBackupFiles(configDir: string): number {
+  if (!existsSync(configDir)) return 0;
+  let count = 0;
+  for (const entry of readdirSync(configDir, { withFileTypes: true })) {
+    const path = join(configDir, entry.name);
+    if (!isBackupSourcePath(path, configDir)) continue;
+    if (entry.isDirectory()) {
+      count += countBackupFiles(path);
+    } else if (entry.isFile()) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function copyBackupSource(configDir: string, backupPath: string): void {
+  mkdirSync(backupPath, { recursive: true, mode: 0o700 });
+  for (const entry of readdirSync(configDir, { withFileTypes: true })) {
+    const source = join(configDir, entry.name);
+    if (!isBackupSourcePath(source, configDir)) continue;
+    cpSync(source, join(backupPath, entry.name), { recursive: true });
+  }
+}
+
+function listBackups(
+  backupDir: string,
+): Array<{ path: string; mtimeMs: number }> {
+  if (!existsSync(backupDir)) return [];
+  return readdirSync(backupDir)
+    .filter((name) => name.startsWith(OMA_AGENTMEMORY_BACKUP_PREFIX))
+    .map((name) => {
+      const path = join(backupDir, name);
+      return { path, mtimeMs: statSync(path).mtimeMs };
+    })
+    .sort((a, b) => b.mtimeMs - a.mtimeMs || b.path.localeCompare(a.path));
+}
+
+function findSqliteTargets(configDir: string): string[] {
+  if (!existsSync(configDir)) return [];
+  const backupDir = join(configDir, OMA_AGENTMEMORY_BACKUPS_DIR);
+  const targets: string[] = [];
+  const visit = (dir: string) => {
+    if (isInsidePath(dir, backupDir)) return;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        visit(path);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      if (/\.(db|sqlite|sqlite3)$/i.test(entry.name)) {
+        targets.push(path);
+      }
+    }
+  };
+  visit(configDir);
+  return targets.sort();
+}
+
+function runCommand(
+  runner: MemoryServiceCommandRunner,
+  bin: string,
+  args: string[],
+): MemoryMaintainCommandResult {
+  const result = runner({ bin, args });
+  return {
+    command: [bin, ...args].join(" "),
+    status: result.status,
+    error: result.error,
+  };
+}
+
+export function maintainAgentMemory(
+  args: MemoryMaintainOptions,
+): MemoryMaintainResult {
+  const homeDir = args.homeDir ?? homedir();
+  const configDir = agentMemoryConfigDir(homeDir);
+  const backupDir = agentMemoryBackupDir(homeDir);
+  const keep = parseNonNegativeInteger(args.keep, DEFAULT_BACKUP_KEEP);
+  const dryRun = args.dryRun === true;
+  const runner = args.runner ?? defaultServiceCommandRunner;
+  let backupPath: string | undefined;
+  let copiedFiles = 0;
+  let prunedBackups: string[] = [];
+  let vacuumTargets: string[] = [];
+  let vacuumResults: MemoryMaintainCommandResult[] = [];
+  let message: string;
+
+  if (args.action === "backup") {
+    copiedFiles = countBackupFiles(configDir);
+    backupPath = join(
+      backupDir,
+      `${OMA_AGENTMEMORY_BACKUP_PREFIX}${timestampSlug()}`,
+    );
+    if (!existsSync(configDir)) {
+      message =
+        "AgentMemory config directory does not exist; nothing to backup";
+    } else if (dryRun) {
+      message = "AgentMemory backup would be created";
+    } else {
+      mkdirSync(backupDir, { recursive: true, mode: 0o700 });
+      copyBackupSource(configDir, backupPath);
+      message = "AgentMemory backup created";
+    }
+  } else if (args.action === "prune") {
+    const backups = listBackups(backupDir);
+    prunedBackups = backups.slice(keep).map((backup) => backup.path);
+    if (!dryRun) {
+      for (const path of prunedBackups)
+        rmSync(path, { recursive: true, force: true });
+    }
+    message =
+      prunedBackups.length === 0
+        ? "No AgentMemory backups to prune"
+        : dryRun
+          ? "AgentMemory backups would be pruned"
+          : "AgentMemory backups pruned";
+  } else if (args.action === "vacuum") {
+    vacuumTargets = findSqliteTargets(configDir);
+    if (!dryRun) {
+      vacuumResults = vacuumTargets.map((target) =>
+        runCommand(runner, "sqlite3", [target, "VACUUM;"]),
+      );
+    }
+    message =
+      vacuumTargets.length === 0
+        ? "No AgentMemory SQLite files found"
+        : dryRun
+          ? "AgentMemory SQLite files would be vacuumed"
+          : "AgentMemory SQLite vacuum completed";
+  } else {
+    throw new Error(`invalid AgentMemory maintain action: ${args.action}`);
+  }
+
+  return {
+    action: args.action,
+    homeDir,
+    configDir,
+    backupDir,
+    backupPath,
+    copiedFiles,
+    prunedBackups,
+    vacuumTargets,
+    vacuumResults,
+    keep,
+    dryRun,
+    message,
+  };
+}
+
+export async function upgradeAgentMemory(
+  args: MemoryUpgradeOptions = {},
+): Promise<MemoryUpgradeResult> {
+  const homeDir = args.homeDir ?? homedir();
+  const env = args.env ?? process.env;
+  const runner = args.runner ?? defaultServiceCommandRunner;
+  const configuredPort =
+    parsePositivePort(args.port) ??
+    portFromEndpointConfig(readEndpointConfig(homeDir)) ??
+    DEFAULT_AGENTMEMORY_PORT;
+  const dryRun = args.dryRun === true;
+
+  const stop = await controlAgentMemoryDaemon({
+    action: "stop",
+    homeDir,
+    env,
+    bin: args.bin,
+    dryRun,
+  });
+  const backup = maintainAgentMemory({
+    action: "backup",
+    homeDir,
+    dryRun,
+  });
+
+  let upgradeExitCode: number | null | undefined;
+  let upgradeError: string | undefined;
+  let start: MemoryDaemonResult | undefined;
+  let status = stop.status;
+  let message = dryRun
+    ? "AgentMemory upgrade would stop, backup, update, start, and health-check"
+    : "AgentMemory upgrade completed";
+
+  if (!dryRun) {
+    const upgrade = runner({
+      bin: "bun",
+      args: ["update", "-g", "@agentmemory/agentmemory"],
+    });
+    upgradeExitCode = upgrade.status;
+    upgradeError = upgrade.error;
+
+    start = await controlAgentMemoryDaemon({
+      action: "start",
+      homeDir,
+      env,
+      bin: args.bin,
+      port: configuredPort,
+    });
+    status = start.status;
+
+    if (upgrade.status === 0) {
+      message = status.reachable
+        ? "AgentMemory upgrade completed"
+        : "AgentMemory upgraded but health check failed";
+    } else {
+      message = status.reachable
+        ? "AgentMemory upgrade failed; restarted existing installation"
+        : "AgentMemory upgrade failed and restart health check failed";
+    }
+  }
+
+  return {
+    homeDir,
+    dryRun,
+    stop,
+    backup,
+    upgradeCommand: AGENTMEMORY_UPGRADE_COMMAND,
+    upgradeExitCode,
+    upgradeError,
+    start,
+    status,
+    message,
+  };
 }
 
 export async function initMemory(
@@ -980,6 +1270,87 @@ export function printAgentMemoryServiceUninstall(
       .join("\n"),
     "AgentMemory service: uninstall",
   );
+}
+
+export function printAgentMemoryMaintain(
+  action: MemoryMaintainAction,
+  jsonMode = false,
+  args: Omit<MemoryMaintainOptions, "action"> = {},
+): void {
+  const result = maintainAgentMemory({ action, ...args });
+  if (jsonMode) {
+    console.log(JSON.stringify(result, null, 2));
+    if (result.vacuumResults.some((item) => item.status !== 0)) {
+      process.exitCode = 1;
+    }
+    return;
+  }
+
+  const lines = [
+    `Config dir: ${pc.cyan(result.configDir)}`,
+    `Backup dir: ${pc.cyan(result.backupDir)}`,
+    result.backupPath ? `Backup path: ${pc.cyan(result.backupPath)}` : null,
+    result.copiedFiles > 0 ? `Copied files: ${result.copiedFiles}` : null,
+    result.prunedBackups.length > 0
+      ? `Pruned backups:\n${result.prunedBackups.map((path) => `  ${path}`).join("\n")}`
+      : null,
+    result.vacuumTargets.length > 0
+      ? `SQLite files:\n${result.vacuumTargets.map((path) => `  ${path}`).join("\n")}`
+      : null,
+    result.vacuumResults.length > 0
+      ? `Commands:\n${result.vacuumResults.map((item) => `  ${item.command} -> ${item.status ?? "unknown"}${item.error ? ` (${item.error})` : ""}`).join("\n")}`
+      : null,
+    result.dryRun ? pc.dim("Dry run: files unchanged") : null,
+    result.message,
+  ].filter((line): line is string => line !== null);
+
+  p.note(lines.join("\n"), `AgentMemory maintain: ${action}`);
+  if (result.vacuumResults.some((item) => item.status !== 0)) {
+    process.exitCode = 1;
+  }
+}
+
+export async function printAgentMemoryUpgrade(
+  jsonMode = false,
+  args: MemoryUpgradeOptions = {},
+): Promise<void> {
+  const result = await upgradeAgentMemory(args);
+  if (jsonMode) {
+    console.log(JSON.stringify(result, null, 2));
+    if (
+      !result.dryRun &&
+      (result.upgradeExitCode !== 0 || !result.status.reachable)
+    ) {
+      process.exitCode = 1;
+    }
+    return;
+  }
+
+  const lines = [
+    `Command: ${pc.cyan(result.upgradeCommand)}`,
+    `Backup: ${result.backup.backupPath ? pc.cyan(result.backup.backupPath) : pc.yellow("(none)")}`,
+    `Stop reachable: ${result.stop.status.reachable ? pc.green("yes") : pc.yellow("no")}`,
+    result.upgradeExitCode !== undefined
+      ? `Upgrade exit: ${result.upgradeExitCode === 0 ? pc.green("0") : pc.red(String(result.upgradeExitCode))}`
+      : null,
+    result.upgradeError
+      ? `Upgrade error: ${pc.red(result.upgradeError)}`
+      : null,
+    result.start?.startedPid ? `Started PID: ${result.start.startedPid}` : null,
+    `Health: ${result.status.reachable ? pc.green("reachable") : pc.red("offline")}`,
+    result.status.version ? `Version: ${pc.cyan(result.status.version)}` : null,
+    result.status.reason ? `Reason: ${result.status.reason}` : null,
+    result.dryRun ? pc.dim("Dry run: files unchanged") : null,
+    result.message,
+  ].filter((line): line is string => line !== null);
+
+  p.note(lines.join("\n"), "AgentMemory upgrade");
+  if (
+    !result.dryRun &&
+    (result.upgradeExitCode !== 0 || !result.status.reachable)
+  ) {
+    process.exitCode = 1;
+  }
 }
 
 export async function printMemoryRetryDrain(

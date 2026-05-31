@@ -92,6 +92,11 @@ APM แจกแค่ skill เท่านั้น ส่วน workflow, rul
 <strong>Qwen Code</strong><br/>
 <sub>dispatch เนทีฟ</sub>
 </td>
+<td align="center">
+<a href="https://github.com/esengine/DeepSeek-Reasonix"><img src="https://github.com/deepseek-ai.png?size=120" alt="dsnix" width="48" height="48" /></a><br/>
+<strong>dsnix</strong><br/>
+<sub>เข้ากันได้แบบเนทีฟ</sub>
+</td>
 </tr>
 <tr>
 <td align="center">

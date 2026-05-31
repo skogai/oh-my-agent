@@ -92,6 +92,11 @@ APM 只分发 skill。workflow、规则、`oma-config.yaml`、关键词检测 ho
 <strong>Qwen Code</strong><br/>
 <sub>原生派发</sub>
 </td>
+<td align="center">
+<a href="https://github.com/esengine/DeepSeek-Reasonix"><img src="https://github.com/deepseek-ai.png?size=120" alt="dsnix" width="48" height="48" /></a><br/>
+<strong>dsnix</strong><br/>
+<sub>原生兼容</sub>
+</td>
 </tr>
 <tr>
 <td align="center">

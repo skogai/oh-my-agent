@@ -92,6 +92,11 @@ Elige un preset y listo:
 <strong>Qwen Code</strong><br/>
 <sub>dispatch nativo</sub>
 </td>
+<td align="center">
+<a href="https://github.com/esengine/DeepSeek-Reasonix"><img src="https://github.com/deepseek-ai.png?size=120" alt="dsnix" width="48" height="48" /></a><br/>
+<strong>dsnix</strong><br/>
+<sub>compatible nativamente</sub>
+</td>
 </tr>
 <tr>
 <td align="center">

@@ -6,6 +6,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { resolve, sep } from "node:path";
+import { OMA_PROJECT_GITIGNORE_PATTERNS } from "../constants/paths.js";
 
 /**
  * True when `repoRoot` is inside a git work tree (or is one).
@@ -162,4 +163,51 @@ export function ensureGitignored(
   }
 
   return { added, alreadyPresent, skipped: false };
+}
+
+export { OMA_PROJECT_GITIGNORE_PATTERNS } from "../constants/paths.js";
+
+/**
+ * Ensure standard OMA project paths are listed in `<repoRoot>/.gitignore`.
+ * Called from `link()` (install / update / `oma link`) in project mode.
+ */
+export function ensureOmaProjectGitignore(
+  repoRoot: string,
+): EnsureGitignoredResult {
+  if (!isGitRepo(repoRoot)) {
+    return { added: [], alreadyPresent: [], skipped: true };
+  }
+
+  const existing = existsSync(resolve(repoRoot, ".gitignore"))
+    ? readFileSync(resolve(repoRoot, ".gitignore"), "utf-8")
+    : "";
+  const existingLines = new Set(
+    existing
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.startsWith("#")),
+  );
+
+  const added: string[] = [];
+  const alreadyPresent: string[] = [];
+  for (const pattern of OMA_PROJECT_GITIGNORE_PATTERNS) {
+    if (existingLines.has(pattern)) {
+      alreadyPresent.push(pattern);
+    } else {
+      added.push(pattern);
+    }
+  }
+
+  if (added.length === 0) {
+    return { added, alreadyPresent, skipped: false };
+  }
+
+  const written = ensureGitignored(repoRoot, added, {
+    header: "# oh-my-agent runtime (local artifacts — do not commit)",
+  });
+  return {
+    added: written.added,
+    alreadyPresent: [...alreadyPresent, ...written.alreadyPresent],
+    skipped: written.skipped,
+  };
 }

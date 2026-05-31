@@ -1,7 +1,7 @@
-import { createHash } from "node:crypto";
 import { createReadStream, readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import type { MemoryRawTurn } from "../../../../types/memory.js";
+import { shortHash } from "../../../../utils/hash.js";
 
 // Utility functions for recap history parsers. Each vendor parser reads a
 // different on-disk shape, but they converge on the same primitives: read
@@ -28,10 +28,6 @@ export function inWindow(ts: number, start: number, end: number): boolean {
   return Number.isFinite(ts) && ts >= start && ts < end;
 }
 
-export function stableShortHash(value: string): string {
-  return createHash("sha256").update(value).digest("hex").slice(0, 16);
-}
-
 export function rawTurnIdempotencyKey(args: {
   vendor: string;
   sessionId: string;
@@ -45,7 +41,7 @@ export function rawTurnIdempotencyKey(args: {
     args.sessionId,
     args.timestamp,
     args.role,
-    stableShortHash(`${args.sourcePath}\n${args.text}`),
+    shortHash([args.sourcePath, args.text]),
   ].join(":");
 }
 

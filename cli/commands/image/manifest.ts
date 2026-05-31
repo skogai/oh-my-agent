@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
+import { sha256Hex } from "../../utils/hash.js";
 import type { Manifest, ManifestRun } from "./types.js";
 
 export interface WriteManifestArgs {
@@ -26,9 +26,7 @@ export async function writeManifest(args: WriteManifestArgs): Promise<string> {
   if (args.includePrompt) {
     manifest.prompt = args.prompt;
   } else {
-    manifest.prompt_sha256 = createHash("sha256")
-      .update(args.prompt)
-      .digest("hex");
+    manifest.prompt_sha256 = sha256Hex(args.prompt);
   }
   if (args.referenceImages && args.referenceImages.length > 0) {
     manifest.reference_images = [...args.referenceImages];

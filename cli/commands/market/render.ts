@@ -17,6 +17,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { AGENTS_RESULTS_DIR } from "../../constants/paths.js";
 import {
   renderFrameworkSkeleton,
   resolveFrameworks,
@@ -46,7 +47,7 @@ function getPackageVersion(): string {
   return _cachedVersion;
 }
 
-const DEFAULT_OUTPUT_DIR = ".agents/results/market/";
+const DEFAULT_OUTPUT_DIR = `${AGENTS_RESULTS_DIR}/market/`;
 
 // Allowed ## headers for COMPARISON layout
 const COMPARISON_ALLOWED_HEADERS = new Set([

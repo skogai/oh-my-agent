@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -10,11 +9,12 @@ import { dirname, join } from "node:path";
 import { http, isAxiosError } from "../io/http.js";
 import type { Manifest, ManifestFile } from "../types/index.js";
 import { parseFrontmatter } from "../utils/frontmatter.js";
+import { sha256Hex } from "../utils/hash.js";
 import { safeReadJson } from "../utils/safe-json.js";
 import { INSTALLED_SKILLS_DIR, REPO } from "./skills-installer.js";
 
 export function calculateSHA256(content: string): string {
-  return createHash("sha256").update(content, "utf-8").digest("hex");
+  return sha256Hex(content);
 }
 
 export async function getFileSHA256(filePath: string): Promise<string | null> {

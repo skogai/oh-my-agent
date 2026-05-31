@@ -10,11 +10,16 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
+import {
+  AGENTS_STATE_RETRY_DIR,
+  AGENTS_STATE_SESSIONS_DIR,
+  agentsPathFromRoot,
+} from "../constants/paths.js";
 import type { MemoryProvider } from "../types/memory.js";
 import { createAgentMemoryProvider } from "./memory-provider.js";
 
-export const STATE_ROOT = join(".agents", "state", "sessions");
-export const RETRY_ROOT = join(".agents", "state", "retry");
+export const STATE_ROOT = AGENTS_STATE_SESSIONS_DIR;
+export const RETRY_ROOT = AGENTS_STATE_RETRY_DIR;
 export const INDEX_SCHEMA_VERSION = 1;
 export const SEMANTIC_EVENT_KINDS = new Set([
   "workflow.phase",
@@ -75,7 +80,7 @@ export interface SessionMeta {
 }
 
 export function sessionsDir(projectDir: string): string {
-  return join(projectDir, STATE_ROOT);
+  return agentsPathFromRoot(projectDir, STATE_ROOT);
 }
 
 export function indexPath(projectDir: string): string {
@@ -95,7 +100,7 @@ export function metaPath(projectDir: string, sid: string): string {
 }
 
 export function retryObservePath(projectDir: string): string {
-  return join(projectDir, RETRY_ROOT, "observe.jsonl");
+  return join(agentsPathFromRoot(projectDir, RETRY_ROOT), "observe.jsonl");
 }
 
 export function defaultIndex(): StateIndex {

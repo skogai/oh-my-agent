@@ -7,10 +7,10 @@
  * Example: bunx tsx cli/generate-manifest.ts 1.2.0
  */
 
-import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { sha256Hex } from "./utils/hash.js";
 
 const AGENT_DIR = ".agents";
 const MANIFEST_FILE = "prompt-manifest.json";
@@ -52,8 +52,7 @@ export interface Manifest {
 }
 
 function calculateSha256(filePath: string): string {
-  const content = fs.readFileSync(filePath);
-  return crypto.createHash("sha256").update(content).digest("hex");
+  return sha256Hex(fs.readFileSync(filePath));
 }
 
 function getAllFiles(

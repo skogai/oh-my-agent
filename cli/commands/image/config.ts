@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import YAML from "yaml";
+import { AGENTS_RESULTS_DIR } from "../../constants/paths.js";
 
 export type VendorConfig = {
   enabled: boolean;
@@ -30,7 +31,7 @@ export interface ImageConfig {
 }
 
 const DEFAULTS: ImageConfig = {
-  defaultOutputDir: ".agents/results/images",
+  defaultOutputDir: `${AGENTS_RESULTS_DIR}/images`,
   defaultVendor: "auto",
   defaultSize: "1024x1024",
   defaultQuality: "auto",

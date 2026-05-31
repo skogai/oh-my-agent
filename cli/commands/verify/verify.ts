@@ -2,6 +2,11 @@ import { execSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse as parseYaml } from "yaml";
+import {
+  AGENTS_DIR,
+  AGENTS_RESULTS_DIR,
+  agentsPathFromRoot,
+} from "../../constants/paths.js";
 import type { VerifyCheck, VerifyResult } from "../../types/index.js";
 import { checkClosure } from "../../utils/skill-outputs.js";
 
@@ -64,7 +69,7 @@ function runCommand(cmd: string, cwd: string): string | null {
 }
 
 function findLatestPlan(workspace: string): string | null {
-  const resultsDir = join(workspace, ".agents", "results");
+  const resultsDir = agentsPathFromRoot(workspace, AGENTS_RESULTS_DIR);
   if (existsSync(resultsDir)) {
     try {
       const planFiles = readdirSync(resultsDir)
@@ -76,7 +81,10 @@ function findLatestPlan(workspace: string): string | null {
       }
     } catch {}
   }
-  const legacyPath = join(workspace, ".agents", "plan.json");
+  const legacyPath = join(
+    agentsPathFromRoot(workspace, AGENTS_DIR),
+    "plan.json",
+  );
   return existsSync(legacyPath) ? legacyPath : null;
 }
 

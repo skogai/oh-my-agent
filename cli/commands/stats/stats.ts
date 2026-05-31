@@ -8,6 +8,7 @@ import {
 import { dirname, join } from "node:path";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
+import { AGENTS_STATE_DIR, agentsPathFromRoot } from "../../constants/paths.js";
 import { getGitStats } from "../../io/git.js";
 import { getCompletedTasksCount, getSessionMeta } from "../../io/memory.js";
 import { estimateUsd, listAllSessionUsage } from "../../io/session-cost.js";
@@ -56,7 +57,7 @@ function formatUsd(n: number): string {
 }
 
 function getMetricsPath(cwd: string): string {
-  return join(cwd, ".agents", "state", "metrics.json");
+  return join(agentsPathFromRoot(cwd, AGENTS_STATE_DIR), "metrics.json");
 }
 
 function getLegacyMetricsPath(cwd: string): string {

@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import pc from "picocolors";
 import { VENDORS } from "../../constants/vendors.js";
+import { ensureOmaProjectGitignore } from "../../io/gitignore.js";
 import { getInstallMode } from "../../platform/install-context.js";
 import {
   applyCursorRules,
@@ -392,6 +393,15 @@ export function link(opts: LinkOptions = {}): LinkResult {
         symlinksCreated.push(...created);
       }
     }
+  }
+
+  try {
+    if (getInstallMode() === "project") {
+      ensureOmaProjectGitignore(cwd);
+    }
+  } catch {
+    // Default to project-scoped hygiene when install context is unset (tests).
+    ensureOmaProjectGitignore(cwd);
   }
 
   // 8. Summary (suppressed in quiet mode — callers render their own UX).

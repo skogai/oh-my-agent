@@ -1,9 +1,9 @@
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { MemoryRawTurn } from "../../../../types/memory.js";
+import { cursorWorkspaceChatHash } from "../../../../utils/hash.js";
 import { registerParser } from "../registry.js";
 import type { NormalizedEntry } from "../schema.js";
 import {
@@ -300,7 +300,7 @@ function buildChatHashProjectMap(): Map<string, string> {
     for (const slug of readdirSync(CURSOR_PROJECTS)) {
       const path = projectSlugToPath(slug);
       if (!path) continue;
-      const hash = createHash("md5").update(path).digest("hex");
+      const hash = cursorWorkspaceChatHash(path);
       map.set(hash, projectSlugToName(slug));
     }
   } catch {

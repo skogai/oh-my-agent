@@ -1,7 +1,8 @@
 import type { CliTool, CliVendor } from "../types/index.js";
+import { AGENTS_SKILLS_DIR } from "./paths.js";
 
 export const REPO = "first-fluke/oh-my-agent";
-export const INSTALLED_SKILLS_DIR = ".agents/skills";
+export const INSTALLED_SKILLS_DIR = AGENTS_SKILLS_DIR;
 
 /**
  * Canonical vendor set: host LLM CLIs that have both a type identity and a

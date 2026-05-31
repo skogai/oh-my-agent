@@ -7,8 +7,8 @@
  *     → ClusterOutput
  */
 
-import { createHash } from "node:crypto";
 import { z } from "zod";
+import { shortHash } from "../../utils/hash.js";
 import type { Candidate, Cluster, ClusterOutput } from "./shared/schema.js";
 import {
   CandidateSchema,
@@ -268,13 +268,9 @@ function buildEntitySignature(memberEntities: Set<string>[]): string[] {
     .map(([term]) => term);
 }
 
-/**
- * Compute cluster_id as sha1 of sorted entity signature joined by "|", first 12 chars.
- */
+/** Deterministic cluster_id from sorted entity signature (short SHA-256). */
 function computeClusterId(entitySignature: string[]): string {
-  const sorted = [...entitySignature].sort();
-  const input = sorted.join("|");
-  return createHash("sha1").update(input).digest("hex").slice(0, 12);
+  return shortHash([...entitySignature].sort());
 }
 
 /**

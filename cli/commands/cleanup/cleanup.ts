@@ -3,6 +3,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
+import {
+  AGENTS_RESULTS_DIR,
+  agentsPathFromRoot,
+} from "../../constants/paths.js";
 import type { CleanupResult } from "../../types/index.js";
 
 interface GeminiCleanupConfig {
@@ -77,7 +81,7 @@ export async function cleanup(
   skipConfirm = false,
 ): Promise<void> {
   const cwd = process.cwd();
-  const resultsDir = join(cwd, ".agents", "results");
+  const resultsDir = agentsPathFromRoot(cwd, AGENTS_RESULTS_DIR);
   const tmpDir = tmpdir();
 
   const result: CleanupResult = {

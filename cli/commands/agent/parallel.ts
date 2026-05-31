@@ -2,6 +2,10 @@ import { spawn as spawnProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import color from "picocolors";
+import {
+  AGENTS_RESULTS_DIR,
+  agentsPathFromRoot,
+} from "../../constants/paths.js";
 import { planDispatch } from "../../io/runtime-dispatch.js";
 import { detectWorkspace } from "../../io/workspaces.js";
 import {
@@ -27,7 +31,7 @@ export async function parallelRun(
   } = {},
 ) {
   const cwd = process.cwd();
-  const resultsDir = path.join(cwd, ".agents", "results");
+  const resultsDir = agentsPathFromRoot(cwd, AGENTS_RESULTS_DIR);
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   const runDir = path.join(resultsDir, `parallel-${timestamp}`);
 

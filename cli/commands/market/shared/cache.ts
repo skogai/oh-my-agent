@@ -2,7 +2,7 @@
  * File-based TTL cache for `oma market harvest`.
  *
  * Design ref: docs/plans/designs/011-oma-market-research.md §4 (harvest cache) and §7 (idempotency).
- * Cache layout: ~/.cache/oma/market/{sha1-key}/result.json
+ * Cache layout: ~/.cache/oma/market/{shortHash-key}/result.json
  *
  * Rules:
  * - Never throws — all filesystem errors are caught and converted to null returns.
@@ -10,7 +10,6 @@
  * - No third-party deps; only Node builtins.
  */
 
-import { createHash } from "node:crypto";
 import {
   access,
   mkdir,
@@ -22,6 +21,7 @@ import {
 } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { shortHash } from "../../../utils/hash.js";
 
 const CACHE_BASE = join(homedir(), ".cache", "oma", "market-research");
 
@@ -38,8 +38,7 @@ export function cacheKey(parts: Record<string, unknown>): string {
   const sorted = Object.fromEntries(
     Object.entries(parts).sort(([a], [b]) => a.localeCompare(b)),
   );
-  const payload = JSON.stringify(sorted);
-  return createHash("sha1").update(payload, "utf-8").digest("hex");
+  return shortHash(sorted);
 }
 
 // ---------------------------------------------------------------------------

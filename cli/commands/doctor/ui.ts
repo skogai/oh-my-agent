@@ -309,6 +309,49 @@ function renderAgentMemory(report: DoctorReport): void {
   p.note(lines.join("\n"), "AgentMemory");
 }
 
+function renderStateHealth(report: DoctorReport): void {
+  const state = report.state;
+  const gitignore = state.gitignoreSkipped
+    ? pc.dim("skipped outside git")
+    : state.gitignored
+      ? pc.green("ignored")
+      : pc.yellow("not ignored");
+  const index = !state.index.exists
+    ? pc.dim("missing")
+    : state.index.parseOk
+      ? pc.green("ok")
+      : pc.red("corrupt");
+  const invalidEvents = state.sessions.reduce(
+    (sum, session) => sum + session.invalidEventLines,
+    0,
+  );
+  const corruptMeta = state.sessions.filter(
+    (session) => !session.metaOk,
+  ).length;
+  const configuredHooks = state.hookOrder.filter((check) => check.configured);
+  const invalidHooks = configuredHooks.filter((check) => !check.ok).length;
+  const hookSummary =
+    configuredHooks.length === 0
+      ? pc.dim("none configured")
+      : invalidHooks === 0
+        ? pc.green(`${configuredHooks.length} configured`)
+        : pc.yellow(`${invalidHooks}/${configuredHooks.length} invalid`);
+
+  const lines = [
+    `Root: ${state.rootExists ? pc.green("exists") : pc.dim("missing")} ${pc.dim(state.rootPath)}`,
+    `Gitignore: ${gitignore}`,
+    `Index: ${index}`,
+    `Active pointers: ${Object.keys(state.index.active).length} (${state.index.missingActive.length} missing)`,
+    `Sessions: ${state.sessions.length} live, ${state.archiveSessions} archived`,
+    `Corruption: ${corruptMeta} corrupt meta, ${invalidEvents} invalid event line(s)`,
+    `Hook order: ${hookSummary}`,
+    state.issues.length > 0 ? "" : null,
+    ...state.issues.map((issue) => `${pc.yellow("⚠️")} ${issue}`),
+  ].filter((line): line is string => line !== null);
+
+  p.note(lines.join("\n"), "State & Hooks");
+}
+
 function renderSelfHealing(report: DoctorReport): void {
   if (!report.selfHealing) return;
   p.note(renderSelfHealingGateResult(report.selfHealing), "Self-Healing Gate");
@@ -537,6 +580,7 @@ export async function renderDoctorReport(report: DoctorReport): Promise<void> {
     renderSkillsTable(report);
     renderSkillBoundaries(report);
     renderAgentMemory(report);
+    renderStateHealth(report);
     renderSelfHealing(report);
     await promptRepair(report);
     renderFooter(report);

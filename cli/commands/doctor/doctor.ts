@@ -38,6 +38,7 @@ import {
 } from "../memory/memory.js";
 import { auditSkills } from "../skills/audit.js";
 import { checkDualInstall } from "./dual-install.js";
+import { collectStateDoctorCheck } from "./state-health.js";
 import type {
   AgentMemoryBinaryCheck,
   AgentMemoryDaemonCheck,
@@ -384,6 +385,7 @@ export async function collectDoctorReport(
 
   const skillAudit = auditSkills(cwd);
   const agentMemory = await collectAgentMemoryCheck(cwd);
+  const state = collectStateDoctorCheck(cwd);
   const selfHealing = options.healCheckAgent
     ? evaluateSelfHealingGate({
         workspace: cwd,
@@ -401,6 +403,7 @@ export async function collectDoctorReport(
     missingSkills.length +
     vendorDocIssues +
     agentMemory.issues.length +
+    state.issues.length +
     selfHealingIssues;
 
   return {
@@ -417,6 +420,7 @@ export async function collectDoctorReport(
     totalIssues,
     skillAudit,
     dualInstall,
+    state,
     selfHealing,
   };
 }
@@ -453,6 +457,17 @@ export function serializeReportAsJson(report: DoctorReport): string {
       service: report.agentMemory.service,
       daemon: report.agentMemory.daemon,
       issues: report.agentMemory.issues,
+    },
+    state: {
+      rootPath: report.state.rootPath,
+      rootExists: report.state.rootExists,
+      gitignored: report.state.gitignored,
+      gitignoreSkipped: report.state.gitignoreSkipped,
+      index: report.state.index,
+      sessions: report.state.sessions,
+      archiveSessions: report.state.archiveSessions,
+      issues: report.state.issues,
+      hookOrder: report.state.hookOrder,
     },
     selfHealing: report.selfHealing ?? null,
     vendorDocs: report.vendorDocs.map((d) => ({

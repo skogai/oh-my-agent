@@ -49,6 +49,45 @@ export interface AgentMemoryDoctorCheck {
   issues: string[];
 }
 
+export interface StateIndexDoctorCheck {
+  path: string;
+  exists: boolean;
+  parseOk: boolean;
+  active: Record<string, string>;
+  missingActive: Array<{ category: string; sid: string }>;
+  error?: string;
+}
+
+export interface StateSessionDoctorCheck {
+  sid: string;
+  metaOk: boolean;
+  invalidEventLines: number;
+}
+
+export interface HookOrderDoctorCheck {
+  vendor: string;
+  settingsPath: string;
+  configured: boolean;
+  parseOk: boolean;
+  promptEvent?: string;
+  order: string[];
+  ok: boolean;
+  agentMemory: "absent" | "after-skill-injector" | "before-skill-injector";
+  error?: string;
+}
+
+export interface StateDoctorCheck {
+  rootPath: string;
+  rootExists: boolean;
+  gitignored: boolean;
+  gitignoreSkipped: boolean;
+  index: StateIndexDoctorCheck;
+  sessions: StateSessionDoctorCheck[];
+  archiveSessions: number;
+  issues: string[];
+  hookOrder: HookOrderDoctorCheck[];
+}
+
 export interface DoctorReport {
   cwd: string;
   clis: CLICheck[];
@@ -63,5 +102,6 @@ export interface DoctorReport {
   totalIssues: number;
   skillAudit: SkillAuditReport;
   dualInstall: DualInstallReport;
+  state: StateDoctorCheck;
   selfHealing?: SelfHealingGateResult;
 }

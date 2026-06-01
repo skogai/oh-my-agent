@@ -96,7 +96,7 @@ vi.mock("node:fs", async (importOriginal) => {
 });
 
 // ---- import module under test AFTER mocks ----
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { collectDoctorReport } from "./doctor.js";
 
 // Settle all pending procs synchronously
@@ -419,5 +419,132 @@ describe("self-healing doctor check", () => {
         report.agentMemory.issues.length +
         1,
     );
+  });
+});
+
+describe("state and hook doctor checks", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    spawnState.lastProcs.length = 0;
+    vi.clearAllMocks();
+    vi.mocked(existsSync).mockReturnValue(false);
+    vi.mocked(readFileSync).mockReturnValue("");
+    vi.mocked(readdirSync).mockReturnValue([]);
+    spawnState.execFileSyncFn.mockImplementation((_command, args) => {
+      const gitArgs = args as string[];
+      if (gitArgs.includes("rev-parse")) return "";
+      if (gitArgs.includes("check-ignore")) {
+        throw new Error("not ignored");
+      }
+      return "";
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("reports gitignore, corrupt meta, invalid event lines, and missing active state", async () => {
+    vi.mocked(existsSync).mockImplementation((p) => {
+      const path = String(p);
+      return (
+        path.endsWith(".agents/state") ||
+        path.endsWith(".agents/state/sessions") ||
+        path.endsWith(".agents/state/sessions/_index.json") ||
+        path.endsWith(".agents/state/sessions/sid-1") ||
+        path.endsWith(".agents/state/sessions/sid-1/meta.json") ||
+        path.endsWith(".agents/state/sessions/sid-1/events.jsonl")
+      );
+    });
+    vi.mocked(readdirSync).mockImplementation((p) => {
+      const path = String(p);
+      if (path.endsWith(".agents/state/sessions")) {
+        return [{ name: "sid-1", isDirectory: () => true }] as never;
+      }
+      return [] as never;
+    });
+    vi.mocked(readFileSync).mockImplementation((p) => {
+      const path = String(p);
+      if (path.endsWith("_index.json")) {
+        return JSON.stringify({
+          schemaVersion: 1,
+          active: { main: "sid-1", tool: "missing-sid" },
+        });
+      }
+      if (path.endsWith("meta.json")) return "{bad json";
+      if (path.endsWith("events.jsonl")) {
+        return [
+          JSON.stringify({
+            sid: "sid-1",
+            kind: "session.created",
+            eventId: "evt-1",
+            ts: "2026-06-01T00:00:00.000Z",
+          }),
+          "{bad json",
+        ].join("\n");
+      }
+      return "";
+    });
+
+    const reportPromise = collectDoctorReport();
+    await vi.advanceTimersByTimeAsync(0);
+    await settleInstalledClis([]);
+
+    const report = await reportPromise;
+
+    expect(report.state.gitignored).toBe(false);
+    expect(report.state.index.missingActive).toEqual([
+      { category: "tool", sid: "missing-sid" },
+    ]);
+    expect(report.state.sessions).toEqual([
+      { sid: "sid-1", metaOk: false, invalidEventLines: 1 },
+    ]);
+    expect(report.state.issues).toContain(".agents/state/ is not gitignored");
+    expect(report.state.issues).toContain(
+      "active state session missing: tool=missing-sid",
+    );
+    expect(report.state.issues).toContain("state meta is corrupt: sid-1");
+    expect(report.state.issues).toContain(
+      "state events contain 1 invalid line(s): sid-1",
+    );
+  });
+
+  it("reports invalid installed prompt hook order", async () => {
+    vi.mocked(existsSync).mockImplementation((p) =>
+      String(p).endsWith(".codex/hooks.json"),
+    );
+    vi.mocked(readFileSync).mockImplementation((p) => {
+      if (!String(p).endsWith(".codex/hooks.json")) return "";
+      return JSON.stringify({
+        hooks: {
+          UserPromptSubmit: [
+            {
+              hooks: [
+                { name: "state-boundary" },
+                { name: "keyword-detector" },
+                { name: "skill-injector" },
+              ],
+            },
+          ],
+        },
+      });
+    });
+
+    const reportPromise = collectDoctorReport();
+    await vi.advanceTimersByTimeAsync(0);
+    await settleInstalledClis([]);
+
+    const report = await reportPromise;
+
+    expect(report.state.hookOrder).toContainEqual(
+      expect.objectContaining({
+        vendor: "codex",
+        configured: true,
+        promptEvent: "UserPromptSubmit",
+        order: ["state-boundary", "keyword-detector", "skill-injector"],
+        ok: false,
+      }),
+    );
+    expect(report.state.issues).toContain("hook order invalid: codex");
   });
 });

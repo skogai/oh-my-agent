@@ -5,14 +5,13 @@ Only commits when the list changes. Unstargazer entries include profile
 summaries to spot which persona is churning.
 
 <!-- unstars-start -->
-## 2026-05-21 · 1 unstarred
+## 2026-06-01 · 1 unstarred
 
-- **@islee23520** · iz · Linalab.io · 171 repos · 40 followers
-  - kira kira✨ Game Dev 🎮 New Typed · 
+- **@ybloom** · YBloom · Shanghai · XJTLU · 13 repos · 3 followers
 <!-- unstars-end -->
 
 <!-- current-start -->
-## Current (1036)
+## Current (1042)
 
 - @05hhh35 — 2026-03-07
 - @0617Allience — 2026-05-23
@@ -289,6 +288,7 @@ summaries to spot which persona is churning.
 - @fatsby — 2026-02-02
 - @fbsbittencourt — 2026-02-13
 - @fdkgenie — 2026-02-25
+- @fengxiaoyi34 — 2026-05-31
 - @Finesssee — 2026-03-10
 - @FitchburgAdvocate — 2026-02-04
 - @fivessun — 2026-04-19
@@ -385,6 +385,7 @@ summaries to spot which persona is churning.
 - @he9lin — 2026-04-20
 - @hebingbinghe — 2026-03-25
 - @HectorSin — 2026-03-09
+- @hegc-co — 2026-05-31
 - @helloicyvodka — 2026-05-09
 - @hemanthep9595 — 2026-02-07
 - @hemp-dev — 2026-03-27
@@ -411,6 +412,7 @@ summaries to spot which persona is churning.
 - @hoya629 — 2026-02-02
 - @hqman — 2026-04-06
 - @hsn9999 — 2026-04-19
+- @hubblethedog — 2026-05-31
 - @humbertouchiyama — 2026-02-12
 - @hundong2 — 2026-02-01
 - @Huro0906 — 2026-03-11
@@ -678,6 +680,7 @@ summaries to spot which persona is churning.
 - @Mulraeng — 2026-02-03
 - @munkgorn — 2026-05-20
 - @muratclk — 2026-02-18
+- @mvandermeulen — 2026-06-01
 - @mxfli — 2026-03-18
 - @mykim-aus — 2026-02-08
 - @n-zhi — 2026-03-02
@@ -689,6 +692,7 @@ summaries to spot which persona is churning.
 - @nanpuhaha — 2026-03-16
 - @naoki-rafael-miura — 2026-02-12
 - @nasong27-oss — 2026-04-14
+- @nerdy2quant — 2026-06-01
 - @neuexg — 2026-05-21
 - @NeuroNexa — 2026-04-07
 - @neverparadise — 2026-03-17
@@ -834,6 +838,7 @@ summaries to spot which persona is churning.
 - @scenery0909 — 2026-02-02
 - @sckroll — 2026-03-02
 - @scottjl — 2026-03-18
+- @seankrux — 2026-05-31
 - @sebatyler — 2026-02-02
 - @secondbest002 — 2026-02-01
 - @seilk — 2026-03-17
@@ -850,6 +855,7 @@ summaries to spot which persona is churning.
 - @shlxue — 2026-04-05
 - @shoppai-cyber — 2026-03-13
 - @shshajek-cpu — 2026-02-01
+- @shubhampachori12110095 — 2026-05-31
 - @sibbl — 2026-01-31
 - @sigco3111 — 2026-05-20
 - @silobust-hash — 2026-05-17
@@ -1016,7 +1022,6 @@ summaries to spot which persona is churning.
 - @yamyay — 2026-05-13
 - @YangOng-md — 2026-05-17
 - @YashDoesCode — 2026-05-20
-- @YBloom — 2026-02-03
 - @yeolwoosung — 2026-04-22
 - @YeongSeokJeong — 2026-04-28
 - @yibille — 2026-05-27

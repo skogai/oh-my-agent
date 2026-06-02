@@ -156,6 +156,40 @@ describe("agentmemory-service", () => {
       expect(result.message).toContain("activation failed");
     });
 
+    it("falls back to legacy launchctl load -w when bootstrap fails (EIO)", () => {
+      const ran: string[] = [];
+      const result = installAgentMemoryService({
+        homeDir,
+        platform: "darwin",
+        runner(command) {
+          ran.push([command.bin, ...command.args].join(" "));
+          // Modern bootstrap fails with EIO; legacy `load -w` succeeds.
+          if (command.args.includes("bootstrap")) {
+            return { status: 5, error: "Input/output error" };
+          }
+          if (command.args.includes("load")) return { status: 0 };
+          return { status: 0 };
+        },
+      });
+      expect(result.activated).toBe(true);
+      expect(result.message).toContain("activated");
+      expect(ran.some((line) => line.includes("launchctl load -w"))).toBe(true);
+      expect(result.commands.some((c) => c.includes("load -w"))).toBe(true);
+    });
+
+    it("stays failed when both bootstrap and legacy load fail", () => {
+      const result = installAgentMemoryService({
+        homeDir,
+        platform: "darwin",
+        runner(command) {
+          if (command.args.includes("bootout")) return { status: 0 };
+          return { status: 5, error: "Input/output error" };
+        },
+      });
+      expect(result.activated).toBe(false);
+      expect(result.message).toContain("activation failed");
+    });
+
     it("is a no-op on unsupported platforms", () => {
       const result = installAgentMemoryService({ homeDir, platform: "win32" });
       expect(result).toMatchObject({

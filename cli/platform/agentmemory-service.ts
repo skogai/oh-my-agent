@@ -255,6 +255,7 @@ export function installAgentMemoryService(
       : serviceCommands({ action: "install", platform, servicePath });
   const commandLines = commands.map(formatServiceCommand);
 
+  const runner = args.runner ?? defaultServiceCommandRunner;
   let wroteFile = false;
   let activated = false;
   let commandExitCode: number | null | undefined;
@@ -264,13 +265,26 @@ export function installAgentMemoryService(
     writeFileSync(servicePath, content, { encoding: "utf-8", mode: 0o600 });
     wroteFile = true;
 
-    const commandResult = runServiceCommands({
-      commands,
-      runner: args.runner ?? defaultServiceCommandRunner,
-    });
+    const commandResult = runServiceCommands({ commands, runner });
     activated = commandResult.activated;
     commandExitCode = commandResult.commandExitCode;
     commandError = commandResult.commandError;
+
+    // `launchctl bootstrap` returns EIO (5) in some macOS session contexts
+    // (background jobs, certain Aqua/login states). The legacy `load -w` API is
+    // deprecated but still works there, so fall back to it before giving up.
+    if (!activated && platform === "darwin") {
+      const legacy = runner({
+        bin: "launchctl",
+        args: ["load", "-w", servicePath],
+      });
+      commandLines.push(`launchctl load -w ${servicePath}`);
+      if (legacy.status === 0) {
+        activated = true;
+        commandExitCode = 0;
+        commandError = undefined;
+      }
+    }
   }
 
   return {
@@ -315,13 +329,18 @@ export function uninstallAgentMemoryService(
   let commandError: string | undefined;
 
   if (servicePath && !args.dryRun) {
-    const commandResult = runServiceCommands({
-      commands,
-      runner: args.runner ?? defaultServiceCommandRunner,
-    });
+    const runner = args.runner ?? defaultServiceCommandRunner;
+    const commandResult = runServiceCommands({ commands, runner });
     activated = commandResult.activated;
     commandExitCode = commandResult.commandExitCode;
     commandError = commandResult.commandError;
+
+    // Best-effort legacy unload to match the `load -w` install fallback; the
+    // modern `bootout` may EIO in the same contexts (see installer note).
+    if (platform === "darwin") {
+      runner({ bin: "launchctl", args: ["unload", "-w", servicePath] });
+      commandLines.push(`launchctl unload -w ${servicePath}`);
+    }
 
     if (existsSync(servicePath)) {
       rmSync(servicePath, { force: true });

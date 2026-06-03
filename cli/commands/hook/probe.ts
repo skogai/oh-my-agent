@@ -15,8 +15,15 @@ import { join } from "node:path";
  * Runs the real `keyword-detector` and `state-boundary` hooks against each
  * vendor's stdin shape inside an isolated temp project, then reports a
  * capability matrix: hook invocation, stdin acceptance, stdout injection field,
- * L1 event recording, and the close-reopen snapshot flush. The matrix is the
- * evidence that lifts a vendor from "experimental" to L1-verified (PR 12-15).
+ * L1 event recording, and the close-reopen snapshot flush.
+ *
+ * SCOPE (important): this exercises OMA's OWN hook behavior — does OMA accept
+ * the vendor stdin shape and emit a well-formed injection + L1 events? It does
+ * NOT run the real vendor CLI, so a PASS does NOT prove the vendor consumes the
+ * injection or executes the hook at runtime. That remains per-vendor live/manual
+ * verification. Known gaps: grok ignores passive-hook stdout (no prompt-time
+ * injection channel); agy (antigravity) loads hooks from a separate hooks.json
+ * and its JSON-hook execution may be feature-flag gated.
  */
 
 export type ProbeVendor =
@@ -25,6 +32,8 @@ export type ProbeVendor =
   | "codex"
   | "cursor"
   | "gemini"
+  | "grok"
+  | "kiro"
   | "qwen";
 
 export const PROBE_VENDORS: ProbeVendor[] = [
@@ -32,6 +41,8 @@ export const PROBE_VENDORS: ProbeVendor[] = [
   "codex",
   "cursor",
   "gemini",
+  "grok",
+  "kiro",
   "qwen",
   "antigravity",
 ];
@@ -55,7 +66,7 @@ const VENDOR_CASES: Record<ProbeVendor, VendorCase> = {
   antigravity: {
     promptEvent: "PreInvocation",
     expectedHookEvent: "PreInvocation",
-    injectionFields: ["additionalContext"],
+    injectionFields: ["injectSteps[].ephemeralMessage"],
     usesHookSpecificOutput: false,
     build: (projectDir, vendorSid, prompt) => ({
       input: {
@@ -125,6 +136,37 @@ const VENDOR_CASES: Record<ProbeVendor, VendorCase> = {
       env: { GEMINI_PROJECT_DIR: projectDir },
     }),
   },
+  grok: {
+    promptEvent: "UserPromptSubmit",
+    expectedHookEvent: "UserPromptSubmit",
+    injectionFields: ["additionalContext"],
+    usesHookSpecificOutput: false,
+    build: (projectDir, vendorSid, prompt) => ({
+      input: {
+        hookEventName: "user_prompt_submit",
+        sessionId: vendorSid,
+        cwd: projectDir,
+        workspaceRoot: projectDir,
+        prompt,
+      },
+      env: { GROK_WORKSPACE_ROOT: projectDir },
+    }),
+  },
+  kiro: {
+    promptEvent: "userPromptSubmit",
+    expectedHookEvent: "userPromptSubmit",
+    injectionFields: ["additionalContext"],
+    usesHookSpecificOutput: false,
+    build: (projectDir, vendorSid, prompt) => ({
+      input: {
+        hook_event_name: "userPromptSubmit",
+        sessionId: vendorSid,
+        cwd: projectDir,
+        prompt,
+      },
+      env: { KIRO_PROJECT_DIR: projectDir },
+    }),
+  },
   qwen: {
     promptEvent: "UserPromptSubmit",
     expectedHookEvent: "UserPromptSubmit",
@@ -188,11 +230,28 @@ function classifyInjection(
 ): { ok: boolean; field: string; context: string | null } {
   const trimmed = raw.trim();
   if (!trimmed) return { ok: false, field: "(no output)", context: null };
+  if (vendor === "kiro") {
+    return { ok: true, field: "stdout", context: trimmed };
+  }
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(trimmed) as Record<string, unknown>;
   } catch {
     return { ok: false, field: "(invalid json)", context: null };
+  }
+
+  if (vendor === "antigravity") {
+    // agy injects via PreInvocation `injectSteps[].ephemeralMessage`.
+    const steps = parsed.injectSteps;
+    const first = Array.isArray(steps)
+      ? (steps[0] as Record<string, unknown> | undefined)
+      : undefined;
+    const ctx = first?.ephemeralMessage ?? first?.userMessage;
+    return {
+      ok: typeof ctx === "string",
+      field: "injectSteps[].ephemeralMessage",
+      context: typeof ctx === "string" ? ctx : null,
+    };
   }
 
   const vendorCase = VENDOR_CASES[vendor];
@@ -418,6 +477,8 @@ export function renderProbeMatrix(matrix: HookProbeMatrix): string {
   const lines = [
     "OMA hook compatibility probe",
     `hooks: ${matrix.hooksDir}`,
+    "PASS = OMA emits a valid injection + L1 events for this stdin shape;",
+    "       it does NOT confirm the vendor consumes it (live verification needed).",
     "",
     "vendor       status   invoke  stdin  inject  events  reopen  chain",
     "-----------  -------  ------  -----  ------  ------  ------  -----",
@@ -451,6 +512,12 @@ export function renderProbeMatrixMarkdown(matrix: HookProbeMatrix): string {
     "# OMA Hook Compatibility Matrix",
     "",
     `Hooks: \`${matrix.hooksDir}\``,
+    "",
+    "> **PASS = OMA emits a valid injection + L1 events for this vendor's stdin",
+    "> shape.** It does NOT confirm the vendor consumes the injection or fires",
+    "> the hook at runtime — that is per-vendor live verification. Known gaps:",
+    "> grok ignores passive-hook stdout; agy loads hooks from a separate",
+    "> hooks.json that may be feature-flag gated.",
     "",
     "| Vendor | Status | Invoke | Stdin | Inject | Events | Reopen | Chain |",
     "|---|---|---|---|---|---|---|---|",

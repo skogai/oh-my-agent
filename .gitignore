@@ -59,6 +59,9 @@ web/.serena/
 .agents/state/
 .agents/results/
 
+# agy (Antigravity) hooks manifest — generated per-install with absolute paths
+.agents/hooks.json
+
 # Nested oma artifacts (when build/tests run from cli/ with OMA_HOME unset
 # they may write a stray .agents/ under cli/ — never tracked)
 cli/.agents/

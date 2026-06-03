@@ -150,6 +150,72 @@ describe("hud.ts", () => {
       expect(result).not.toContain("sandbox");
     });
 
+    it("shows git branch from vcs, with dirty marker", () => {
+      const clean = stripAnsi(hud({ vcs: { type: "git", branch: "dev" } }));
+      expect(clean).toContain("⎇ dev");
+      expect(clean).not.toContain("dev*");
+      const dirty = stripAnsi(
+        hud({ vcs: { type: "git", branch: "dev", dirty: true } }),
+      );
+      expect(dirty).toContain("⎇ dev*");
+    });
+
+    it("hides branch when vcs is absent", () => {
+      const result = stripAnsi(hud({}));
+      expect(result).not.toContain("⎇");
+    });
+
+    it("shows active subagent count", () => {
+      const result = stripAnsi(
+        hud({ subagents: [{ name: "a" }, { name: "b" }] }),
+      );
+      expect(result).toContain("subagents:2");
+    });
+
+    it("shows background task count", () => {
+      const result = stripAnsi(hud({ background_tasks: [{ name: "build" }] }));
+      expect(result).toContain("bg:1");
+    });
+
+    it("shows queued input count when > 0, hides when 0", () => {
+      expect(stripAnsi(hud({ pending_input_count: 3 }))).toContain("queue:3");
+      expect(stripAnsi(hud({ pending_input_count: 0 }))).not.toContain(
+        "queue:",
+      );
+    });
+
+    it("flags a pending tool confirmation", () => {
+      expect(stripAnsi(hud({ tool_confirmation_pending: true }))).toContain(
+        "confirm?",
+      );
+      expect(
+        stripAnsi(hud({ tool_confirmation_pending: false })),
+      ).not.toContain("confirm?");
+    });
+
+    it("keeps the token block last when agy-rich fields are present", () => {
+      const result = stripAnsi(
+        hud({
+          vcs: { type: "git", branch: "main", dirty: true },
+          subagents: [{ name: "x" }],
+          background_tasks: [{ name: "t" }],
+          pending_input_count: 2,
+          tool_confirmation_pending: true,
+          agent_state: "working",
+          context_window: {
+            total_input_tokens: 1234,
+            total_output_tokens: 5678,
+          },
+        }),
+      );
+      expect(result.endsWith("tok:1.2k↑5.7k↓")).toBe(true);
+      expect(result).toContain("⎇ main*");
+      expect(result).toContain("subagents:1");
+      expect(result).toContain("bg:1");
+      expect(result).toContain("queue:2");
+      expect(result).toContain("confirm?");
+    });
+
     it("renders the captured agy payload end-to-end", () => {
       const result = stripAnsi(
         hud({

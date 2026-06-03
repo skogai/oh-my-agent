@@ -51,6 +51,7 @@ export function renderStateSnapshot(input: StateSnapshotRenderInput): string {
     case "cursor":
     case "gemini":
     case "grok":
+    case "kiro":
     case "qwen":
       return renderClaudeSnapshot(input);
   }

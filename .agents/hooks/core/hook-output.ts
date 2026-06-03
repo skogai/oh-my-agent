@@ -11,7 +11,13 @@ export function makePromptOutput(
 ): string {
   switch (vendor) {
     case "antigravity":
-      return JSON.stringify({ additionalContext });
+      // agy (Antigravity) does NOT read `additionalContext`. Per the official
+      // contract (antigravity.google/docs/hooks), a PreInvocation hook injects
+      // context by returning `injectSteps`, where `ephemeralMessage` is a
+      // transient system-message step prepended before the model is called.
+      return JSON.stringify({
+        injectSteps: [{ ephemeralMessage: additionalContext }],
+      });
     case "claude":
       return JSON.stringify({ additionalContext });
     case "codex":
@@ -42,6 +48,9 @@ export function makePromptOutput(
       // it via hook annotations or ignore for prompt events. State side-effects
       // (mode activation, L1 events) are the primary mechanism.
       return JSON.stringify({ additionalContext });
+    case "kiro":
+      // Kiro CLI adds stdout directly to the agent context for prompt hooks.
+      return additionalContext;
     case "qwen":
       // Qwen Code fork uses hookSpecificOutput (same as Codex)
       return JSON.stringify({
@@ -56,11 +65,15 @@ export function makePromptOutput(
 export function makeBlockOutput(vendor: Vendor, reason: string): string {
   switch (vendor) {
     case "claude":
-    case "antigravity":
     case "codex":
     case "cursor":
+    case "kiro":
     case "qwen":
       return JSON.stringify({ decision: "block", reason });
+    case "antigravity":
+      // agy Stop: `decision:"continue"` re-enters the loop (= block the stop);
+      // `reason` is injected as a system message. (Any other value allows stop.)
+      return JSON.stringify({ decision: "continue", reason });
     case "gemini":
       // Gemini AfterAgent uses "deny" to reject response and force retry
       return JSON.stringify({ decision: "deny", reason });
@@ -90,8 +103,8 @@ export function makePreToolOutput(
         },
       });
     case "claude":
-    case "antigravity":
     case "codex":
+    case "kiro":
     case "qwen":
       return JSON.stringify({
         hookSpecificOutput: {
@@ -99,6 +112,11 @@ export function makePreToolOutput(
           updatedInput,
         },
       });
+    case "antigravity":
+      // agy PreToolUse output is a gate decision; it cannot rewrite tool input.
+      // Allow execution (test-filter is advisory on agy). updatedInput unused.
+      void updatedInput;
+      return JSON.stringify({ decision: "allow" });
     case "grok":
       // Grok PreToolUse uses decision + possibly updated tool input
       return JSON.stringify({

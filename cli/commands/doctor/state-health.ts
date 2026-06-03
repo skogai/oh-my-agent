@@ -1,4 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import {
   AGENTS_STATE_ARCHIVE_DIR,
@@ -45,11 +46,8 @@ const HOOK_SETTINGS: Array<{
     path: ".gemini/settings.json",
     promptEvents: ["BeforeAgent"],
   },
-  {
-    vendor: "antigravity",
-    path: ".gemini/antigravity-cli/settings.json",
-    promptEvents: ["PreInvocation"],
-  },
+  // antigravity is checked separately (collectAntigravityHookOrder): it is
+  // HOME-only and loads a named-map hooks.json, not settings.json event arrays.
   {
     vendor: "grok",
     path: ".grok/hooks/oma-hooks.json",
@@ -134,8 +132,87 @@ function agentMemoryOrder(
     : "before-skill-injector";
 }
 
+/**
+ * agy's hooks.json is a named map (`{ "hooks": { "<name>": { event, ... } } }`)
+ * rather than the settings.json event-keyed arrays the other vendors use, so it
+ * needs its own order extractor. Tolerates `event` (string) or `events` (array).
+ */
+function namedHookOrder(parsed: unknown, eventName: string): string[] {
+  if (!isRecord(parsed)) return [];
+  const hooksRoot = parsed.hooks;
+  if (!isRecord(hooksRoot)) return [];
+  const ordered: string[] = [];
+  for (const [name, spec] of Object.entries(hooksRoot)) {
+    if (!isRecord(spec)) continue;
+    const events = Array.isArray(spec.events) ? spec.events : [];
+    if (spec.event === eventName || events.includes(eventName)) {
+      ordered.push(name);
+    }
+  }
+  return ordered;
+}
+
+/**
+ * antigravity (agy) loads hooks from `~/.gemini/antigravity-cli/hooks.json`.
+ * BEST-EFFORT: agy strips `defaultHooksPath` from settings.json and headless
+ * runs never fired hooks, so this only confirms the file is well-formed and
+ * ordered — not that agy actually loads/executes it.
+ */
+function collectAntigravityHookOrder(): HookOrderDoctorCheck {
+  const vendor = "antigravity";
+  const hooksJsonPath = join(homedir(), ".gemini/antigravity-cli/hooks.json");
+  if (!existsSync(hooksJsonPath)) {
+    return {
+      vendor,
+      settingsPath: hooksJsonPath,
+      configured: false,
+      parseOk: true,
+      order: [],
+      ok: true,
+      agentMemory: "absent",
+    };
+  }
+  const parsed = parseJsonFile(hooksJsonPath);
+  if (!parsed.ok) {
+    return {
+      vendor,
+      settingsPath: hooksJsonPath,
+      configured: true,
+      parseOk: false,
+      order: [],
+      ok: false,
+      agentMemory: "absent",
+      error: parsed.error,
+    };
+  }
+  const order = namedHookOrder(parsed.value, "PreInvocation");
+  if (order.length === 0) {
+    return {
+      vendor,
+      settingsPath: hooksJsonPath,
+      configured: false,
+      parseOk: true,
+      order: [],
+      ok: true,
+      agentMemory: "absent",
+      error: "prompt hook event not found",
+    };
+  }
+  const memory = agentMemoryOrder(order);
+  return {
+    vendor,
+    settingsPath: hooksJsonPath,
+    configured: true,
+    parseOk: true,
+    promptEvent: "PreInvocation",
+    order,
+    ok: hasExpectedOrder(order) && memory !== "before-skill-injector",
+    agentMemory: memory,
+  };
+}
+
 function collectHookOrder(projectDir: string): HookOrderDoctorCheck[] {
-  return HOOK_SETTINGS.map((spec) => {
+  const checks: HookOrderDoctorCheck[] = HOOK_SETTINGS.map((spec) => {
     const settingsPath = join(projectDir, ...spec.path.split("/"));
     if (!existsSync(settingsPath)) {
       return {
@@ -190,6 +267,9 @@ function collectHookOrder(projectDir: string): HookOrderDoctorCheck[] {
       error: "prompt hook event not found",
     };
   });
+
+  checks.push(collectAntigravityHookOrder());
+  return checks;
 }
 
 function collectIndex(projectDir: string): StateIndexDoctorCheck {

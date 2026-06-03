@@ -380,10 +380,12 @@ export function installClaudeSkills(
  * and must NOT be passed to `installVendorAdaptations`.
  */
 const HOOK_VENDORS: ReadonlySet<VendorType> = new Set([
+  "antigravity",
   "claude",
   "codex",
   "cursor",
   "gemini",
+  "grok",
   "kiro",
   "qwen",
 ]);

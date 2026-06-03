@@ -41,6 +41,7 @@ function inferVendorFromScriptPath(): Vendor | null {
   if (path.includes(`${join(".gemini", "hooks")}`)) return "gemini";
   if (path.includes(`${join(".codex", "hooks")}`)) return "codex";
   if (path.includes(`${join(".grok", "hooks")}`)) return "grok";
+  if (path.includes(`${join(".kiro", "hooks")}`)) return "kiro";
   return null;
 }
 
@@ -52,6 +53,14 @@ function detectVendor(input: Record<string, unknown>): Vendor {
 
   if (process.env.GROK_WORKSPACE_ROOT || hookEventName?.includes("prompt")) {
     if (process.env.GROK_WORKSPACE_ROOT) return "grok";
+  }
+
+  if (
+    process.env.KIRO_PROJECT_DIR ||
+    event === "userPromptSubmit" ||
+    hookEventName === "userPromptSubmit"
+  ) {
+    return "kiro";
   }
 
   if (event === "PreInvocation") return "antigravity";
@@ -89,6 +98,10 @@ function getProjectDir(vendor: Vendor, input: Record<string, unknown>): string {
         process.env.GROK_WORKSPACE_ROOT ||
         (input.cwd as string) ||
         process.cwd();
+      break;
+    case "kiro":
+      dir =
+        process.env.KIRO_PROJECT_DIR || (input.cwd as string) || process.cwd();
       break;
     default:
       dir = process.env.CLAUDE_PROJECT_DIR || process.cwd();

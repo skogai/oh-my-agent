@@ -50,6 +50,7 @@ import {
   needsGrokTelemetryUpdate,
 } from "../../vendors/grok/settings.js";
 import {
+  applyKiroOmaHooksAgent,
   applyKiroProjectMcp,
   needsKiroMcpUpdate,
 } from "../../vendors/kiro/settings.js";
@@ -282,9 +283,12 @@ export function link(opts: LinkOptions = {}): LinkResult {
     applyGrokProjectMcp(cwd);
   }
 
-  // 4f-kiro. Kiro `.kiro/settings/cli.json` — Serena MCP entry.
-  if (configuredVendors.includes("kiro") && needsKiroMcpUpdate(cwd)) {
-    applyKiroProjectMcp(cwd);
+  // 4f-kiro. Kiro uses agent configuration for hooks and settings for MCP.
+  if (configuredVendors.includes("kiro")) {
+    applyKiroOmaHooksAgent(cwd);
+    if (needsKiroMcpUpdate(cwd)) {
+      applyKiroProjectMcp(cwd);
+    }
   }
 
   // 4f. Claude Code project-level MCP (`.mcp.json` at project root, serena

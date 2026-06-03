@@ -547,4 +547,36 @@ describe("state and hook doctor checks", () => {
     );
     expect(report.state.issues).toContain("hook order invalid: codex");
   });
+
+  it("checks antigravity hooks.json named-map order (HOME, best-effort)", async () => {
+    vi.mocked(existsSync).mockImplementation((p) =>
+      String(p).endsWith(".gemini/antigravity-cli/hooks.json"),
+    );
+    vi.mocked(readFileSync).mockImplementation((p) => {
+      if (!String(p).endsWith(".gemini/antigravity-cli/hooks.json")) return "";
+      return JSON.stringify({
+        hooks: {
+          "keyword-detector": { event: "PreInvocation" },
+          "state-boundary": { event: "PreInvocation" },
+          "skill-injector": { event: "PreInvocation" },
+        },
+      });
+    });
+
+    const reportPromise = collectDoctorReport();
+    await vi.advanceTimersByTimeAsync(0);
+    await settleInstalledClis([]);
+
+    const report = await reportPromise;
+
+    expect(report.state.hookOrder).toContainEqual(
+      expect.objectContaining({
+        vendor: "antigravity",
+        configured: true,
+        promptEvent: "PreInvocation",
+        order: ["keyword-detector", "state-boundary", "skill-injector"],
+        ok: true,
+      }),
+    );
+  });
 });

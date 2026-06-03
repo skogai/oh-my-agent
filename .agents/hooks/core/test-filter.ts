@@ -14,8 +14,10 @@ function detectVendor(input: Record<string, unknown>): Vendor {
   const _hookEventName = input.hookEventName as string | undefined;
 
   if (process.env.GROK_WORKSPACE_ROOT) return "grok";
+  if (process.env.KIRO_PROJECT_DIR) return "kiro";
 
   if (event === "BeforeTool") return "gemini";
+  if (event === "preToolUse" || _hookEventName === "preToolUse") return "kiro";
   if (event === "PreToolUse" && process.env.ANTIGRAVITY_PROJECT_DIR)
     return "antigravity";
   if (event === "PreToolUse") {
@@ -50,6 +52,10 @@ function getProjectDir(vendor: Vendor, input: Record<string, unknown>): string {
         (input.cwd as string) ||
         process.cwd();
       break;
+    case "kiro":
+      dir =
+        process.env.KIRO_PROJECT_DIR || (input.cwd as string) || process.cwd();
+      break;
     default:
       dir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
       break;
@@ -67,6 +73,10 @@ function getHookDir(vendor: Vendor): string {
       return ".gemini/antigravity-cli/hooks";
     case "qwen":
       return ".qwen/hooks";
+    case "grok":
+      return ".grok/hooks";
+    case "kiro":
+      return ".kiro/hooks";
     default:
       return ".claude/hooks";
   }

@@ -26,5 +26,6 @@ export const VENDORS = [
   "cursor",
   "gemini",
   "grok",
+  "kiro",
   "qwen",
 ] as const;

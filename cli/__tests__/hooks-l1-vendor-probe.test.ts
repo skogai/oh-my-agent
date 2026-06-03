@@ -42,7 +42,11 @@ function expectPromptOutput(vendor: Vendor, raw: string): void {
   }
 
   if (vendor === "antigravity") {
-    expect(parsed.additionalContext).toEqual(expect.any(String));
+    // agy injects via PreInvocation injectSteps[].ephemeralMessage (official contract)
+    const steps = parsed.injectSteps as
+      | Array<Record<string, unknown>>
+      | undefined;
+    expect(steps?.[0]?.ephemeralMessage).toEqual(expect.any(String));
     return;
   }
 
@@ -63,8 +67,12 @@ function expectPromptOutput(vendor: Vendor, raw: string): void {
 
 function getAdditionalContext(vendor: Vendor, raw: string): string {
   const parsed = JSON.parse(raw) as Record<string, unknown>;
-  if (vendor === "claude" || vendor === "antigravity") {
+  if (vendor === "claude") {
     return parsed.additionalContext as string;
+  }
+  if (vendor === "antigravity") {
+    const steps = parsed.injectSteps as Array<Record<string, unknown>>;
+    return steps[0]?.ephemeralMessage as string;
   }
   if (vendor === "cursor") {
     return parsed.additionalContext as string;

@@ -11,9 +11,8 @@ import {
 const repoRoot = join(__dirname, "..", "..", "..");
 
 describe("hook compatibility probe", () => {
-  // Cover the three stdout-injection styles: additionalContext (claude),
-  // hookSpecificOutput (codex), and dual-field (cursor).
-  const vendors: ProbeVendor[] = ["claude", "codex", "cursor"];
+  // Cover the stdout-injection styles and the newer project-hook vendors.
+  const vendors: ProbeVendor[] = ["claude", "codex", "cursor", "grok", "kiro"];
 
   it("reports verified L1 compatibility for supported vendors", () => {
     const matrix = runHookProbe({ vendors, projectDir: repoRoot });
@@ -59,6 +58,8 @@ describe("hook compatibility probe", () => {
   it("exposes the default vendor set", () => {
     expect(PROBE_VENDORS).toContain("claude");
     expect(PROBE_VENDORS).toContain("codex");
+    expect(PROBE_VENDORS).toContain("grok");
+    expect(PROBE_VENDORS).toContain("kiro");
     expect(PROBE_VENDORS).toContain("qwen");
   });
 

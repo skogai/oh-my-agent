@@ -7,7 +7,9 @@ import { installAntigravityHud } from "./hud.js";
 const FAKE_HOME = "/tmp/fake-home";
 const AGY_DIR = join(FAKE_HOME, ".gemini/antigravity-cli");
 const SETTINGS = join(AGY_DIR, "settings.json");
-const HOOKS_DIR = join(AGY_DIR, "hooks");
+const HOME_HOOKS_DIR = join(AGY_DIR, "hooks"); // HOME copy backing statusLine
+const PROJECT_HOOKS_JSON = "/repo/.agents/hooks.json"; // agy auto-loads this
+const CORE = "/repo/.agents/hooks/core"; // project core hooks (command targets)
 const VARIANT = "/repo/.agents/hooks/variants/antigravity.json";
 
 const variantJson = JSON.stringify({
@@ -19,7 +21,7 @@ const variantJson = JSON.stringify({
     ],
     PreToolUse: {
       hook: "test-filter.ts",
-      matcher: "Bash",
+      matcher: "run_command",
       timeout: 5,
     },
     Stop: { hook: "persistent-mode.ts", timeout: 5 },
@@ -73,7 +75,7 @@ describe("installAntigravityHud", () => {
     expect(fs.writeFileSync).not.toHaveBeenCalled();
   });
 
-  it("writes statusLine and PreToolUse/Stop hooks with absolute commands", () => {
+  it("writes project .agents/hooks.json (official schema) + HOME statusLine", () => {
     (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
       (p: string) => {
         const norm = p.replace(/\\/g, "/");
@@ -96,47 +98,62 @@ describe("installAntigravityHud", () => {
     const result = installAntigravityHud("/repo");
 
     expect(result.installed).toBe(true);
-    expect(fs.cpSync).toHaveBeenCalledWith(
-      "/repo/.agents/hooks/core",
-      HOOKS_DIR,
-      { recursive: true, force: true, dereference: true },
-    );
+    expect(result.hooksJsonPath).toBe(PROJECT_HOOKS_JSON);
+    // HOME copy of core hooks backs the statusLine
+    expect(fs.cpSync).toHaveBeenCalledWith(CORE, HOME_HOOKS_DIR, {
+      recursive: true,
+      force: true,
+      dereference: true,
+    });
 
-    const writeCall = (
-      fs.writeFileSync as unknown as ReturnType<typeof vi.fn>
-    ).mock.calls.find(
-      (call: string[]) => typeof call[0] === "string" && call[0] === SETTINGS,
-    );
-    expect(writeCall).toBeTruthy();
+    const writes = (fs.writeFileSync as unknown as ReturnType<typeof vi.fn>)
+      .mock.calls;
 
-    const settings = JSON.parse(writeCall?.[1] as string);
-    expect(settings.statusLine.type).toBe("command");
-    expect(settings.statusLine.command).toBe(
-      `bun "${join(HOOKS_DIR, "hud.ts")}"`,
+    // hooks.json: official top-level map of NAME -> event config (no `hooks` wrapper).
+    const hooksWrite = writes.find(
+      (call: string[]) => call[0] === PROJECT_HOOKS_JSON,
     );
-    expect(settings.hooks.PreInvocation).toHaveLength(3);
-    expect(settings.hooks.PreInvocation[0]).toMatchObject({
-      name: "keyword-detector",
+    expect(hooksWrite).toBeTruthy();
+    const doc = JSON.parse(hooksWrite?.[1] as string);
+    expect(doc.hooks).toBeUndefined();
+
+    // lifecycle (PreInvocation): handler array directly, no matcher
+    expect(doc["oma-keyword-detector"].PreInvocation[0]).toMatchObject({
       type: "command",
-      command: `bun "${join(HOOKS_DIR, "keyword-detector.ts")}"`,
+      command: `bun "${join(CORE, "keyword-detector.ts")}"`,
       timeout: 5,
     });
-    expect(settings.hooks.PreInvocation[1].command).toBe(
-      `bun "${join(HOOKS_DIR, "state-boundary.ts")}"`,
+    expect(doc["oma-state-boundary"].PreInvocation[0].command).toBe(
+      `bun "${join(CORE, "state-boundary.ts")}"`,
     );
-    expect(settings.hooks.PreInvocation[2].command).toBe(
-      `bun "${join(HOOKS_DIR, "skill-injector.ts")}"`,
+    expect(doc["oma-skill-injector"].PreInvocation[0].command).toBe(
+      `bun "${join(CORE, "skill-injector.ts")}"`,
     );
-    expect(settings.hooks.PreToolUse[0].matcher).toBe("Bash");
-    expect(settings.hooks.PreToolUse[0].hooks[0].command).toBe(
-      `bun "${join(HOOKS_DIR, "test-filter.ts")}"`,
+
+    // tool event (PreToolUse): { matcher, hooks: [handler] }
+    expect(doc["oma-test-filter"].PreToolUse[0].matcher).toBe("run_command");
+    expect(doc["oma-test-filter"].PreToolUse[0].hooks[0].command).toBe(
+      `bun "${join(CORE, "test-filter.ts")}"`,
     );
-    expect(settings.hooks.Stop[0].command).toBe(
-      `bun "${join(HOOKS_DIR, "persistent-mode.ts")}"`,
+
+    // lifecycle (Stop): handler array directly
+    expect(doc["oma-persistent-mode"].Stop[0].command).toBe(
+      `bun "${join(CORE, "persistent-mode.ts")}"`,
     );
+
+    // settings.json: statusLine (HOME copy) only — agy strips hooks/defaultHooksPath.
+    const settingsWrite = writes.find((call: string[]) => call[0] === SETTINGS);
+    expect(settingsWrite).toBeTruthy();
+    const settings = JSON.parse(settingsWrite?.[1] as string);
+    expect(settings.statusLine.type).toBe("command");
+    expect(settings.statusLine.command).toBe(
+      `bun "${join(HOME_HOOKS_DIR, "hud.ts")}"`,
+    );
+    expect(settings.hooks).toBeUndefined();
+    expect(settings.defaultHooksPath).toBeUndefined();
   });
 
-  it("preserves existing unrelated keys (colorScheme, toolPermission, trustedWorkspaces)", () => {
+  it("preserves unrelated keys and removes the legacy settings.hooks key", () => {
     (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
       (p: string) => {
         const norm = p.replace(/\\/g, "/");
@@ -157,6 +174,9 @@ describe("installAntigravityHud", () => {
               enableTelemetry: false,
               toolPermission: "always-proceed",
               trustedWorkspaces: ["/repo"],
+              // dead keys from a previous OMA install — both must be removed
+              hooks: { PreInvocation: [{ hooks: [] }] },
+              defaultHooksPath: "/stale/hooks.json",
             }),
     );
 
@@ -173,9 +193,10 @@ describe("installAntigravityHud", () => {
     expect(settings.enableTelemetry).toBe(false);
     expect(settings.toolPermission).toBe("always-proceed");
     expect(settings.trustedWorkspaces).toEqual(["/repo"]);
-    // and HUD wiring was added alongside
+    // HUD wired; dead settings.hooks + defaultHooksPath keys stripped
     expect(settings.statusLine).toBeDefined();
-    expect(settings.hooks).toBeDefined();
+    expect(settings.hooks).toBeUndefined();
+    expect(settings.defaultHooksPath).toBeUndefined();
   });
 
   it("is idempotent — second run produces the same settings", () => {

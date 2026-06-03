@@ -8,6 +8,7 @@ import {
 } from "../serena.js";
 
 export const KIRO_PROJECT_SETTINGS_PATH = ".kiro/settings/cli.json";
+export const KIRO_PROJECT_OMA_HOOKS_AGENT_PATH = ".kiro/agents/oma-hooks.json";
 export const KIRO_GLOBAL_SETTINGS_PATH = join(
   homedir(),
   ".kiro",
@@ -19,6 +20,30 @@ export const RECOMMENDED_KIRO_MCP = {
   serena: {
     command: "serena",
     args: serenaStartMcpArgs("ide"),
+  },
+};
+
+export const OMA_KIRO_HOOKS_AGENT_NAME = "oma-hooks";
+
+const OMA_KIRO_HOOKS_AGENT = {
+  name: OMA_KIRO_HOOKS_AGENT_NAME,
+  description: "Default Kiro CLI agent with oh-my-agent hook context enabled.",
+  prompt:
+    "You are Kiro CLI running in an oh-my-agent workspace. Follow project instructions and use hook-provided context when present.",
+  includeMcpJson: true,
+  hooks: {
+    userPromptSubmit: [
+      { command: "bun .kiro/hooks/keyword-detector.ts" },
+      { command: "bun .kiro/hooks/state-boundary.ts" },
+      { command: "bun .kiro/hooks/skill-injector.ts" },
+    ],
+    preToolUse: [
+      {
+        matcher: "execute_bash",
+        command: "bun .kiro/hooks/test-filter.ts",
+      },
+    ],
+    stop: [{ command: "bun .kiro/hooks/persistent-mode.ts" }],
   },
 };
 
@@ -80,4 +105,49 @@ export function applyKiroProjectMcp(cwd: string): void {
   };
 
   writeJson(path, updated);
+}
+
+export function needsKiroOmaHooksAgentUpdate(cwd: string): boolean {
+  const agentPath = join(cwd, KIRO_PROJECT_OMA_HOOKS_AGENT_PATH);
+  const agent = readJson(agentPath);
+  return (
+    JSON.stringify(agent.hooks) !== JSON.stringify(OMA_KIRO_HOOKS_AGENT.hooks)
+  );
+}
+
+/**
+ * Kiro CLI reads hooks from agent configuration files, not from
+ * `.kiro/settings/cli.json`. Install a local default agent so ordinary
+ * `kiro-cli chat` runs the OMA prompt/boundary/injection chain.
+ */
+export function applyKiroOmaHooksAgent(cwd: string): void {
+  const agentPath = join(cwd, KIRO_PROJECT_OMA_HOOKS_AGENT_PATH);
+  if (needsKiroOmaHooksAgentUpdate(cwd)) {
+    writeJson(agentPath, OMA_KIRO_HOOKS_AGENT);
+  }
+
+  const settingsPath = join(cwd, KIRO_PROJECT_SETTINGS_PATH);
+  const settings = readJson(settingsPath);
+  let changed = false;
+
+  if (
+    typeof settings["chat.defaultAgent"] !== "string" ||
+    settings["chat.defaultAgent"].length === 0
+  ) {
+    settings["chat.defaultAgent"] = OMA_KIRO_HOOKS_AGENT_NAME;
+    changed = true;
+  }
+
+  const chat = isRecord(settings.chat) ? settings.chat : null;
+  if (chat?.defaultAgent === OMA_KIRO_HOOKS_AGENT_NAME) {
+    delete chat.defaultAgent;
+    if (Object.keys(chat).length === 0) {
+      delete settings.chat;
+    }
+    changed = true;
+  }
+
+  if (changed) {
+    writeJson(settingsPath, settings);
+  }
 }

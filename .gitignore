@@ -33,6 +33,9 @@ docs/generated/
 .qwen/
 .kiro/
 
+# pi (Earendil pi-coding-agent) extension bridge (generated)
+.pi/
+
 # Cursor/Gemini integration layer (generated)
 .cursor/*
 .gemini/*

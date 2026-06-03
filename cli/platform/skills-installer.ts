@@ -4,6 +4,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import {
   ALL_CLI_VENDORS,
   CLI_SKILLS_DIR,
+  EXTENSION_VENDORS,
   INSTALLED_SKILLS_DIR,
   SKILLS,
 } from "../constants/index.js";
@@ -397,6 +398,17 @@ const HOOK_VENDORS: ReadonlySet<VendorType> = new Set([
  */
 export function isHookVendor(v: CliVendor): v is VendorType {
   return HOOK_VENDORS.has(v as VendorType);
+}
+
+/**
+ * True for vendors whose hooks install as in-process extensions (e.g. `pi`)
+ * rather than settings-file registrations. Such vendors are NOT `VendorType`
+ * and must be routed to their dedicated composer (`installPiExtension`), never
+ * to `installVendorAdaptations`. Accepts a raw string because these vendors do
+ * not appear in the `CliVendor` union.
+ */
+export function isExtensionVendor(v: string): boolean {
+  return (EXTENSION_VENDORS as readonly string[]).includes(v);
 }
 
 /**

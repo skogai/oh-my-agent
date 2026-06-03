@@ -13,6 +13,10 @@ function detectVendor(input: Record<string, unknown>): Vendor {
   const event = input.hook_event_name as string | undefined;
   const _hookEventName = input.hookEventName as string | undefined;
 
+  // pi spawns this script from `.pi/extensions/oma/`; trust the script path.
+  if (import.meta.filename.includes(`${join(".pi", "extensions")}`))
+    return "pi";
+
   if (process.env.GROK_WORKSPACE_ROOT) return "grok";
   if (process.env.KIRO_PROJECT_DIR) return "kiro";
 
@@ -77,6 +81,10 @@ function getHookDir(vendor: Vendor): string {
       return ".grok/hooks";
     case "kiro":
       return ".kiro/hooks";
+    case "pi":
+      // pi keeps the core scripts (and filter-test-output.sh) inside the
+      // bridge's directory extension, not a dedicated hooks dir.
+      return join(".pi", "extensions", "oma");
     default:
       return ".claude/hooks";
   }

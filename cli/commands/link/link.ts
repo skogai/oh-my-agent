@@ -4,6 +4,7 @@ import pc from "picocolors";
 import { VENDORS } from "../../constants/vendors.js";
 import { ensureOmaProjectGitignore } from "../../io/gitignore.js";
 import { getInstallMode } from "../../platform/install-context.js";
+import { installPiExtension } from "../../platform/pi-extension-composer.js";
 import {
   applyCursorRules,
   mergeRulesIndexForVendor,
@@ -16,6 +17,7 @@ import {
   installCodexWorkflowSkills,
   installCopilotWorkflowPrompts,
   installVendorAdaptations,
+  isExtensionVendor,
   isHookVendor,
   readVendorsFromConfig,
   vendorRequiresHomeConsent,
@@ -151,11 +153,31 @@ export function link(opts: LinkOptions = {}): LinkResult {
       ? (opts.vendorFilter as CliVendor[])
       : readVendorsFromConfig(cwd);
   const hookVendors = configuredVendors.filter(isHookVendor);
+  // Extension-model vendors (pi) install via a forked path, not the
+  // settings-file hook flow. They are not in the CliVendor union, so match on
+  // the raw configured strings.
+  const extensionVendors = (configuredVendors as readonly string[]).filter(
+    isExtensionVendor,
+  );
 
-  if (hookVendors.length === 0) {
+  if (hookVendors.length === 0 && extensionVendors.length === 0) {
     if (!quiet) {
       console.log(`${pc.yellow("⚠")} No vendors to link.`);
     }
+    return empty;
+  }
+
+  // Install in-process extension vendors (pi) regardless of whether any
+  // hook-model vendors are configured. pi auto-loads `.pi/extensions/oma/`.
+  if (extensionVendors.includes("pi")) {
+    installPiExtension(cwd, cwd);
+    if (!quiet) {
+      console.log(`${pc.green("✓")} pi (.pi/extensions/oma/)`);
+    }
+  }
+
+  if (hookVendors.length === 0) {
+    // Only extension vendors were configured; the bridge is installed above.
     return empty;
   }
 

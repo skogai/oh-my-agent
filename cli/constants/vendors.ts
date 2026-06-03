@@ -26,6 +26,19 @@ export const VENDORS = [
 ] as const;
 
 /**
+ * Vendors whose hooks load as in-process extensions rather than settings-file
+ * hook registrations. These are deliberately kept OUT of `VENDORS` (and thus
+ * out of `VendorType`, `HOOK_VENDORS`, and the `installHooksFromVariant` path):
+ * their install is forked to a dedicated composer.
+ *
+ * `pi` (Earendil pi-coding-agent) auto-discovers `.pi/extensions/*​/index.ts`
+ * and dispatches `pi.on(event, handler)`; `installPiExtension` writes that
+ * bridge. See `cli/platform/pi-extension-composer.ts`.
+ */
+export const EXTENSION_VENDORS = ["pi"] as const;
+export type ExtensionVendor = (typeof EXTENSION_VENDORS)[number];
+
+/**
  * All CLI tools including non-hook vendors (skill-install only).
  * Derived from VENDORS plus the install-only targets, sorted alphabetically
  * for deterministic output where consumers iterate.

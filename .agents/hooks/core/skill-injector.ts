@@ -48,6 +48,9 @@ function inferVendorFromScriptPath(): Vendor | null {
   if (path.includes(`${join(".codex", "hooks")}`)) return "codex";
   if (path.includes(`${join(".grok", "hooks")}`)) return "grok";
   if (path.includes(`${join(".kiro", "hooks")}`)) return "kiro";
+  // pi auto-loads the bridge from `.pi/extensions/oma/`; the core scripts are
+  // copied alongside it and spawned as subprocesses from there.
+  if (path.includes(`${join(".pi", "extensions")}`)) return "pi";
   return null;
 }
 

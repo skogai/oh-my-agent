@@ -51,6 +51,11 @@ export function makePromptOutput(
     case "kiro":
       // Kiro CLI adds stdout directly to the agent context for prompt hooks.
       return additionalContext;
+    case "pi":
+      // pi (Earendil) reads this via the in-process bridge in
+      // `.pi/extensions/oma/index.ts`, which lifts `additionalContext` into the
+      // `before_agent_start` return as `{ systemPrompt: <prev> + context }`.
+      return JSON.stringify({ additionalContext });
     case "qwen":
       // Qwen Code fork uses hookSpecificOutput (same as Codex)
       return JSON.stringify({
@@ -77,6 +82,11 @@ export function makeBlockOutput(vendor: Vendor, reason: string): string {
     case "gemini":
       // Gemini AfterAgent uses "deny" to reject response and force retry
       return JSON.stringify({ decision: "deny", reason });
+    case "pi":
+      // pi has no stop-blocking event (agent_end is notification-only), so
+      // persistent-mode never runs under pi. This shape mirrors pi's native
+      // tool_call block return for completeness/forward-compat.
+      return JSON.stringify({ block: true, reason });
     case "grok":
       // Grok Stop hooks are generally advisory. Emit block decision + rich
       // stderr message (persistent-mode already prints the reason to stderr).
@@ -112,6 +122,10 @@ export function makePreToolOutput(
           updatedInput,
         },
       });
+    case "pi":
+      // pi's bridge reads `updatedInput.command` and mutates the live
+      // `tool_call` event input in place (pi exposes event.input as mutable).
+      return JSON.stringify({ updatedInput });
     case "antigravity":
       // agy PreToolUse output is a gate decision; it cannot rewrite tool input.
       // Allow execution (test-filter is advisory on agy). updatedInput unused.

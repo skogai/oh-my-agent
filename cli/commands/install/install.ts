@@ -35,6 +35,7 @@ import {
 import {
   CLI_SKILLS_DIR,
   createVendorSymlinks,
+  type ExtensionVendor,
   getAllSkills,
   getVendorDisplayPath,
   INSTALLED_SKILLS_DIR,
@@ -43,6 +44,7 @@ import {
   installShared,
   installSkill,
   installWorkflows,
+  isExtensionVendor,
   PRESETS,
   REPO,
   type SkillTargetSpec,
@@ -569,7 +571,11 @@ export async function install(options: InstallOptions = {}): Promise<void> {
     const allowHomeWriteVendors =
       process.platform !== "win32" && !process.env.CI;
 
-    const vendorOptions: { value: CliVendor; label: string; hint: string }[] = [
+    const vendorOptions: {
+      value: CliVendor | ExtensionVendor;
+      label: string;
+      hint: string;
+    }[] = [
       {
         value: "claude",
         label: "Claude Code",
@@ -597,6 +603,11 @@ export async function install(options: InstallOptions = {}): Promise<void> {
         label: "Kiro CLI",
         hint: "hooks + Serena MCP + .kiro/agents/",
       },
+      {
+        value: "pi",
+        label: "pi (Earendil)",
+        hint: "in-process extension bridge — .pi/extensions/oma/",
+      },
       ...(allowHomeWriteVendors
         ? [
             {
@@ -611,6 +622,8 @@ export async function install(options: InstallOptions = {}): Promise<void> {
 
     const defaultVendorValues = vendorOptions
       .filter((opt) => {
+        // Extension-model vendors (pi) are opt-in — shown but unchecked.
+        if (isExtensionVendor(opt.value)) return false;
         const spec = (CLI_SKILLS_DIR as Record<string, SkillTargetSpec>)[
           opt.value
         ];

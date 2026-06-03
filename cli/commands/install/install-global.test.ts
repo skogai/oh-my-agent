@@ -104,6 +104,7 @@ const skillsState = vi.hoisted(() => ({
   isHookVendor: vi.fn((v: string) =>
     ["claude", "codex", "cursor", "gemini", "qwen"].includes(v),
   ),
+  isExtensionVendor: vi.fn((v: string) => v === "pi"),
   writeVendorsToConfig: vi.fn(),
 }));
 

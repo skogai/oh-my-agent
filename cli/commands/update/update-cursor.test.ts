@@ -96,6 +96,7 @@ vi.mock("../../platform/skills-installer.js", () => ({
   isHookVendor: vi.fn((v: string) =>
     ["claude", "codex", "cursor", "gemini", "qwen"].includes(v),
   ),
+  isExtensionVendor: vi.fn((v: string) => v === "pi"),
   vendorRequiresHomeConsent: vi.fn((cli: string) => cli === "hermes"),
 }));
 

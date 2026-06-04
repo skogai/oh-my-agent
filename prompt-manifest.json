@@ -1,7 +1,7 @@
 {
   "name": "oh-my-agent",
   "version": "8.36.0",
-  "releaseDate": "2026-06-04T06:57:04.451Z",
+  "releaseDate": "2026-06-04T07:01:07.741Z",
   "repository": "https://github.com/first-fluke/oh-my-agent",
   "files": [
     {
@@ -231,8 +231,8 @@
     },
     {
       "path": ".agents/hooks/variants/pi/README.md",
-      "sha256": "367c40ae6a9a178d96bfc5bf38950f17bc4587728cb308d5b9c048b0cd06ac54",
-      "size": 2768
+      "sha256": "e95bed1d712304f6b4b675773d0b3f1ba23300c80d88345e549c9a5154c96c4e",
+      "size": 3005
     },
     {
       "path": ".agents/hooks/variants/pi/index.ts",
@@ -453,6 +453,11 @@
       "path": ".agents/skills/_shared/runtime/execution-protocols/kiro.md",
       "sha256": "7844a32c8201b7de6c63eb273fe310b3c87c31d8ab9a425d459e6cdcd35c08ef",
       "size": 2659
+    },
+    {
+      "path": ".agents/skills/_shared/runtime/execution-protocols/pi.md",
+      "sha256": "7ba055823795333a5f76436951a59f8f21dde013e8110c5b3b562bd62ab0823d",
+      "size": 2981
     },
     {
       "path": ".agents/skills/_shared/runtime/execution-protocols/qwen.md",
@@ -1336,8 +1341,8 @@
     },
     {
       "path": ".agents/skills/oma-orchestrator/config/cli-config.yaml",
-      "sha256": "4b3df8cc842b65625cd0db978e35272ce037c3f01201835f67735f892738e2be",
-      "size": 2816
+      "sha256": "8a3d0cc2bb999878740784d6c9828d46fafebd354665e6c06fc166b8ae645d6a",
+      "size": 3091
     },
     {
       "path": ".agents/skills/oma-orchestrator/resources/memory-schema.md",
@@ -1866,6 +1871,6 @@
   "metadata": {
     "skillCount": 30,
     "workflowCount": 21,
-    "totalFiles": 371
+    "totalFiles": 372
   }
 }

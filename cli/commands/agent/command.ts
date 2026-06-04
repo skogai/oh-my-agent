@@ -20,6 +20,10 @@ export function registerAgentCommands(program: Command): void {
       "--isolation <mode>",
       "Isolation mode: 'worktree' creates a git worktree per spawn (default: none)",
     )
+    .option(
+      "--read-only",
+      "Restrict the spawned agent to non-destructive tools (suppresses auto-approve flags)",
+    )
     .action(
       runAction(async (agentId, prompt, sessionId, options) => {
         await spawnAgent(
@@ -30,6 +34,7 @@ export function registerAgentCommands(program: Command): void {
           options.model,
           undefined,
           options.isolation,
+          options.readOnly,
         );
       }),
     );

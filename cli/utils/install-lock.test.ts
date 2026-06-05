@@ -12,6 +12,7 @@ import {
   _forceReleaseLock,
   acquireLock,
   bindInstallLockRelease,
+  DEAD_PID_GRACE_MS,
   lockPath,
 } from "./install-lock.js";
 
@@ -69,30 +70,56 @@ describe("acquireLock", () => {
     }
   });
 
-  it("auto-clears a stale lock when pid is dead and time > STALE_AFTER_MS", () => {
+  it("auto-clears a dead-pid lock older than the grace window", () => {
     const root = mkdtempSync(join(tmpdir(), "oma-lock-"));
     tempRoots.push(root);
 
-    // Write a stale lock: pid that is definitely dead (very high number unlikely to exist)
-    // and a startedAt well past the 10-minute threshold
-    const deadPid = 9999999; // extremely unlikely to exist
-    const staleTime = new Date(Date.now() - 11 * 60 * 1000).toISOString(); // 11 minutes ago
+    // pid that is definitely dead (very high number unlikely to exist), with a
+    // startedAt past DEAD_PID_GRACE_MS — should be reclaimed.
+    const deadPid = 9999999;
+    const pastGrace = new Date(
+      Date.now() - (DEAD_PID_GRACE_MS + 5000),
+    ).toISOString();
     mkdirSync(join(root, ".agents"), { recursive: true });
     writeFileSync(
       lockPath(root),
       JSON.stringify({
         pid: deadPid,
         hostname: hostname(),
-        startedAt: staleTime,
+        startedAt: pastGrace,
         uid: 0,
       }),
     );
 
     const result = acquireLock(root);
-    // Should have auto-cleared and successfully acquired
     expect(result.ok).toBe(true);
-    if (result.ok) {
-      result.release();
+    if (result.ok) result.release();
+  });
+
+  it("does NOT clear a dead-pid lock still within the grace window", () => {
+    const root = mkdtempSync(join(tmpdir(), "oma-lock-"));
+    tempRoots.push(root);
+
+    // Dead pid, but the lock was created just now: a SIGKILLed install/update may
+    // have orphaned child processes still finishing, so the short grace must hold.
+    const deadPid = 9999999;
+    const withinGrace = new Date(Date.now() - 5000).toISOString();
+    mkdirSync(join(root, ".agents"), { recursive: true });
+    writeFileSync(
+      lockPath(root),
+      JSON.stringify({
+        pid: deadPid,
+        hostname: hostname(),
+        startedAt: withinGrace,
+        uid: 0,
+      }),
+    );
+
+    const result = acquireLock(root);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("active");
+      expect(result.held.pid).toBe(deadPid);
     }
   });
 

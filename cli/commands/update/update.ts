@@ -63,6 +63,8 @@ import { t } from "../../utils/i18n.js";
 import {
   acquireLock,
   bindInstallLockRelease,
+  DEAD_PID_GRACE_MS,
+  lockPath,
 } from "../../utils/install-lock.js";
 import { link } from "../link/link.js";
 import { runMigrations } from "../migrations/index.js";
@@ -249,7 +251,11 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
   // Acquire install lock — prevents concurrent install/update runs
   const lock = acquireLock(installRoot);
   if (!lock.ok) {
-    const msg = t("install.lockHeld", { pid: lock.held.pid });
+    const msg = t("install.lockHeld", {
+      pid: lock.held.pid,
+      path: lockPath(installRoot),
+      grace: DEAD_PID_GRACE_MS / 1000,
+    });
     if (ci) {
       throw new Error(msg);
     }

@@ -22,7 +22,16 @@ export type AcquireResult =
   | { ok: true; release: () => void }
   | { ok: false; held: LockMeta; reason: "active" | "stale-but-uncleared" };
 
-const STALE_AFTER_MS = 10 * 60 * 1000; // 10 minutes
+/**
+ * Once the lock's recorded pid is confirmed DEAD on this host (ESRCH), wait this
+ * short grace before reclaiming it. The grace exists only to let an orphaned
+ * child subprocess of a SIGKILLed install/update (npm/git/file copy) finish —
+ * the lock guards fast, synchronous reconciliation, so a long wait is
+ * unnecessary and would block the next install for no reason after a crash. An
+ * ambiguous (EPERM "exists but can't signal") pid is treated as alive and never
+ * reclaimed, regardless of this grace.
+ */
+export const DEAD_PID_GRACE_MS = 60_000; // 60 seconds
 
 /** Lock path: <installRoot>/.agents/_install.lock (transient runtime lock) */
 export function lockPath(installRoot: string): string {
@@ -88,7 +97,12 @@ function readLockFile(path: string): LockMeta | null {
   }
 }
 
-/** Try to acquire the install lock. Atomic via O_EXCL; auto-clears stale locks where pid is dead. */
+/**
+ * Try to acquire the install lock (atomic via O_EXCL). An existing lock is
+ * reclaimed only when its recorded pid is confirmed dead on THIS host and the
+ * lock is older than DEAD_PID_GRACE_MS. A live pid, an ambiguous (EPERM) pid,
+ * or a foreign hostname is never auto-cleared.
+ */
 export function acquireLock(installRoot: string): AcquireResult {
   const path = lockPath(installRoot);
 
@@ -131,7 +145,7 @@ export function acquireLock(installRoot: string): AcquireResult {
 
       const pidAlive = isPidAlive(existing.pid);
       const ageMs = Date.now() - new Date(existing.startedAt).getTime();
-      const isStale = !pidAlive && ageMs > STALE_AFTER_MS;
+      const isStale = !pidAlive && ageMs > DEAD_PID_GRACE_MS;
 
       if (isStale) {
         // Auto-clear stale lock and retry once

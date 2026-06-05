@@ -33,8 +33,8 @@ export const MESSAGES: Catalog = {
     ko: "oh-my-agent를 글로벌로 처음 설치합니다.",
   },
   "install.lockHeld": {
-    en: "Another oma install/update is running (pid={pid}). Try again in a moment.",
-    ko: "다른 oma install/update가 실행 중입니다 (pid={pid}). 잠시 후 다시 시도하세요.",
+    en: "Another oma install/update is running (pid={pid}). If none is running it crashed — remove {path}, or wait ~{grace}s for it to auto-clear.",
+    ko: "다른 oma install/update가 실행 중입니다 (pid={pid}). 실행 중이 아니면 비정상 종료된 것입니다 — {path}를 삭제하거나 ~{grace}초 후 자동 해제를 기다리세요.",
   },
   "install.outroSuccess": {
     en: "Done! Next steps:\n  1. Open your project in your IDE\n  2. Type /orchestrate to spawn a multi-agent workflow\n  3. Run `oma doctor` if anything looks off",

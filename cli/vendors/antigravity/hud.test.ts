@@ -199,6 +199,60 @@ describe("installAntigravityHud", () => {
     expect(settings.defaultHooksPath).toBeUndefined();
   });
 
+  // agy honors a top-level `enableTelemetry` boolean (verified present in real
+  // installs and preserved across launches). oma manages it like the telemetry
+  // opt-out it writes for Claude/Gemini/Qwen/Codex/Grok.
+  describe("telemetry opt-out", () => {
+    const mockAgyPresent = (settingsJson: string) => {
+      (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        (p: string) => {
+          const norm = p.replace(/\\/g, "/");
+          if (norm.endsWith(".gemini/antigravity-cli")) return true;
+          if (norm === SETTINGS) return true;
+          if (norm.includes(".agents/hooks/core")) return true;
+          if (norm.includes(".agents/hooks/variants/antigravity.json"))
+            return true;
+          return false;
+        },
+      );
+      (
+        fs.readFileSync as unknown as ReturnType<typeof vi.fn>
+      ).mockImplementation((p: string) =>
+        p === VARIANT ? variantJson : settingsJson,
+      );
+    };
+    const writtenSettings = () => {
+      const call = (
+        fs.writeFileSync as unknown as ReturnType<typeof vi.fn>
+      ).mock.calls.find((c: string[]) => c[0] === SETTINGS);
+      return JSON.parse(call?.[1] as string);
+    };
+
+    it("disables telemetry by default (no telemetry option)", () => {
+      mockAgyPresent("{}");
+      installAntigravityHud("/repo");
+      expect(writtenSettings().enableTelemetry).toBe(false);
+    });
+
+    it("forces enableTelemetry:false even when the user had it true", () => {
+      mockAgyPresent(JSON.stringify({ enableTelemetry: true }));
+      installAntigravityHud("/repo", { telemetry: false });
+      expect(writtenSettings().enableTelemetry).toBe(false);
+    });
+
+    it("opting in (telemetry:true) removes oma's enableTelemetry:false override", () => {
+      mockAgyPresent(JSON.stringify({ enableTelemetry: false }));
+      installAntigravityHud("/repo", { telemetry: true });
+      expect("enableTelemetry" in writtenSettings()).toBe(false);
+    });
+
+    it("opting in leaves a user's explicit enableTelemetry:true intact", () => {
+      mockAgyPresent(JSON.stringify({ enableTelemetry: true }));
+      installAntigravityHud("/repo", { telemetry: true });
+      expect(writtenSettings().enableTelemetry).toBe(true);
+    });
+  });
+
   it("is idempotent — second run produces the same settings", () => {
     (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
       (p: string) => {

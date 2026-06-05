@@ -364,7 +364,7 @@ export function link(opts: LinkOptions = {}): LinkResult {
   let agyInstalled = false;
   let agySkipReason: string | undefined;
   if (configuredVendors.includes("antigravity")) {
-    const agyResult = installAntigravityHud(cwd);
+    const agyResult = installAntigravityHud(cwd, telemetryOptions);
     if (agyResult.installed) {
       agyInstalled = true;
     } else if (agyResult.reason) {

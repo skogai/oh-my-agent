@@ -243,6 +243,7 @@ describe("link kernel", () => {
 
       expect(antigravity.installAntigravityHud).toHaveBeenCalledWith(
         expect.stringContaining(projectDir),
+        expect.objectContaining({ telemetry: expect.any(Boolean) }),
       );
       expect(skills.installVendorAdaptations).toHaveBeenCalledWith(
         expect.stringContaining(projectDir),

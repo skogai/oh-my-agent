@@ -19,7 +19,9 @@
  *      (`~/.gemini/antigravity-cli/settings.json`). agy persists only its own
  *      settings allowlist there and STRIPS unknown keys on launch — verified
  *      that `hooks` and `defaultHooksPath` are both dropped, so we never write
- *      them. The HUD command runs from a HOME copy of the core hooks.
+ *      them. The HUD command runs from a HOME copy of the core hooks. We also
+ *      manage the allowlisted `enableTelemetry` boolean here (telemetry opt-out
+ *      by default; see installAntigravityHud).
  *
  * NOTE: agy hooks fire on the interactive execution loop; headless `agy --print`
  * does not run them, so live firing must be confirmed in an interactive session.
@@ -163,15 +165,33 @@ interface AgyInstallResult {
   hooksDir?: string;
 }
 
+export interface AntigravityHudOptions {
+  /**
+   * Vendor telemetry preference (from oma-config.yaml, default `false`). When
+   * `false`/unset, oma writes `enableTelemetry: false` to agy's settings. When
+   * `true`, oma removes its own opt-out so agy falls back to its own default.
+   */
+  telemetry?: boolean;
+}
+
 /**
  * Wire OMA into agy: write the project `.agents/hooks.json` (hook events) and
  * the HOME `statusLine` (HUD). Idempotent. Preserves unrelated settings keys
  * (colorScheme, toolPermission, trustedWorkspaces, ...).
  *
+ * Telemetry: agy honors a top-level `enableTelemetry` boolean in its settings
+ * allowlist (it survives agy's key-stripping on launch). Mirroring the other
+ * vendors, oma disables it by default and only steps aside when the user opts
+ * in via `telemetry: true` in oma-config.yaml. agy exposes no separate survey
+ * key — `enableTelemetry` is the single lever.
+ *
  * Returns `installed: false` with a `reason` when agy's HOME config dir doesn't
  * exist (agy not installed / never run) — we don't bootstrap it ourselves.
  */
-export function installAntigravityHud(sourceDir: string): AgyInstallResult {
+export function installAntigravityHud(
+  sourceDir: string,
+  options: AntigravityHudOptions = {},
+): AgyInstallResult {
   const { settingsPath, hooksDir, staleHooksJson } = homePaths();
   const agyConfigDir = join(homedir(), AGY_HOME_DIR);
 
@@ -211,6 +231,14 @@ export function installAntigravityHud(sourceDir: string): AgyInstallResult {
   };
   if ("hooks" in settings) delete settings.hooks;
   if ("defaultHooksPath" in settings) delete settings.defaultHooksPath;
+  // Telemetry opt-out (default) / opt-in. agy honors `enableTelemetry`; oma
+  // disables it unless the user opts in, in which case oma removes only the
+  // opt-out it would have written so agy keeps its own default.
+  if (options.telemetry === true) {
+    if (settings.enableTelemetry === false) delete settings.enableTelemetry;
+  } else {
+    settings.enableTelemetry = false;
+  }
   mkdirSync(agyConfigDir, { recursive: true });
   writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
 

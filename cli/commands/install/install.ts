@@ -59,6 +59,8 @@ import { isTelemetryEnabled } from "../../utils/config.js";
 import {
   acquireLock,
   bindInstallLockRelease,
+  DEAD_PID_GRACE_MS,
+  lockPath,
 } from "../../utils/install-lock.js";
 import { link } from "../link/link.js";
 import { runMigrations } from "../migrations/index.js";
@@ -258,7 +260,7 @@ export async function install(options: InstallOptions = {}): Promise<void> {
   const lockResult = acquireLock(installRoot);
   if (!lockResult.ok) {
     p.cancel(
-      `Another oma install/update is running (pid=${lockResult.held.pid}). Try again in a moment.`,
+      `Another oma install/update is running (pid=${lockResult.held.pid}). If none is running it crashed — remove ${lockPath(installRoot)}, or wait ~${DEAD_PID_GRACE_MS / 1000}s for it to auto-clear.`,
     );
     process.exit(1);
   }

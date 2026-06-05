@@ -62,16 +62,26 @@ describe("t()", () => {
 
   it("interpolates {pid} correctly", () => {
     process.env.LANG = "en_US.UTF-8";
-    const result = t("install.lockHeld", { pid: 12345 });
+    const result = t("install.lockHeld", {
+      pid: 12345,
+      path: "/x/.agents/_install.lock",
+      grace: 60,
+    });
     expect(result).toContain("12345");
     expect(result).not.toContain("{pid}");
+    expect(result).not.toContain("{path}");
   });
 
   it("interpolates {pid} correctly in Korean", () => {
     process.env.LANG = "ko_KR.UTF-8";
-    const result = t("install.lockHeld", { pid: 9999 });
+    const result = t("install.lockHeld", {
+      pid: 9999,
+      path: "/x/.agents/_install.lock",
+      grace: 60,
+    });
     expect(result).toContain("9999");
     expect(result).not.toContain("{pid}");
+    expect(result).not.toContain("{path}");
   });
 
   it("returns message without interpolation when no vars passed", () => {

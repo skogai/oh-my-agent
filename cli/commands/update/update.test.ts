@@ -19,6 +19,7 @@ import { runMigrations } from "../migrations/index.js";
 import {
   classifyUpdateTarget,
   resolveUpdateVendors,
+  selectSkillsToPrune,
 } from "../update/update.js";
 
 describe("whitelist-based skill filtering", () => {
@@ -68,6 +69,59 @@ describe("whitelist-based skill filtering", () => {
     for (const expected of expectedSkills) {
       expect(skillNames).toContain(expected);
     }
+  });
+});
+
+describe("selectSkillsToPrune (preserve skill selection on update)", () => {
+  const before = ["oma-backend", "oma-frontend"];
+  // After the bulk copy the project contains every skill the release ships.
+  const after = [
+    "oma-backend",
+    "oma-frontend",
+    "oma-market",
+    "oma-video",
+    "oma-voice",
+  ];
+
+  it("prunes skills that are new in the release and were not installed", () => {
+    expect(selectSkillsToPrune(before, after, false)).toEqual([
+      "oma-market",
+      "oma-video",
+      "oma-voice",
+    ]);
+  });
+
+  it("keeps every skill when --with-new-skills is set", () => {
+    expect(selectSkillsToPrune(before, after, true)).toEqual([]);
+  });
+
+  it("prunes nothing when no new skills were added", () => {
+    expect(selectSkillsToPrune(before, before, false)).toEqual([]);
+  });
+
+  it("never prunes a skill the user already had", () => {
+    const pruned = selectSkillsToPrune(before, after, false);
+    for (const kept of before) {
+      expect(pruned).not.toContain(kept);
+    }
+  });
+
+  it("ignores non-skill directories (e.g. _version.json, .DS_Store)", () => {
+    const noisy = [...after, "_version.json", ".DS_Store", "custom-thing"];
+    expect(selectSkillsToPrune(before, noisy, false)).toEqual([
+      "oma-market",
+      "oma-video",
+      "oma-voice",
+    ]);
+  });
+
+  it("returns a sorted, stable list", () => {
+    const unsorted = ["oma-voice", "oma-market", "oma-backend", "oma-video"];
+    expect(selectSkillsToPrune(["oma-backend"], unsorted, false)).toEqual([
+      "oma-market",
+      "oma-video",
+      "oma-voice",
+    ]);
   });
 });
 

@@ -157,12 +157,38 @@ export function classifyUpdateTarget(
 
 export type UpdateOptions = {
   force?: boolean;
+  withNewSkills?: boolean;
   ci?: boolean;
   global?: boolean;
   yes?: boolean;
   all?: boolean;
   vendor?: string;
 };
+
+/**
+ * Decide which freshly-copied skills to prune after the bulk `.agents` copy.
+ *
+ * An update overwrites the whole `.agents` tree with the release, which drops
+ * in every skill the release ships. To preserve the selection the user made at
+ * install time, we prune skills that are new in the release and were not already
+ * present — unless the user opts into them with `--with-new-skills`.
+ *
+ * @param installedBefore skill dirs present before the copy (the user's selection)
+ * @param installedAfter  skill dirs present after the copy (the full release set)
+ * @param withNewSkills   when true, keep new skills instead of pruning them
+ * @returns skill names to remove (sorted): new in the release and not opted in
+ */
+export function selectSkillsToPrune(
+  installedBefore: string[],
+  installedAfter: string[],
+  withNewSkills: boolean,
+): string[] {
+  if (withNewSkills) return [];
+  const kept = new Set(installedBefore);
+  return installedAfter
+    .filter((name) => name.startsWith("oma-") && !kept.has(name))
+    .sort();
+}
 
 const VENDOR_ROOTS: Record<CliVendor, string[]> = {
   antigravity: [".gemini/antigravity-cli"],
@@ -229,7 +255,12 @@ function toCliTools(vendors: CliVendor[]): CliTool[] {
 }
 
 export async function update(options: UpdateOptions = {}): Promise<void> {
-  const { force = false, ci = false, yes = false } = options;
+  const {
+    force = false,
+    withNewSkills = false,
+    ci = false,
+    yes = false,
+  } = options;
   const nonInteractive =
     ci ||
     yes ||
@@ -459,6 +490,27 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
           );
         }
 
+        // Preserve the user's skill selection. The bulk copy above drops in
+        // every skill the release ships; prune the ones that are new and were
+        // not already installed so an update refreshes the existing selection
+        // instead of growing it. `--with-new-skills` opts into the new ones.
+        // Capture descriptions before pruning so we can still surface them.
+        const prunedSkills = selectSkillsToPrune(
+          beforeArtifacts.skills,
+          getInstalledSkillNames(cwd),
+          withNewSkills,
+        );
+        const newSkillNotes = prunedSkills.map((name) => ({
+          name,
+          desc: readSkillDescription(cwd, name),
+        }));
+        for (const name of prunedSkills) {
+          rmSync(join(cwd, ".agents", "skills", name), {
+            recursive: true,
+            force: true,
+          });
+        }
+
         // Reconcile all vendor adaptations via the link kernel. agy HUD,
         // Claude .mcp.json seeding, vendor settings (Claude / Gemini / Qwen /
         // Codex telemetry-aware), Cursor MCP + rules, doc merging, and CLI
@@ -584,6 +636,24 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
             );
           }
           ui.note(lines.join("\n"), "What's new");
+        }
+
+        if (newSkillNotes.length > 0) {
+          const plural = newSkillNotes.length === 1 ? "" : "s";
+          const lines = [
+            pc.dim(
+              `${newSkillNotes.length} new skill${plural} shipped in this release but ${newSkillNotes.length === 1 ? "was" : "were"} not installed:`,
+            ),
+            ...newSkillNotes.map(({ name, desc }) =>
+              desc
+                ? `  ${pc.cyan(name)}: ${pc.dim(desc)}`
+                : `  ${pc.cyan(name)}`,
+            ),
+            pc.dim(
+              `Run ${pc.cyan("oma update --with-new-skills")} to add ${newSkillNotes.length === 1 ? "it" : "them"}.`,
+            ),
+          ];
+          ui.note(lines.join("\n"), "New skills available");
         }
 
         if (cliSymlinks.created.length > 0) {

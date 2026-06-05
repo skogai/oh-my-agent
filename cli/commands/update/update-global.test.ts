@@ -124,6 +124,7 @@ const skillsState = vi.hoisted(() => ({
     },
     qwen: { projectPath: ".qwen/skills", homePath: ".qwen/skills" },
   },
+  getInstalledSkillNames: vi.fn(() => []),
 }));
 
 // ---------------------------------------------------------------------------

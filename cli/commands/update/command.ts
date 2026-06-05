@@ -9,6 +9,10 @@ export function registerUpdate(program: Command): void {
     .command("update")
     .description("Update skills to latest version from registry")
     .option("-f, --force", "Overwrite user-customized config files")
+    .option(
+      "--with-new-skills",
+      "Also install skills that are new in this release (default: refresh only the skills already installed)",
+    )
     .option("--ci", "Run in non-interactive CI mode (skip prompts)")
     .option("-y, --yes", "Skip prompts")
     .option("--all", "Create/update all supported project-scoped vendors")
@@ -20,6 +24,7 @@ export function registerUpdate(program: Command): void {
       runAction(
         async (options: {
           force?: boolean;
+          withNewSkills?: boolean;
           ci?: boolean;
           yes?: boolean;
           all?: boolean;
@@ -28,6 +33,7 @@ export function registerUpdate(program: Command): void {
           const globalFlag = program.opts<{ global?: boolean }>().global;
           await update({
             force: options.force,
+            withNewSkills: options.withNewSkills,
             ci: options.ci,
             yes: options.yes,
             global: globalFlag,

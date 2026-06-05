@@ -305,6 +305,24 @@ describe("install home policy", () => {
       writes.some((path) => path.startsWith("/tmp/test-home/.gemini/")),
     ).toBe(false);
   });
+
+  // --- Prompt option list: Antigravity replaces Gemini (deprecation cutover) ---
+
+  it("offers Antigravity (not Gemini) in the 'CLI tools to configure:' prompt", async () => {
+    await install();
+
+    const cliToolsCall = promptState.multiselect.mock.calls.find(
+      (call) => call[0]?.message === "CLI tools to configure:",
+    );
+    expect(cliToolsCall).toBeDefined();
+
+    const optionValues = (cliToolsCall?.[0].options as { value: string }[]).map(
+      (opt) => opt.value,
+    );
+
+    expect(optionValues).toContain("antigravity");
+    expect(optionValues).not.toContain("gemini");
+  });
 });
 
 // ── Task 45 — EC-12: cwd === homedir() guard tests ────────────────────────────

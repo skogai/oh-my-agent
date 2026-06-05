@@ -594,7 +594,6 @@ export async function install(options: InstallOptions = {}): Promise<void> {
         label: "Cursor",
         hint: ".cursor/rules/ export + prompt hooks",
       },
-      { value: "gemini", label: "Gemini CLI", hint: "hooks + Serena MCP" },
       {
         value: "grok",
         label: "Grok",
@@ -612,6 +611,11 @@ export async function install(options: InstallOptions = {}): Promise<void> {
       },
       ...(allowHomeWriteVendors
         ? [
+            {
+              value: "antigravity" as const,
+              label: "Antigravity CLI (agy)",
+              hint: "hooks + HUD + Serena MCP — HOME-shared (~/.gemini/antigravity-cli/)",
+            },
             {
               value: "hermes" as const,
               label: "Hermes Agent",

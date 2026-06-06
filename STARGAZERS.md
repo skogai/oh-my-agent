@@ -5,13 +5,14 @@ Only commits when the list changes. Unstargazer entries include profile
 summaries to spot which persona is churning.
 
 <!-- unstars-start -->
-## 2026-06-04 · 1 unstarred
+## 2026-06-06 · 1 unstarred
 
-- **@thehealingcenterllc4-lgtm** · 0 repos · 0 followers
+- **@gokhantaskan** · Gökhan Taşkan · Ankara, Turkiye · 21 repos · 24 followers
+  - Software/UX/Visuals/Sounds
 <!-- unstars-end -->
 
 <!-- current-start -->
-## Current (1060)
+## Current (1061)
 
 - @05hhh35 — 2026-03-07
 - @0617Allience — 2026-05-23
@@ -32,6 +33,7 @@ summaries to spot which persona is churning.
 - @810230010 — 2026-04-21
 - @abcfy2 — 2026-04-25
 - @abdalrohman — 2026-02-12
+- @abdelpy — 2026-06-05
 - @abderrazzakchabab — 2026-04-21
 - @AbdulAhadSerfraz — 2026-04-01
 - @abhi-jha — 2026-02-18
@@ -294,6 +296,7 @@ summaries to spot which persona is churning.
 - @fbsbittencourt — 2026-02-13
 - @fdkgenie — 2026-02-25
 - @fengxiaoyi34 — 2026-05-31
+- @fengzhaoy — 2026-06-05
 - @Finesssee — 2026-03-10
 - @FitchburgAdvocate — 2026-02-04
 - @fivessun — 2026-04-19
@@ -343,7 +346,6 @@ summaries to spot which persona is churning.
 - @goddaehee — 2026-02-04
 - @godsentaigod — 2026-02-23
 - @gokepler — 2026-04-19
-- @gokhantaskan — 2026-04-06
 - @goldenrati0 — 2026-05-05
 - @gongul — 2026-05-05
 - @goodlookingprokim — 2026-04-15

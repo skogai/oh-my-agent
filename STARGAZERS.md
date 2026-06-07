@@ -12,7 +12,7 @@ summaries to spot which persona is churning.
 <!-- unstars-end -->
 
 <!-- current-start -->
-## Current (1061)
+## Current (1063)
 
 - @05hhh35 — 2026-03-07
 - @0617Allience — 2026-05-23
@@ -118,6 +118,7 @@ summaries to spot which persona is churning.
 - @beyondnk — 2026-02-26
 - @bez-soomgo — 2026-03-18
 - @bforbilly24 — 2026-05-12
+- @bgembalczyk — 2026-06-06
 - @bigccc — 2026-05-14
 - @Bill0538 — 2026-05-14
 - @billyadult002 — 2026-04-21
@@ -309,6 +310,7 @@ summaries to spot which persona is churning.
 - @forsh4w — 2026-04-07
 - @foxion37 — 2026-04-18
 - @fredleger — 2026-03-18
+- @freeeebie — 2026-06-06
 - @freeNanum — 2026-02-14
 - @freesmisfreesm-ux — 2026-04-27
 - @freevue — 2026-02-02

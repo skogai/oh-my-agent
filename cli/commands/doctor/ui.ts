@@ -405,6 +405,28 @@ function renderStateHealth(report: DoctorReport): void {
   p.note(lines.join("\n"), "State & Hooks");
 }
 
+function renderHookWrappers(report: DoctorReport): void {
+  const checks = report.hookWrappers;
+  const active = checks.filter((c) => c.status !== "skip");
+  if (active.length === 0) return;
+
+  const lines: string[] = [];
+  for (const check of active) {
+    if (check.status === "pass") {
+      lines.push(`${pc.green("✅")} ${check.vendor}`);
+    } else {
+      lines.push(
+        `${pc.yellow("⚠️")} ${check.vendor}: oma binary not resolvable`,
+      );
+      if (check.remediation) {
+        lines.push(pc.dim(`   → ${check.remediation}`));
+      }
+    }
+  }
+
+  p.note(lines.join("\n"), "Hook Wrapper Checks");
+}
+
 function renderSelfHealing(report: DoctorReport): void {
   if (!report.selfHealing) return;
   p.note(renderSelfHealingGateResult(report.selfHealing), "Self-Healing Gate");
@@ -634,6 +656,7 @@ export async function renderDoctorReport(report: DoctorReport): Promise<void> {
     renderSkillBoundaries(report);
     renderAgentMemory(report);
     renderStateHealth(report);
+    renderHookWrappers(report);
     renderSelfHealing(report);
     await promptRepair(report);
     renderFooter(report);

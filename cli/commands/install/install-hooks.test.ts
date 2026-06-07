@@ -88,7 +88,9 @@ describe("installHooksFromVariant", () => {
     );
   });
 
-  it("should generate settings with hook entries", () => {
+  it("should generate settings with hook entries routed via oma-hook.sh", () => {
+    // Event hooks now emit ONE entry per event calling oma-hook.sh (design 019).
+    // The command is: "$GEMINI_PROJECT_DIR/.gemini/hooks/oma-hook.sh" --vendor gemini --event BeforeAgent --matcher *
     (fs.readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
       JSON.stringify({
         vendor: "gemini",
@@ -118,10 +120,17 @@ describe("installHooksFromVariant", () => {
 
     const settings = JSON.parse(writeCall?.[1] as string);
     expect(settings.hooks.BeforeAgent).toBeDefined();
+    // Matcher is lifted to the entry level (not inside hooks[]).
     expect(settings.hooks.BeforeAgent[0].matcher).toBe("*");
-    expect(settings.hooks.BeforeAgent[0].hooks[0].command).toContain(
-      "keyword-detector.ts",
-    );
+    // Single oma-hook entry for the whole chain — no per-handler script names.
+    expect(settings.hooks.BeforeAgent[0].hooks).toHaveLength(1);
+    const cmd = settings.hooks.BeforeAgent[0].hooks[0].command;
+    expect(cmd).toContain("oma-hook.sh");
+    expect(cmd).toContain("--vendor 'gemini'");
+    expect(cmd).toContain("--event 'BeforeAgent'");
+    expect(cmd).toContain("--matcher '*'");
+    // projectDirEnv expansion still applied (machine-independent).
+    expect(cmd).toContain("$GEMINI_PROJECT_DIR");
   });
 
   it("should include statusLine for Claude variant", () => {
@@ -194,7 +203,11 @@ describe("installHooksFromVariant", () => {
     expect(settings.ui.theme).toBe("Dark");
   });
 
-  it("wires hud.ts into Gemini SessionStart, AfterTool, and AfterAgent events", () => {
+  it("wires hud.ts into Gemini SessionStart/AfterTool via bun, and AfterAgent (mixed) via oma-hook.sh", () => {
+    // T1-c: hud-only events (SessionStart, AfterTool) keep the current bun path.
+    // AfterAgent is mixed (persistent-mode.ts + hud.ts) — routed through oma-hook.sh
+    // for the handler chain; the hud entry in the mixed event is intentionally
+    // excluded from the settings entry (display is a statusLine concern).
     (fs.readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
       JSON.stringify({
         vendor: "gemini",
@@ -241,15 +254,22 @@ describe("installHooksFromVariant", () => {
     expect(writeCall).toBeTruthy();
     const settings = JSON.parse(writeCall?.[1] as string);
 
+    // Hud-only events keep the existing bun path (T1-c: statusLine/hud stays on current mechanism).
     expect(settings.hooks.SessionStart[0].hooks[0].command).toContain("hud.ts");
     expect(settings.hooks.SessionStart[0].hooks[0].command).toContain(
       "$GEMINI_PROJECT_DIR",
     );
     expect(settings.hooks.AfterTool[0].hooks[0].command).toContain("hud.ts");
-    // AfterAgent stays a single entry whose hooks chain persistent-mode then hud.
-    expect(settings.hooks.AfterAgent[0].hooks).toHaveLength(2);
-    expect(settings.hooks.AfterAgent[0].hooks[0].name).toBe("persistent-mode");
-    expect(settings.hooks.AfterAgent[0].hooks[1].name).toBe("hud");
+
+    // AfterAgent is mixed: routed through oma-hook.sh (one entry for the handler chain).
+    expect(settings.hooks.AfterAgent[0].hooks).toHaveLength(1);
+    const afterAgentCmd = settings.hooks.AfterAgent[0].hooks[0].command;
+    expect(afterAgentCmd).toContain("oma-hook.sh");
+    expect(afterAgentCmd).toContain("--vendor 'gemini'");
+    expect(afterAgentCmd).toContain("--event 'AfterAgent'");
+    expect(settings.hooks.AfterAgent[0].hooks[0].name).toBe(
+      "oma-hook-AfterAgent",
+    );
   });
 
   it("should not include statusLine for Gemini variant", () => {
@@ -383,10 +403,9 @@ describe("installHooksFromVariant", () => {
     expect(writeCall).toBeTruthy();
   });
 
-  it("should write bare bun without absolute paths (machine-independent)", () => {
-    // Regression: resolveRuntimeCmd used to embed `which bun` into settings,
-    // which caused per-machine churn — every user's `oma update` rewrote
-    // vendor settings with their own bun path.
+  it("should write oma-hook.sh command without absolute oma paths (machine-independent)", () => {
+    // Design 019: event hooks now emit `<hookDir>/oma-hook.sh --vendor <v> --event <e>`.
+    // The wrapper resolves oma at runtime (PATH first), so settings stay machine-independent.
     (
       childProcess.execFileSync as unknown as ReturnType<typeof vi.fn>
     ).mockReturnValue("/opt/homebrew/bin/bun\n");
@@ -417,11 +436,17 @@ describe("installHooksFromVariant", () => {
     );
     const settings = JSON.parse(writeCall?.[1] as string);
     const cmd = settings.hooks.UserPromptSubmit[0].hooks[0].command;
-    expect(cmd).toBe("bun .codex/hooks/keyword-detector.ts");
+    // Now invokes oma-hook.sh wrapper instead of bun <script>.
+    expect(cmd).toBe(
+      ".codex/hooks/oma-hook.sh --vendor 'codex' --event 'UserPromptSubmit'",
+    );
+    // No absolute paths from the local machine embedded in settings.
     expect(cmd).not.toMatch(/\/opt\/homebrew|\/Users\/|\.local\/share\/mise/);
   });
 
-  it("should write bare bun with projectDirEnv expansion for Claude variant", () => {
+  it("should write oma-hook.sh with projectDirEnv expansion for Claude variant", () => {
+    // Design 019: projectDirEnv expansion is preserved in the wrapper path so
+    // the command remains machine-independent for vendors like Claude that use it.
     (fs.readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
       JSON.stringify({
         vendor: "claude",
@@ -448,145 +473,131 @@ describe("installHooksFromVariant", () => {
     );
     const settings = JSON.parse(writeCall?.[1] as string);
     const cmd = settings.hooks.UserPromptSubmit[0].hooks[0].command;
+    // oma-hook.sh wrapper path uses $CLAUDE_PROJECT_DIR expansion.
     expect(cmd).toBe(
-      'bun "$CLAUDE_PROJECT_DIR/.claude/hooks/keyword-detector.ts"',
+      "\"$CLAUDE_PROJECT_DIR/.claude/hooks/oma-hook.sh\" --vendor 'claude' --event 'UserPromptSubmit'",
     );
     expect(cmd).not.toMatch(/\/opt\/homebrew|\/Users\/|\.local\/share\/mise/);
   });
 
-  it("should patch copied Codex hook types to use updated_input", () => {
-    (fs.readFileSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      (pathArg: string) => {
-        if (n(pathArg).includes("variants/") && n(pathArg).endsWith(".json")) {
-          return JSON.stringify({
-            vendor: "codex",
-            hookDir: ".codex/hooks",
-            settingsFile: ".codex/hooks.json",
-            projectDirEnv: null,
-            runtime: "bun",
-            events: {
-              PreToolUse: {
-                hook: "test-filter.ts",
-                matcher: "Bash",
-                timeout: 5,
-              },
-            },
-          });
-        }
-
-        if (n(pathArg).endsWith(".codex/hooks/hook-output.ts")) {
-          return `    case "claude":
-    case "codex":
-    case "qwen":
-      return JSON.stringify({
-        hookSpecificOutput: {
-          hookEventName: "PreToolUse",
-          updatedInput,
+  it("should generate the oma-hook.sh wrapper in the vendor hookDir", () => {
+    // Design 019: patchVendorHookTypes is no longer called (vendor identity is
+    // now the --vendor arg, not a runtime-patched switch). Instead, a single
+    // oma-hook.sh wrapper is written to the hookDir and used by all event entries.
+    (fs.readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      JSON.stringify({
+        vendor: "codex",
+        hookDir: ".codex/hooks",
+        settingsFile: ".codex/hooks.json",
+        projectDirEnv: null,
+        runtime: "bun",
+        events: {
+          PreToolUse: {
+            hook: "test-filter.ts",
+            matcher: "Bash",
+            timeout: 5,
+          },
         },
-      });`;
-        }
-
-        return "{}";
-      },
-    );
-    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      (pathArg: string) =>
-        n(pathArg).includes("variants/") ||
-        n(pathArg).includes("hooks/core") ||
-        n(pathArg).includes(".codex/hooks/hook-output.ts") ||
-        n(pathArg).includes(".agents/agents") ||
-        n(pathArg).includes(".agents/workflows"),
+      }),
     );
 
     installVendorAdaptations(mockSourceDir, mockTargetDir, ["codex"]);
 
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      join(mockTargetDir, ".codex", "hooks", "hook-output.ts"),
-      expect.stringContaining("updated_input: updatedInput"),
-      "utf-8",
+    // The wrapper must be written to hookDir.
+    const wrapperWrite = (
+      fs.writeFileSync as unknown as ReturnType<typeof vi.fn>
+    ).mock.calls.find(
+      (call: unknown[]) =>
+        typeof call[0] === "string" &&
+        n(call[0]).endsWith(".codex/hooks/oma-hook.sh"),
     );
+    expect(wrapperWrite).toBeTruthy();
+
+    const wrapperContent = wrapperWrite?.[1] as string;
+    // Dedup preamble present.
+    expect(wrapperContent).toContain("__oma_dedup_lock");
+    // oma binary resolution: recorded install path first, then PATH lookup.
+    expect(wrapperContent).toContain("command -v oma");
+    // Always fail-open: force exit 0 even if oma errors / lacks the hook command.
+    expect(wrapperContent).toContain("exit 0");
+    // Delegates to oma hook with verbatim args, swallowing a non-zero exit.
+    expect(wrapperContent).toContain('"$__oma_bin" hook "$@" || true');
+
+    // hook-output.ts patching is intentionally NOT performed (vendor is --vendor arg now).
+    const hookOutputWrite = (
+      fs.writeFileSync as unknown as ReturnType<typeof vi.fn>
+    ).mock.calls.find(
+      (call: unknown[]) =>
+        typeof call[0] === "string" && n(call[0]).includes("hook-output.ts"),
+    );
+    expect(hookOutputWrite).toBeUndefined();
   });
 
-  it("should patch copied hook scripts to infer vendor from script path", () => {
-    (fs.readFileSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      (pathArg: string) => {
-        if (n(pathArg).includes("variants/") && n(pathArg).endsWith(".json")) {
-          return JSON.stringify({
-            vendor: "codex",
-            hookDir: ".codex/hooks",
-            settingsFile: ".codex/hooks.json",
-            projectDirEnv: null,
-            runtime: "bun",
-            events: {
-              PreToolUse: {
-                hook: "test-filter.ts",
-                matcher: "Bash",
-                timeout: 5,
-              },
-              Stop: {
-                hook: "persistent-mode.ts",
-                timeout: 5,
-              },
-            },
-          });
-        }
-
-        if (n(pathArg).endsWith(".codex/hooks/test-filter.ts")) {
-          return `function detectVendor(input: Record<string, unknown>): Vendor {
-  const event = input.hook_event_name as string | undefined;
-  if (event === "BeforeTool") return "gemini";
-  if (event === "PreToolUse") {
-    if ("session_id" in input && !("sessionId" in input)) return "codex";
-  }
-  if (process.env.QWEN_PROJECT_DIR) return "qwen";
-  return "claude";
-}`;
-        }
-
-        if (n(pathArg).endsWith(".codex/hooks/persistent-mode.ts")) {
-          return `function detectVendor(input: Record<string, unknown>): Vendor {
-  const event = input.hook_event_name as string | undefined;
-  if (event === "AfterAgent") return "gemini";
-  if (event === "Stop") {
-    if ("session_id" in input && !("sessionId" in input)) return "codex";
-  }
-  if (process.env.QWEN_PROJECT_DIR) return "qwen";
-  return "claude";
-}`;
-        }
-
-        return "{}";
-      },
-    );
-    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      (pathArg: string) =>
-        n(pathArg).includes("variants/") ||
-        n(pathArg).includes("hooks/core") ||
-        n(pathArg).includes(".codex/hooks/test-filter.ts") ||
-        n(pathArg).includes(".codex/hooks/persistent-mode.ts") ||
-        n(pathArg).includes(".agents/agents") ||
-        n(pathArg).includes(".agents/workflows"),
+  it("should pass vendor identity via --vendor flag rather than patching copied hook scripts", () => {
+    // Design 019: patchVendorDetection is no longer called. Hook scripts are NOT
+    // patched to infer vendor from script path. Instead, vendor identity is an
+    // explicit --vendor argument in the oma-hook.sh command registered in settings.
+    (fs.readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      JSON.stringify({
+        vendor: "codex",
+        hookDir: ".codex/hooks",
+        settingsFile: ".codex/hooks.json",
+        projectDirEnv: null,
+        runtime: "bun",
+        events: {
+          PreToolUse: {
+            hook: "test-filter.ts",
+            matcher: "Bash",
+            timeout: 5,
+          },
+          Stop: {
+            hook: "persistent-mode.ts",
+            timeout: 5,
+          },
+        },
+      }),
     );
 
     installVendorAdaptations(mockSourceDir, mockTargetDir, ["codex"]);
 
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      join(mockTargetDir, ".codex", "hooks", "test-filter.ts"),
-      expect.stringContaining(
-        "const byScriptPath = inferVendorFromScriptPath();",
-      ),
-      "utf-8",
+    // test-filter.ts and persistent-mode.ts must NOT be patched.
+    const patchedTestFilter = (
+      fs.writeFileSync as unknown as ReturnType<typeof vi.fn>
+    ).mock.calls.find(
+      (call: unknown[]) =>
+        typeof call[0] === "string" &&
+        n(call[0]).endsWith(".codex/hooks/test-filter.ts"),
     );
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      join(mockTargetDir, ".codex", "hooks", "persistent-mode.ts"),
-      expect.stringContaining(
-        'if (event === "Stop" && "session_id" in input) return "codex";',
-      ),
-      "utf-8",
+    expect(patchedTestFilter).toBeUndefined();
+
+    const patchedPersistentMode = (
+      fs.writeFileSync as unknown as ReturnType<typeof vi.fn>
+    ).mock.calls.find(
+      (call: unknown[]) =>
+        typeof call[0] === "string" &&
+        n(call[0]).endsWith(".codex/hooks/persistent-mode.ts"),
     );
+    expect(patchedPersistentMode).toBeUndefined();
+
+    // The settings commands include --vendor codex explicitly.
+    const hooksWrite = (
+      fs.writeFileSync as unknown as ReturnType<typeof vi.fn>
+    ).mock.calls.find(
+      (call: unknown[]) =>
+        typeof call[0] === "string" && n(call[0]).endsWith(".codex/hooks.json"),
+    );
+    const settings = JSON.parse(hooksWrite?.[1] as string);
+    const preToolCmd = settings.hooks.PreToolUse[0].hooks[0].command;
+    const stopCmd = settings.hooks.Stop[0].hooks[0].command;
+    expect(preToolCmd).toContain("--vendor 'codex'");
+    expect(preToolCmd).toContain("--event 'PreToolUse'");
+    expect(stopCmd).toContain("--vendor 'codex'");
+    expect(stopCmd).toContain("--event 'Stop'");
   });
 
-  it("should generate Cursor hooks.json with version 1 and prompt hooks", () => {
+  it("should generate Cursor hooks.json with version 1 and prompt hooks via oma-hook.sh", () => {
+    // Design 019: cursor event hooks now call oma-hook.sh instead of bun <script>.
+    // extra.version is still written to the settings file unchanged.
     (fs.readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
       JSON.stringify({
         vendor: "cursor",
@@ -622,13 +633,18 @@ describe("installHooksFromVariant", () => {
     expect(writeCall).toBeTruthy();
 
     const settings = JSON.parse(writeCall?.[1] as string);
+    // extra fields still written.
     expect(settings.version).toBe(1);
-    expect(settings.hooks.UserPromptSubmit[0].hooks[0].command).toContain(
-      ".cursor/hooks/keyword-detector.ts",
-    );
-    expect(settings.hooks.beforeSubmitPrompt[0].hooks[0].command).toContain(
-      ".cursor/hooks/keyword-detector.ts",
-    );
+    // Event hooks now use oma-hook.sh with --vendor cursor.
+    const userPromptCmd = settings.hooks.UserPromptSubmit[0].hooks[0].command;
+    expect(userPromptCmd).toContain(".cursor/hooks/oma-hook.sh");
+    expect(userPromptCmd).toContain("--vendor 'cursor'");
+    expect(userPromptCmd).toContain("--event 'UserPromptSubmit'");
+    const beforeSubmitCmd =
+      settings.hooks.beforeSubmitPrompt[0].hooks[0].command;
+    expect(beforeSubmitCmd).toContain(".cursor/hooks/oma-hook.sh");
+    expect(beforeSubmitCmd).toContain("--vendor 'cursor'");
+    expect(beforeSubmitCmd).toContain("--event 'beforeSubmitPrompt'");
   });
 
   it("should clear existing files before copying hooks to prevent EEXIST", () => {
@@ -776,5 +792,417 @@ describe("installHooksFromVariant", () => {
       join(mockTargetDir, ".claude", "hooks"),
       { recursive: true, force: true, dereference: true },
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Migration tests (Task 7 — backward-compat replace semantics)
+// ---------------------------------------------------------------------------
+
+describe("migration: legacy bun-script entries replaced, user hooks preserved", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        const norm = p.replace(/\\/g, "/");
+        if (norm.includes("variants/") && norm.endsWith(".json")) return true;
+        if (norm.includes("hooks/core")) return true;
+        if (norm.includes(".agents/agents")) return true;
+        if (norm.includes(".agents/workflows")) return true;
+        if (norm.includes("settings.json")) return true;
+        return false;
+      },
+    );
+
+    (fs.readdirSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue([]);
+    (fs.lstatSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      () => {
+        throw new Error("ENOENT");
+      },
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("replaces legacy bun keyword-detector entries with new oma-hook.sh entry, preserves user hook", () => {
+    // Seed a settings.json that represents an OLD install:
+    //   - OMA legacy entry: bun ".../.claude/hooks/keyword-detector.ts"
+    //   - User-added entry: my-custom-prompt-hook (NOT an OMA script)
+    const legacySettings = {
+      hooks: {
+        UserPromptSubmit: [
+          {
+            // Legacy OMA entry (pre-019 style)
+            hooks: [
+              {
+                name: "keyword-detector",
+                type: "command",
+                command:
+                  'bun "$CLAUDE_PROJECT_DIR/.claude/hooks/keyword-detector.ts"',
+                timeout: 5,
+              },
+              {
+                name: "state-boundary",
+                type: "command",
+                command:
+                  'bun "$CLAUDE_PROJECT_DIR/.claude/hooks/state-boundary.ts"',
+                timeout: 5,
+              },
+              {
+                name: "skill-injector",
+                type: "command",
+                command:
+                  'bun "$CLAUDE_PROJECT_DIR/.claude/hooks/skill-injector.ts"',
+                timeout: 3,
+              },
+            ],
+          },
+          {
+            // User-added hook — must be preserved
+            hooks: [
+              {
+                name: "my-custom-prompt-hook",
+                type: "command",
+                command: "my-custom-tool --on-prompt",
+                timeout: 10,
+              },
+            ],
+          },
+        ],
+        PreToolUse: [
+          {
+            matcher: "Bash",
+            // Legacy OMA entry
+            hooks: [
+              {
+                name: "test-filter",
+                type: "command",
+                command:
+                  'bun "$CLAUDE_PROJECT_DIR/.claude/hooks/test-filter.ts"',
+                timeout: 5,
+              },
+            ],
+          },
+        ],
+      },
+      statusLine: {
+        type: "command",
+        command: 'bun "$CLAUDE_PROJECT_DIR/.claude/hooks/hud.ts"',
+      },
+    };
+
+    (fs.readFileSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        const norm = p.replace(/\\/g, "/");
+        if (norm.includes("settings.json")) {
+          return JSON.stringify(legacySettings);
+        }
+        // variant JSON for claude
+        return JSON.stringify({
+          vendor: "claude",
+          hookDir: ".claude/hooks",
+          settingsFile: ".claude/settings.json",
+          projectDirEnv: "CLAUDE_PROJECT_DIR",
+          runtime: "bun",
+          events: {
+            UserPromptSubmit: [
+              { hook: "keyword-detector.ts", timeout: 5 },
+              { hook: "state-boundary.ts", timeout: 5 },
+              { hook: "skill-injector.ts", timeout: 3 },
+            ],
+            PreToolUse: {
+              hook: "test-filter.ts",
+              matcher: "Bash",
+              timeout: 5,
+            },
+            Stop: { hook: "persistent-mode.ts", timeout: 5 },
+          },
+          statusLine: { hook: "hud.ts" },
+          extra: {
+            permissions: {
+              allow: ["Bash(bun run:*)"],
+            },
+          },
+        });
+      },
+    );
+
+    installVendorAdaptations(mockSourceDir, mockTargetDir, ["claude"]);
+
+    const writeCall = (
+      fs.writeFileSync as unknown as ReturnType<typeof vi.fn>
+    ).mock.calls.find(
+      (call: string[]) =>
+        typeof call[0] === "string" &&
+        call[0].replace(/\\/g, "/").includes("settings.json"),
+    );
+    expect(writeCall).toBeTruthy();
+
+    const settings = JSON.parse(writeCall?.[1] as string);
+    const userPromptEntries = settings.hooks.UserPromptSubmit;
+
+    // Legacy OMA entry is gone.
+    const hasLegacyBunEntry = userPromptEntries.some(
+      (g: { hooks?: Array<{ command?: string }> }) =>
+        g.hooks?.some(
+          (h: { command?: string }) =>
+            h.command?.includes("keyword-detector.ts") &&
+            h.command?.includes("bun"),
+        ),
+    );
+    expect(hasLegacyBunEntry).toBe(false);
+
+    // New oma-hook.sh entry is present.
+    const omaEntry = userPromptEntries.find(
+      (g: { hooks?: Array<{ command?: string }> }) =>
+        g.hooks?.some((h: { command?: string }) =>
+          h.command?.includes("oma-hook.sh"),
+        ),
+    );
+    expect(omaEntry).toBeTruthy();
+    expect(omaEntry.hooks[0].command).toContain("--vendor 'claude'");
+    expect(omaEntry.hooks[0].command).toContain("--event 'UserPromptSubmit'");
+
+    // User hook is still present.
+    const userEntry = userPromptEntries.find(
+      (g: { hooks?: Array<{ name?: string }> }) =>
+        g.hooks?.some(
+          (h: { name?: string }) => h.name === "my-custom-prompt-hook",
+        ),
+    );
+    expect(userEntry).toBeTruthy();
+    expect(userEntry.hooks[0].command).toBe("my-custom-tool --on-prompt");
+
+    // PreToolUse: legacy test-filter replaced by new oma-hook.sh entry.
+    const preToolEntries = settings.hooks.PreToolUse;
+    const hasLegacyTestFilter = preToolEntries.some(
+      (g: { hooks?: Array<{ command?: string }> }) =>
+        g.hooks?.some(
+          (h: { command?: string }) =>
+            h.command?.includes("test-filter.ts") && h.command?.includes("bun"),
+        ),
+    );
+    expect(hasLegacyTestFilter).toBe(false);
+    const omaPreTool = preToolEntries.find(
+      (g: { hooks?: Array<{ command?: string }> }) =>
+        g.hooks?.some((h: { command?: string }) =>
+          h.command?.includes("oma-hook.sh"),
+        ),
+    );
+    expect(omaPreTool).toBeTruthy();
+    expect(omaPreTool.hooks[0].command).toContain(
+      "--vendor 'claude' --event 'PreToolUse'",
+    );
+
+    // Stop event should be present with oma-hook.sh.
+    const stopCmd = settings.hooks.Stop[0].hooks[0].command;
+    expect(stopCmd).toContain("oma-hook.sh");
+    expect(stopCmd).toContain("--vendor 'claude' --event 'Stop'");
+  });
+
+  it("is idempotent: running install twice yields identical settings", () => {
+    // First install from clean state.
+    const claudeVariant = JSON.stringify({
+      vendor: "claude",
+      hookDir: ".claude/hooks",
+      settingsFile: ".claude/settings.json",
+      projectDirEnv: "CLAUDE_PROJECT_DIR",
+      runtime: "bun",
+      events: {
+        UserPromptSubmit: [
+          { hook: "keyword-detector.ts", timeout: 5 },
+          { hook: "state-boundary.ts", timeout: 5 },
+          { hook: "skill-injector.ts", timeout: 3 },
+        ],
+        PreToolUse: {
+          hook: "test-filter.ts",
+          matcher: "Bash",
+          timeout: 5,
+        },
+        Stop: { hook: "persistent-mode.ts", timeout: 5 },
+      },
+      statusLine: { hook: "hud.ts" },
+    });
+
+    // For the first call: settings.json does not exist yet.
+    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        const norm = p.replace(/\\/g, "/");
+        if (norm.includes("variants/") && norm.endsWith(".json")) return true;
+        if (norm.includes("hooks/core")) return true;
+        if (norm.includes(".agents/agents")) return true;
+        if (norm.includes(".agents/workflows")) return true;
+        return false; // settings.json does not exist on first run
+      },
+    );
+    (fs.readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      claudeVariant,
+    );
+
+    installVendorAdaptations(mockSourceDir, mockTargetDir, ["claude"]);
+
+    // Capture first write result.
+    const firstWrite = (
+      fs.writeFileSync as unknown as ReturnType<typeof vi.fn>
+    ).mock.calls.find(
+      (call: string[]) =>
+        typeof call[0] === "string" &&
+        call[0].replace(/\\/g, "/").includes("settings.json"),
+    );
+    expect(firstWrite).toBeTruthy();
+    const firstResult = firstWrite?.[1] as string;
+
+    // For the second call: settings.json NOW exists with the first write result.
+    vi.clearAllMocks();
+    (fs.readdirSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue([]);
+    (fs.lstatSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      () => {
+        throw new Error("ENOENT");
+      },
+    );
+    (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        const norm = p.replace(/\\/g, "/");
+        if (norm.includes("variants/") && norm.endsWith(".json")) return true;
+        if (norm.includes("hooks/core")) return true;
+        if (norm.includes(".agents/agents")) return true;
+        if (norm.includes(".agents/workflows")) return true;
+        if (norm.includes("settings.json")) return true; // now exists
+        return false;
+      },
+    );
+    (fs.readFileSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        const norm = p.replace(/\\/g, "/");
+        if (norm.includes("settings.json")) return firstResult;
+        return claudeVariant;
+      },
+    );
+
+    installVendorAdaptations(mockSourceDir, mockTargetDir, ["claude"]);
+
+    const secondWrite = (
+      fs.writeFileSync as unknown as ReturnType<typeof vi.fn>
+    ).mock.calls.find(
+      (call: string[]) =>
+        typeof call[0] === "string" &&
+        call[0].replace(/\\/g, "/").includes("settings.json"),
+    );
+    expect(secondWrite).toBeTruthy();
+    const secondResult = secondWrite?.[1] as string;
+
+    // Both runs must produce the same settings.
+    expect(JSON.parse(secondResult)).toEqual(JSON.parse(firstResult));
+  });
+
+  it("mixed event: user hook on same event as OMA hook is preserved alongside new OMA entry", () => {
+    // Scenario: user has added their own PreToolUse hook (different matcher: "Write").
+    // OMA also manages PreToolUse (legacy test-filter entry → replaced by oma-hook.sh).
+    // After re-install, the user "Write" guard must still be in the PreToolUse list.
+    // Uses claude vendor so the settingsFile path (.claude/settings.json) matches
+    // the beforeEach existsSync mock that returns true for "settings.json" paths.
+    const existingSettings = {
+      hooks: {
+        PreToolUse: [
+          {
+            matcher: "Bash",
+            // Legacy OMA entry — bun command for test-filter (pre-019 style)
+            hooks: [
+              {
+                name: "test-filter",
+                type: "command",
+                command:
+                  'bun "$CLAUDE_PROJECT_DIR/.claude/hooks/test-filter.ts"',
+                timeout: 5,
+              },
+            ],
+          },
+          {
+            matcher: "Write",
+            // User-added hook on the same event with a different matcher
+            hooks: [
+              {
+                name: "user-write-guard",
+                type: "command",
+                command: "/usr/local/bin/write-guard",
+                timeout: 3,
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    (fs.readFileSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        const norm = p.replace(/\\/g, "/");
+        if (norm.includes("settings.json")) {
+          return JSON.stringify(existingSettings);
+        }
+        return JSON.stringify({
+          vendor: "claude",
+          hookDir: ".claude/hooks",
+          settingsFile: ".claude/settings.json",
+          projectDirEnv: "CLAUDE_PROJECT_DIR",
+          runtime: "bun",
+          events: {
+            PreToolUse: {
+              hook: "test-filter.ts",
+              matcher: "Bash",
+              timeout: 5,
+            },
+          },
+          statusLine: { hook: "hud.ts" },
+        });
+      },
+    );
+
+    installVendorAdaptations(mockSourceDir, mockTargetDir, ["claude"]);
+
+    const writeCall = (
+      fs.writeFileSync as unknown as ReturnType<typeof vi.fn>
+    ).mock.calls.find(
+      (call: string[]) =>
+        typeof call[0] === "string" &&
+        call[0].replace(/\\/g, "/").includes("settings.json"),
+    );
+    expect(writeCall).toBeTruthy();
+    const settings = JSON.parse(writeCall?.[1] as string);
+
+    const preToolEntries = settings.hooks.PreToolUse;
+
+    // Legacy OMA test-filter entry is gone.
+    const hasLegacy = preToolEntries.some(
+      (g: { hooks?: Array<{ command?: string }> }) =>
+        g.hooks?.some(
+          (h: { command?: string }) =>
+            h.command?.includes("test-filter.ts") && h.command?.includes("bun"),
+        ),
+    );
+    expect(hasLegacy).toBe(false);
+
+    // New oma-hook.sh entry is present.
+    const omaEntry = preToolEntries.find(
+      (g: { hooks?: Array<{ command?: string }> }) =>
+        g.hooks?.some((h: { command?: string }) =>
+          h.command?.includes("oma-hook.sh"),
+        ),
+    );
+    expect(omaEntry).toBeTruthy();
+    expect(omaEntry.hooks[0].command).toContain(
+      "--vendor 'claude' --event 'PreToolUse'",
+    );
+
+    // User hook (write-guard on "Write" matcher) is preserved.
+    const userEntry = preToolEntries.find(
+      (g: { hooks?: Array<{ name?: string }> }) =>
+        g.hooks?.some((h: { name?: string }) => h.name === "user-write-guard"),
+    );
+    expect(userEntry).toBeTruthy();
+    expect(userEntry.hooks[0].command).toBe("/usr/local/bin/write-guard");
+    expect(userEntry.matcher).toBe("Write");
   });
 });

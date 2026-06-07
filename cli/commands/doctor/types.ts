@@ -96,6 +96,8 @@ export interface StateDoctorCheck {
   hookOrder: HookOrderDoctorCheck[];
 }
 
+import type { HookWrapperCheck } from "./hook-wrapper-check.js";
+
 export interface DoctorReport {
   cwd: string;
   clis: CLICheck[];
@@ -113,4 +115,5 @@ export interface DoctorReport {
   dualInstall: DualInstallReport;
   state: StateDoctorCheck;
   selfHealing?: SelfHealingGateResult;
+  hookWrappers: HookWrapperCheck[];
 }

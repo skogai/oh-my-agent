@@ -39,6 +39,7 @@ import {
 import { auditSkills } from "../skills/audit.js";
 import { MIN_TASKS } from "../skills/eval.js";
 import { checkDualInstall } from "./dual-install.js";
+import { collectHookWrapperChecks } from "./hook-wrapper-check.js";
 import { collectStateDoctorCheck } from "./state-health.js";
 import type {
   AgentMemoryBinaryCheck,
@@ -442,6 +443,7 @@ export async function collectDoctorReport(
   const skillEval = computeEvalCoverage(cwd, skillAudit.skillCount);
   const agentMemory = await collectAgentMemoryCheck(cwd);
   const state = collectStateDoctorCheck(cwd);
+  const hookWrappers = collectHookWrapperChecks(cwd);
   const selfHealing = options.healCheckAgent
     ? evaluateSelfHealingGate({
         workspace: cwd,
@@ -479,6 +481,7 @@ export async function collectDoctorReport(
     dualInstall,
     state,
     selfHealing,
+    hookWrappers,
   };
 }
 
@@ -575,6 +578,12 @@ export function serializeReportAsJson(report: DoctorReport): string {
         : null,
       warnings: report.dualInstall.warnings,
     },
+    hookWrappers: report.hookWrappers.map((w) => ({
+      vendor: w.vendor,
+      wrapperPath: w.wrapperPath,
+      status: w.status,
+      remediation: w.remediation ?? null,
+    })),
   };
   return JSON.stringify(payload, null, 2);
 }

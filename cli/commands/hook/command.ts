@@ -1,5 +1,7 @@
 import type { Command } from "commander";
+import { VENDORS } from "../../constants/vendors.js";
 import { runAction } from "../../utils/cli-framework.js";
+import { extractSessionId } from "./adapters.js";
 import {
   PROBE_VENDORS,
   type ProbeVendor,
@@ -7,6 +9,8 @@ import {
   renderProbeMatrixMarkdown,
   runHookProbe,
 } from "./probe.js";
+import { selectTransport } from "./transport.js";
+import type { HookRequest, Vendor } from "./types.js";
 
 const PROBE_FORMATS = ["text", "md", "json"] as const;
 type ProbeFormat = (typeof PROBE_FORMATS)[number];
@@ -38,7 +42,98 @@ function parseVendors(value: string | undefined): ProbeVendor[] | undefined {
   return requested as ProbeVendor[];
 }
 
+async function readAllStdin(): Promise<string> {
+  if (process.stdin.isTTY) return "";
+  return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
+    process.stdin.on("data", (chunk: Buffer) => chunks.push(chunk));
+    process.stdin.on("end", () =>
+      resolve(Buffer.concat(chunks).toString("utf-8")),
+    );
+    process.stdin.on("error", () => resolve(""));
+  });
+}
+
 export function registerHook(program: Command): void {
+  // ---------------------------------------------------------------------------
+  // oma hook — canonical ABI for vendor hook dispatch (design 019).
+  // Each vendor hook event invokes: oma hook --vendor <v> --event <e> [--matcher <m>]
+  // stdin = vendor raw payload; stdout = vendor dialect or empty; exit always 0.
+  // ---------------------------------------------------------------------------
+  program
+    .command("hook")
+    .description(
+      "Dispatch a vendor hook event through the centralised oma hook router (design 019)",
+    )
+    .requiredOption(
+      "--vendor <v>",
+      `Vendor identity (one of: ${VENDORS.join(", ")})`,
+    )
+    .requiredOption(
+      "--event <e>",
+      "Native hook event name from the vendor registration",
+    )
+    .option(
+      "--matcher <m>",
+      "Optional tool name / matcher forwarded from the hook registration",
+    )
+    .action(
+      runAction(async (options) => {
+        const vendorRaw = (options.vendor as string).trim().toLowerCase();
+        const nativeEvent = (options.event as string).trim();
+        const matcher = options.matcher as string | undefined;
+
+        // Validate --vendor against the VENDORS whitelist.
+        if (!VENDORS.includes(vendorRaw as (typeof VENDORS)[number])) {
+          process.stderr.write(
+            `oma hook: unknown vendor "${vendorRaw}". Valid: ${VENDORS.join(", ")}\n`,
+          );
+          // fail-open: exit 0, write nothing to stdout
+          return;
+        }
+
+        const vendor = vendorRaw as Vendor;
+
+        let rawStdin = "";
+        try {
+          rawStdin = await readAllStdin();
+        } catch {
+          // fail-open: proceed with empty stdin
+        }
+
+        const cwd = process.cwd();
+        const sid = extractSessionId(vendor, rawStdin);
+
+        const req: HookRequest = {
+          vendor,
+          nativeEvent,
+          matcher,
+          rawStdin,
+          cwd,
+          sid,
+        };
+
+        // selectTransport: probes for daemon socket (OMA_HOOK_SOCKET or per-project
+        // default) with a 200ms connect timeout; falls back to InProcessTransport
+        // today since SocketTransport is not yet implemented (design 019 §2.7).
+        const transport = await selectTransport({ cwd });
+
+        try {
+          const response = await transport.dispatch(req);
+          if (response.output) {
+            process.stdout.write(response.output);
+          }
+        } catch {
+          // fail-open: any error → write nothing to stdout, warn to stderr.
+          // A legitimate block result is NOT an error — it returns normally.
+          process.stderr.write(
+            `oma hook: dispatch error for vendor=${vendor} event=${nativeEvent} (fail-open)\n`,
+          );
+        }
+        // Always exit 0 (process.exitCode default is 0).
+      }),
+    );
+
   program
     .command("hook:probe")
     .description(

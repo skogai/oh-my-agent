@@ -6,7 +6,7 @@ import {
   readFileSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { clearNonDirectory } from "../utils/fs-utils.js";
 
 // --- Hook self-dedup preamble ---
@@ -19,8 +19,10 @@ import { clearNonDirectory } from "../utils/fs-utils.js";
 // Two `stat` forms cover macOS (-f %m) and Linux (-c %Y).
 
 /** The shell dedup preamble snippet prepended to every generated hook shell script. */
-export const HOOK_DEDUP_PREAMBLE = `# oma-hook self-dedup — suppresses double-fire when both project and global installs exist
-__oma_dedup_lock="/tmp/oma-hook-\${UID:-\${EUID:-0}}-\${OMA_SESSION_ID:-default}.lock"
+export const HOOK_DEDUP_PREAMBLE = `# oma-hook self-dedup — suppresses double-fire of the SAME event when both project and global installs register it.
+# The lock key includes the event args ("$@") so DIFFERENT events (e.g. PreToolUse right after UserPromptSubmit) never suppress each other.
+__oma_evt="$(printf '%s' "$*" | tr -c 'A-Za-z0-9' '_')"
+__oma_dedup_lock="/tmp/oma-hook-\${UID:-\${EUID:-0}}-\${OMA_SESSION_ID:-default}-\${__oma_evt}.lock"
 if [ -f "$__oma_dedup_lock" ]; then
   __oma_age=$(( $(date +%s) - $(stat -f %m "$__oma_dedup_lock" 2>/dev/null || stat -c %Y "$__oma_dedup_lock" 2>/dev/null || echo 0) ))
   if [ "$__oma_age" -lt 2 ]; then
@@ -95,12 +97,116 @@ export interface HookVariant {
  * machine-independent. Resolving to an absolute path at install time caused
  * churn: every machine's `oma update` rewrote vendor settings with its own
  * `which bun` result.
+ *
+ * Only used for statusLine/hud entries — event hooks now use buildOmaHookCmd.
  */
 function buildHookCmd(variant: HookVariant, script: string): string {
   if (variant.projectDirEnv) {
     return `${variant.runtime} "$${variant.projectDirEnv}/${variant.hookDir}/${script}"`;
   }
   return `${variant.runtime} ${variant.hookDir}/${script}`;
+}
+
+/** Filename of the generated per-vendor oma-hook wrapper script. */
+const OMA_HOOK_WRAPPER_FILENAME = "oma-hook.sh";
+
+/**
+ * Build the command that vendor settings should register for a hook event.
+ *
+ * Emits: `<hookDir>/oma-hook.sh --vendor <vendor> --event <nativeEvent> [--matcher <m>]`
+ *
+ * The wrapper script resolves the oma binary at runtime and exec's
+ * `oma hook "$@"` so every vendor event routes through the in-process
+ * handler chain (see design 019 §Integration).
+ *
+ * Uses `projectDirEnv` expansion for vendors that set it (e.g. Claude's
+ * `$CLAUDE_PROJECT_DIR`) so the path stays machine-independent.
+ */
+/**
+ * POSIX single-quote a value for safe inclusion in the settings `command`
+ * string (which the vendor executes via the shell). Without this, a variant
+ * JSON containing shell metacharacters in `vendor`/`event`/`matcher` (e.g. a
+ * malicious project's `.agents/hooks/variants/*.json`) would inject an
+ * executable payload into the generated settings. Single-quote and escape any
+ * embedded single quotes; preserves legitimate values like `Edit|Write`.
+ */
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
+export function buildOmaHookCmd(
+  variant: HookVariant,
+  nativeEvent: string,
+  matcher?: string,
+): string {
+  const wrapperName = OMA_HOOK_WRAPPER_FILENAME;
+  const basePath = variant.projectDirEnv
+    ? `"$${variant.projectDirEnv}/${variant.hookDir}/${wrapperName}"`
+    : `${variant.hookDir}/${wrapperName}`;
+  // Quote interpolated values — they originate from variant JSON and must not
+  // be able to inject shell metacharacters into the registered command.
+  let cmd = `${basePath} --vendor ${shellQuote(variant.vendor)} --event ${shellQuote(nativeEvent)}`;
+  if (matcher) cmd += ` --matcher ${shellQuote(matcher)}`;
+  return cmd;
+}
+
+/**
+ * Generate the oma-hook wrapper shell script for a given vendor.
+ *
+ * oma path resolution strategy (T1-d from design 019):
+ *   1. `command -v oma` — prefer the user's PATH (portable, no hardcode).
+ *   2. Recorded absolute path from install time (`process.argv[1]` resolved
+ *      to the oma binary, captured at the moment `oma link/install` ran).
+ *   3. If neither resolves — `exit 0` (fail-open, never block the agent).
+ *
+ * The dedup preamble suppresses double-fire when both a project and global
+ * install register the same event (existing dedup strategy, kept intact).
+ *
+ * Passes `"$@"` verbatim so `--vendor`, `--event`, `--matcher` args that
+ * the settings entry emits reach `oma hook` unchanged (no shell injection).
+ */
+export function generateOmaHookWrapper(recordedOmaPath: string): string {
+  // Authored directly (NOT via generateHookShellWrapper, whose `exec ${cmd} "$@"`
+  // template is for single-command wrappers). This is a multi-statement script,
+  // and it must ALWAYS exit 0 — a non-zero hook exit (e.g. a stale oma without
+  // the `hook` command) can disrupt the vendor agent.
+  //
+  // Resolution order: the recorded install-time path FIRST (the exact oma that
+  // generated this wrapper — guaranteed to support `hook`), then PATH `oma`. A
+  // stale `oma` on PATH must not shadow the installer's feature set.
+  return `#!/usr/bin/env bash
+${HOOK_DEDUP_PREAMBLE}
+__oma_bin=""
+if [ -x "${recordedOmaPath}" ]; then
+  __oma_bin="${recordedOmaPath}"
+elif command -v oma >/dev/null 2>&1; then
+  __oma_bin="$(command -v oma)"
+fi
+if [ -n "$__oma_bin" ]; then
+  # Run oma hook; swallow a non-zero exit so the wrapper is always fail-open.
+  "$__oma_bin" hook "$@" || true
+fi
+exit 0
+`;
+}
+
+/**
+ * Resolve the oma binary path to record in the oma-hook wrapper.
+ *
+ * Priority:
+ *   1. `process.argv[1]` — the JS entry point (works for `node cli.js` invocations).
+ *   2. `process.execPath` — the Node/Bun executable itself (fallback when argv[1]
+ *      is not the oma wrapper, e.g. during tests).
+ *
+ * The resolved path is stored verbatim in the wrapper as a compile-time
+ * fallback; PATH lookup at runtime takes precedence (see generateOmaHookWrapper).
+ */
+function resolveOmaRecordedPath(): string {
+  const argv1 = process.argv[1];
+  if (argv1) {
+    return resolve(argv1);
+  }
+  return process.execPath;
 }
 
 function deriveHookName(script: string): string {
@@ -112,149 +218,89 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function patchVendorHookTypes(hooksDest: string, vendor: string): void {
-  if (vendor !== "codex" && vendor !== "qwen") {
-    return;
-  }
+/**
+ * Known OMA-managed core hook script basenames (without extension).
+ *
+ * Used by `isOmaManagedHookGroup` to identify legacy `bun …/<script>.ts`
+ * entries written by pre-019 installs so they can be replaced on re-install.
+ */
+const OMA_CORE_SCRIPT_NAMES = new Set([
+  "keyword-detector",
+  "skill-injector",
+  "state-boundary",
+  "test-filter",
+  "persistent-mode",
+  "hud",
+]);
 
-  // Output builders moved from types.ts to hook-output.ts; fall back to
-  // the legacy location if a previous install left only types.ts on disk.
-  const outputPath = join(hooksDest, "hook-output.ts");
-  const legacyTypesPath = join(hooksDest, "types.ts");
-  const targetPath = existsSync(outputPath) ? outputPath : legacyTypesPath;
-  if (!existsSync(targetPath)) {
-    return;
-  }
+/**
+ * Return true if a hook group object (one element of an event's array in
+ * `settings.hooks`) was written by oma and should be replaced on re-install.
+ *
+ * Two generations are matched:
+ *
+ * **New (design 019)** — the group contains a hook whose `name` starts with
+ * `"oma-hook-"` or whose `command` contains `"oma-hook.sh"`.
+ *
+ * **Legacy (pre-019)** — the group contains a hook whose `command` matches
+ * the old `bun "<hookDir>/<script>.{ts,js}"` or `bun <hookDir>/<script>.{ts,js}`
+ * pattern for any of the known OMA core scripts.
+ *
+ * User-added hook groups are never matched by either pattern, so they are
+ * preserved verbatim.
+ */
+export function isOmaManagedHookGroup(
+  // biome-ignore lint/suspicious/noExplicitAny: hook group shape varies by vendor
+  group: any,
+): boolean {
+  if (!isPlainObject(group)) return false;
+  const hooks = group.hooks;
+  if (!Array.isArray(hooks)) return false;
 
-  const content = readFileSync(targetPath, "utf-8");
-  const legacyPreToolBranch = `    case "claude":
-    case "codex":
-    case "qwen":
-      return JSON.stringify({
-        hookSpecificOutput: {
-          hookEventName: "PreToolUse",
-          updatedInput,
-        },
-      });`;
-  const patchedPreToolBranch = `    case "claude":
-      return JSON.stringify({
-        hookSpecificOutput: {
-          hookEventName: "PreToolUse",
-          updatedInput,
-        },
-      });
-    case "codex":
-    case "qwen":
-      return JSON.stringify({
-        updated_input: updatedInput,
-      });`;
+  return hooks.some((h: unknown) => {
+    if (!isPlainObject(h)) return false;
+    const name = typeof h.name === "string" ? h.name : "";
+    const cmd = typeof h.command === "string" ? h.command : "";
 
-  if (!content.includes(legacyPreToolBranch)) {
-    return;
-  }
+    // New-style: oma-hook.sh wrapper (design 019+)
+    if (name.startsWith("oma-hook-") || cmd.includes("oma-hook.sh")) {
+      return true;
+    }
 
-  writeFileSync(
-    targetPath,
-    content.replace(legacyPreToolBranch, patchedPreToolBranch),
-    "utf-8",
+    // Legacy-style: `bun "<path>/<script>.ts"` or `bun <path>/<script>.ts`
+    // e.g. bun "$CLAUDE_PROJECT_DIR/.claude/hooks/keyword-detector.ts"
+    //      bun .codex/hooks/persistent-mode.ts
+    const legacyMatch = cmd.match(/\bbun\b.*?[/\\]([\w-]+)\.(ts|js)["']?\s*$/);
+    if (legacyMatch) {
+      const scriptName = legacyMatch[1];
+      if (scriptName && OMA_CORE_SCRIPT_NAMES.has(scriptName)) return true;
+    }
+
+    return false;
+  });
+}
+
+/**
+ * Strip OMA-managed hook groups from an existing event array and append the
+ * new OMA groups, preserving user-added hook groups in their original order.
+ *
+ * @param existing - Current array from `settings.hooks[eventName]` (may be
+ *   undefined, null, or not an array — treated as empty in those cases).
+ * @param newOmaGroups - Array of hook group objects to write for this event.
+ * @returns Merged array: [user-preserved groups …, …newOmaGroups].
+ */
+export function mergeHookGroups(
+  // biome-ignore lint/suspicious/noExplicitAny: hook group shape is dynamic
+  existing: any,
+  // biome-ignore lint/suspicious/noExplicitAny: hook group shape is dynamic
+  newOmaGroups: any[],
+  // biome-ignore lint/suspicious/noExplicitAny: merged result
+): any[] {
+  const existingArray = Array.isArray(existing) ? existing : [];
+  const userGroups = existingArray.filter(
+    (g: unknown) => !isOmaManagedHookGroup(g),
   );
-}
-
-function patchCopiedHookFile(
-  hooksDest: string,
-  filename: string,
-  needle: string,
-  replacement: string,
-): void {
-  const filePath = join(hooksDest, filename);
-  if (!existsSync(filePath)) {
-    return;
-  }
-
-  const content = readFileSync(filePath, "utf-8");
-  if (!content.includes(needle)) {
-    return;
-  }
-
-  writeFileSync(filePath, content.replace(needle, replacement), "utf-8");
-}
-
-function patchVendorDetection(hooksDest: string): void {
-  const legacyTestFilterDetectVendor = `function detectVendor(input: Record<string, unknown>): Vendor {
-  const event = input.hook_event_name as string | undefined;
-  if (event === "BeforeTool") return "gemini";
-  if (event === "PreToolUse") {
-    if ("session_id" in input && !("sessionId" in input)) return "codex";
-  }
-  if (process.env.QWEN_PROJECT_DIR) return "qwen";
-  return "claude";
-}`;
-  const patchedTestFilterDetectVendor = `function inferVendorFromScriptPath(): Vendor | null {
-  const path = import.meta.filename;
-  if (path.includes(\`\${join(".cursor", "hooks")}\`)) return "cursor";
-  if (path.includes(\`\${join(".qwen", "hooks")}\`)) return "qwen";
-  if (path.includes(\`\${join(".claude", "hooks")}\`)) return "claude";
-  if (path.includes(\`\${join(".gemini", "hooks")}\`)) return "gemini";
-  if (path.includes(\`\${join(".codex", "hooks")}\`)) return "codex";
-  if (path.includes(\`\${join(".grok", "hooks")}\`)) return "grok";
-  return null;
-}
-
-function detectVendor(input: Record<string, unknown>): Vendor {
-  const event = input.hook_event_name as string | undefined;
-  const hookEventName = input.hookEventName as string | undefined;
-  const byScriptPath = inferVendorFromScriptPath();
-  if (byScriptPath) return byScriptPath;
-  if (process.env.GROK_WORKSPACE_ROOT) return "grok";
-  if (event === "BeforeTool") return "gemini";
-  if (event === "PreToolUse" && "session_id" in input) return "codex";
-  if (process.env.QWEN_PROJECT_DIR) return "qwen";
-  return "claude";
-}`;
-  patchCopiedHookFile(
-    hooksDest,
-    "test-filter.ts",
-    legacyTestFilterDetectVendor,
-    patchedTestFilterDetectVendor,
-  );
-
-  const legacyPersistentModeDetectVendor = `function detectVendor(input: Record<string, unknown>): Vendor {
-  const event = input.hook_event_name as string | undefined;
-  if (event === "AfterAgent") return "gemini";
-  if (event === "Stop") {
-    if ("session_id" in input && !("sessionId" in input)) return "codex";
-  }
-  if (process.env.QWEN_PROJECT_DIR) return "qwen";
-  return "claude";
-}`;
-  const patchedPersistentModeDetectVendor = `function inferVendorFromScriptPath(): Vendor | null {
-  const path = import.meta.filename;
-  if (path.includes(\`\${join(".cursor", "hooks")}\`)) return "cursor";
-  if (path.includes(\`\${join(".qwen", "hooks")}\`)) return "qwen";
-  if (path.includes(\`\${join(".claude", "hooks")}\`)) return "claude";
-  if (path.includes(\`\${join(".gemini", "hooks")}\`)) return "gemini";
-  if (path.includes(\`\${join(".codex", "hooks")}\`)) return "codex";
-  if (path.includes(\`\${join(".grok", "hooks")}\`)) return "grok";
-  return null;
-}
-
-function detectVendor(input: Record<string, unknown>): Vendor {
-  const event = input.hook_event_name as string | undefined;
-  const hookEventName = input.hookEventName as string | undefined;
-  const byScriptPath = inferVendorFromScriptPath();
-  if (byScriptPath) return byScriptPath;
-  if (process.env.GROK_WORKSPACE_ROOT || hookEventName?.includes("stop")) return "grok";
-  if (event === "AfterAgent") return "gemini";
-  if (event === "Stop" && "session_id" in input) return "codex";
-  if (process.env.QWEN_PROJECT_DIR) return "qwen";
-  return "claude";
-}`;
-  patchCopiedHookFile(
-    hooksDest,
-    "persistent-mode.ts",
-    legacyPersistentModeDetectVendor,
-    patchedPersistentModeDetectVendor,
-  );
+  return [...userGroups, ...newOmaGroups];
 }
 
 /**
@@ -305,7 +351,20 @@ export function mergeIntoSettings(
     }
   }
 
-  settings.hooks = { ...(settings.hooks || {}), ...hookEntries };
+  // Merge hook entries with replace semantics for OMA-managed groups.
+  // For each event key OMA is writing: strip existing OMA-managed groups
+  // (old bun-script or new oma-hook.sh) then append the new OMA groups.
+  // User-added groups on the same event are preserved in their original order.
+  // Event keys not touched by OMA are left verbatim.
+  const existingHooks = settings.hooks || {};
+  const mergedHooks: Record<string, unknown> = { ...existingHooks };
+  for (const [eventName, newGroups] of Object.entries(hookEntries)) {
+    mergedHooks[eventName] = mergeHookGroups(
+      existingHooks[eventName],
+      Array.isArray(newGroups) ? newGroups : [newGroups],
+    );
+  }
+  settings.hooks = mergedHooks;
   if (extra) {
     // Shallow-merge one level deep so nested keys like `ui` (Qwen statusLine)
     // or `permissions` augment — rather than clobber — existing vendor settings.
@@ -365,40 +424,99 @@ export function ensureFeatureFlags(
 /**
  * Install hooks for any vendor using its variant config from .agents/hooks/variants/.
  * Reads the variant JSON, copies core hooks, generates settings entries.
+ *
+ * ### Event hook strategy (design 019 §T6)
+ *
+ * For each event in `variant.events`:
+ *   - If ALL configs in that event reference `hud.ts` only:
+ *       Keep the current `bun <hookDir>/hud.ts` command (hot-path display,
+ *       excluded from oma hook per T1-c).
+ *   - Otherwise (at least one non-hud handler):
+ *       Emit ONE settings entry whose command is `<oma-hook.sh> --vendor <v>
+ *       --event <e> [--matcher <m>]`.  oma runs the WHOLE handler chain
+ *       in-process — no longer one entry per handler script.
+ *       Hud-only configs within mixed events are intentionally dropped from
+ *       the settings entry (display is a statusLine concern, not a handler).
+ *
+ * ### copyHookScripts is still called
+ * `copyHookScripts` materializes `hud.ts` (needed by statusLine entries) and
+ * all other core scripts (needed by the pi bridge — see pi-extension-composer).
+ * We no longer call `patchVendorHookTypes` or `patchVendorDetection` because
+ * vendor identity is now a `--vendor` CLI argument, not a runtime detection.
+ *
+ * ### ONE wrapper per vendor
+ * A single `oma-hook.sh` is written to `hookDir`. It resolves the oma binary
+ * (PATH → recorded absolute path → exit 0 fail-open) and `exec`s `oma hook "$@"`.
  */
 export function installHooksFromVariant(
   sourceDir: string,
   targetDir: string,
   variant: HookVariant,
 ): void {
-  // 1. Copy core hook files to vendor hooks directory
+  // 1. Copy core hook files to vendor hooks directory.
+  //    Keeps hud.ts available for statusLine entries and pi bridge subprocesses.
+  //    patchVendorHookTypes / patchVendorDetection are intentionally omitted:
+  //    vendor identity is now the `--vendor` arg, not a runtime-detected value.
   const hooksDest = join(targetDir, variant.hookDir);
   copyHookScripts(sourceDir, hooksDest);
-  patchVendorHookTypes(hooksDest, variant.vendor);
-  patchVendorDetection(hooksDest);
 
-  // 2. Build hook entries from events (single or chained)
+  // 2. Write the single oma-hook wrapper (one per vendor hookDir).
+  const wrapperPath = join(hooksDest, OMA_HOOK_WRAPPER_FILENAME);
+  const recordedOmaPath = resolveOmaRecordedPath();
+  writeFileSync(wrapperPath, generateOmaHookWrapper(recordedOmaPath), {
+    mode: 0o755,
+  });
+
+  // 3. Build hook entries from events.
   // biome-ignore lint/suspicious/noExplicitAny: hook config varies by vendor
   const hookEntries: Record<string, any> = {};
   for (const [eventName, rawConfig] of Object.entries(variant.events)) {
     const configs = Array.isArray(rawConfig) ? rawConfig : [rawConfig];
     if (configs.length === 0) continue;
 
-    const hooks = configs.map((c) => ({
-      name: deriveHookName(c.hook),
-      type: "command",
-      command: buildHookCmd(variant, c.hook),
-      timeout: c.timeout,
-    }));
+    // Determine whether ALL hooks in this event are hud-only (display, not handlers).
+    const nonHudConfigs = configs.filter((c) => c.hook !== "hud.ts");
+    const allHud = nonHudConfigs.length === 0;
 
     // biome-ignore lint/suspicious/noExplicitAny: hook entry shape varies
-    const entry: any = { hooks };
+    let entry: any;
     const matcher = configs.find((c) => c.matcher)?.matcher;
-    if (matcher) entry.matcher = matcher;
+
+    if (allHud) {
+      // Hud-only event — keep the current bun path (T1-c: statusLine/hud stays
+      // on its current mechanism; gemini uses hud via events rather than statusLine).
+      const hooks = configs.map((c) => ({
+        name: deriveHookName(c.hook),
+        type: "command",
+        command: buildHookCmd(variant, c.hook),
+        timeout: c.timeout,
+      }));
+      entry = { hooks };
+      if (matcher) entry.matcher = matcher;
+    } else {
+      // Handler event — route through oma hook (one entry for the whole chain).
+      // Timeout = sum of all handler timeouts + 5 s margin for oma startup/IPC.
+      const handlerTimeout =
+        nonHudConfigs.reduce((sum, c) => sum + c.timeout, 0) + 5;
+      const omaHookCmd = buildOmaHookCmd(variant, eventName, matcher);
+      entry = {
+        hooks: [
+          {
+            name: `oma-hook-${eventName}`,
+            type: "command",
+            command: omaHookCmd,
+            timeout: handlerTimeout,
+          },
+        ],
+      };
+      if (matcher) entry.matcher = matcher;
+    }
+
     hookEntries[eventName] = [entry];
   }
 
-  // 3. Build extra settings (statusLine, permissions, etc.)
+  // 4. Build extra settings (statusLine, permissions, etc.).
+  //    statusLine keeps the current bun/hud path (T1-c: not routed via oma hook).
   // biome-ignore lint/suspicious/noExplicitAny: extra settings are dynamic
   const extra: Record<string, any> = {};
   if (variant.statusLine) {
@@ -415,7 +533,7 @@ export function installHooksFromVariant(
   }
   if (variant.extra) Object.assign(extra, variant.extra);
 
-  // 4. Merge into settings file (or write Grok-native hook file)
+  // 5. Merge into settings file (or write Grok-native hook file).
   if (variant.vendor === "grok") {
     // Grok discovers hooks from .grok/hooks/*.json files (directory-based).
     // Write a single well-named file with the double-nested shape Grok expects.
@@ -431,7 +549,7 @@ export function installHooksFromVariant(
     );
   }
 
-  // 5. Vendor-specific feature flags (e.g., Codex config.toml)
+  // 6. Vendor-specific feature flags (e.g., Codex config.toml).
   if (variant.featureFlags) {
     ensureFeatureFlags(
       join(targetDir, variant.featureFlags.file),

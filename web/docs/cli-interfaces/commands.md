@@ -695,6 +695,118 @@ oma verify frontend -w ./apps/web
 oma verify backend --json
 ```
 
+### hook
+
+Dispatch a vendor hook event through the centralised oma hook router (design 019). This is the canonical ABI invoked by every vendor's generated `oma-hook.sh` wrapper. It can also be used directly to debug or test handler chains in isolation.
+
+```
+oma hook --vendor <v> --event <nativeEvent> [--matcher <tool>]
+```
+
+**Options:**
+
+| Flag | Required | Description |
+|:-----|:---------|:-----------|
+| `--vendor <v>` | Yes | Vendor identity. One of: `claude`, `codex`, `gemini`, `qwen`, `cursor`, `grok`, `kiro`, `antigravity`, `pi` |
+| `--event <e>` | Yes | Native hook event name as registered in the vendor settings (e.g. `UserPromptSubmit`, `PreToolUse`, `Stop`) |
+| `--matcher <m>` | No | Optional tool name / matcher forwarded from the hook registration (e.g. `Bash`) |
+
+**Stdin / stdout contract:**
+- **stdin**: vendor-native JSON payload (the same object the vendor passes to hook processes).
+- **stdout**: vendor-dialect JSON (or plain text for kiro prompts) when a handler fires; empty when no handler produces output.
+- **exit code**: always `0` (fail-open — errors are written to stderr and the agent is never blocked).
+
+**Runtime data flow:**
+```
+vendor fires: oma-hook.sh --vendor claude --event UserPromptSubmit
+  stdin: {"prompt":"...","cwd":"/project","sessionId":"..."}
+  → oma hook resolves handler chain from .agents/hooks/variants/claude.json
+  → runs: keyword-detector → state-boundary → skill-injector (in-process)
+  → merges HandlerResult values (context: concat; pre_tool: last mutate wins; stop: any block)
+  → emits vendor dialect to stdout
+  → exit 0
+```
+
+**Debugging handler chains in isolation:**
+
+```bash
+# Test what keyword-detector injects for a given prompt (Claude)
+echo '{"prompt":"orchestrate the auth feature","cwd":"/path/to/project"}' \
+  | oma hook --vendor claude --event UserPromptSubmit
+
+# Test a Bash pre_tool block (Claude)
+echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"},"cwd":"/path/to/project"}' \
+  | oma hook --vendor claude --event PreToolUse --matcher Bash
+
+# Test persistent-mode Stop enforcement (Codex)
+echo '{"cwd":"/path/to/project"}' \
+  | oma hook --vendor codex --event Stop
+
+# Test a Gemini BeforeTool event
+echo '{"tool_name":"run_shell_command","tool_input":{"command":"cat /etc/passwd"},"cwd":"/path/to/project"}' \
+  | oma hook --vendor gemini --event BeforeTool
+```
+
+Empty stdout means the chain produced a no-op for that event. A JSON object on stdout is the vendor dialect the agent session would receive.
+
+**Scope notes:**
+- `statusLine`/hud entries are not routed through `oma hook` (hot-path display stays on a direct `bun` path).
+- The pi vendor uses its in-process `installPiExtension` bridge, not `oma hook`.
+- The daemon socket path (`SocketTransport`) is a future phase; the current transport is always in-process.
+
+See `docs/plans/designs/019-hook-oma-call-dispatch.md` for the full design and `019-appendix-handler-result-pi-mapping.md` for the daemon/pi-ext future arc.
+
+**Examples:**
+```bash
+# Inspect Claude keyword-detection output for a real prompt
+echo '{"prompt":"plan the new checkout feature","cwd":"'$(pwd)'"}' \
+  | oma hook --vendor claude --event UserPromptSubmit
+
+# Verify a Qwen Stop event fires the persistent-mode block
+echo '{"cwd":"'$(pwd)'"}' | oma hook --vendor qwen --event Stop
+
+# Check Gemini hook output format
+echo '{"prompt":"brainstorm","cwd":"'$(pwd)'"}' \
+  | oma hook --vendor gemini --event BeforeAgent
+```
+
+---
+
+### hook:probe
+
+Probe per-vendor hook compatibility and print a coverage matrix.
+
+```
+oma hook:probe [--vendor <list>] [--format <fmt>] [--hooks-dir <dir>]
+```
+
+**Options:**
+
+| Flag | Description | Default |
+|:-----|:-----------|:--------|
+| `--vendor <list>` | Comma-separated vendors to probe | All supported vendors |
+| `--format <fmt>` | Output format: `text`, `md`, or `json` | `text` |
+| `--hooks-dir <dir>` | Override the `.agents/hooks/core` directory | Auto-detected |
+
+**What it checks:** For each vendor, probes whether the core hook scripts (`keyword-detector`, `persistent-mode`, etc.) are present and whether the variant JSON maps events correctly to handler chains. Exit code `1` if any vendor reports `failed` status.
+
+**Examples:**
+```bash
+# Text matrix for all vendors
+oma hook:probe
+
+# Markdown matrix (useful in CI PR comments)
+oma hook:probe --format md
+
+# JSON for programmatic consumption
+oma hook:probe --format json | jq '.results[] | select(.status == "failed")'
+
+# Probe a subset of vendors
+oma hook:probe --vendor claude,codex,gemini
+```
+
+---
+
 ### vault
 
 Manage API keys and other secrets in the OS keychain (macOS Keychain, Linux Secret Service, or Windows Credential Manager), backed by `@napi-rs/keyring`. Values never appear in shell history or environment files; only key names are tracked in `~/.config/oma/vault-index.json` so `oma vault list` can enumerate without exposing secret values.
@@ -1184,6 +1296,7 @@ Outputs the current CLI version and exits.
 | `DASHBOARD_PORT` | Port for the web dashboard | `dashboard:web` |
 | `MEMORIES_DIR` | Override the memories directory path | `dashboard`, `dashboard:web` |
 | `OMA_SKILLEVAL_MOCK` | Set to `1` to force mock mode in `oma skills eval` regardless of flags | `skills eval` |
+| `OMA_HOOK_SOCKET` | Override the per-project daemon socket path probed by `selectTransport` (default: `<cwd>/.agents/.run/oma-hook.sock`). Currently always falls back to in-process transport; reserved for the future daemon phase. | `hook` |
 
 ---
 

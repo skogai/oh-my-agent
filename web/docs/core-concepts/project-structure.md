@@ -241,9 +241,10 @@ your-project/
 │   ├── settings.json                  ← Hooks registration and permissions
 │   ├── hooks/
 │   │   ├── triggers.json              ← Keyword-to-workflow mapping (11 languages)
-│   │   ├── keyword-detector.ts        ← Auto-detection logic
-│   │   ├── persistent-mode.ts         ← Persistent workflow enforcement
-│   │   └── hud.ts                     ← [OMA] statusline indicator
+│   │   ├── oma-hook.sh                ← Generated wrapper: resolves oma binary, exec oma hook "$@"
+│   │   ├── keyword-detector.ts        ← Auto-detection handler (pure run() fn, bundled into oma)
+│   │   ├── persistent-mode.ts         ← Persistent workflow handler (pure run() fn, bundled into oma)
+│   │   └── hud.ts                     ← [OMA] statusline indicator (bun path, not routed via oma hook)
 │   ├── skills/                        ← Symlinks → .agents/skills/
 │   │   ├── oma-frontend -> ../../.agents/skills/oma-frontend
 │   │   ├── oma-backend -> ../../.agents/skills/oma-backend
@@ -348,7 +349,26 @@ This directory connects oh-my-agent to Claude Code and other IDEs.
 
 ### settings.json
 
-Registers hooks and permissions for Claude Code. Contains references to the hook scripts and their trigger conditions (e.g., `UserPromptSubmit`).
+Registers hooks and permissions for Claude Code. Each event hook entry now uses the `oma hook` canonical ABI:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [{
+          "name": "oma-hook-UserPromptSubmit",
+          "type": "command",
+          "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/oma-hook.sh --vendor claude --event UserPromptSubmit",
+          "timeout": 25
+        }]
+      }
+    ]
+  }
+}
+```
+
+The `statusLine` entry stays on a direct `bun` path (hot-path display, not routed through `oma hook`).
 
 ### hooks/
 
@@ -363,16 +383,42 @@ Language sections in `keywords`, `patterns`, and `informationalPatterns` follow 
 - `en`: Loaded for backward compatibility. Functionally equivalent to `*`. New English content should go in `*`.
 - `ko`/`ja`/`zh`/etc.: Language-specific. Loaded only when `language: <code>` is set in `.agents/oma-config.yaml`.
 
-**`keyword-detector.ts`**: TypeScript hook that:
+**`oma-hook.sh`**: Generated wrapper script written by `oma link`/`oma install`/`oma update`. Every vendor hook event routes through this file. Resolution order at runtime: `command -v oma` (PATH) → recorded absolute path from install time → `exit 0` (fail-open, never blocks the agent). Passes `"$@"` verbatim so `--vendor`, `--event`, and `--matcher` args reach `oma hook` unchanged. Includes the self-dedup preamble that suppresses double-fire when both a project and a global install register the same event.
+
+**`keyword-detector.ts`**: Pure handler (`run(input, ctx): HandlerResult | null`) for keyword detection. Bundled into the `oma` binary and called in-process by `oma hook`. Logic:
 1. Sanitizes input (strips code blocks, quoted strings, pasted system-echo blocks)
 2. Scans cleaned input against trigger `keywords` (literal) and `patterns` (regex)
 3. Checks for informational patterns in a 60-character window around each match
 4. Applies reinforcement guard (suppresses if same workflow triggered 2+ times in 60s)
-5. Injects `[OMA WORKFLOW: ...]` or `[OMA PERSISTENT MODE: ...]` into context
+5. Returns a `context` result injecting `[OMA WORKFLOW: ...]` or `[OMA PERSISTENT MODE: ...]`
 
-**`persistent-mode.ts`**: Checks for active state files in `.agents/state/` and reinforces persistent workflow execution.
+**`persistent-mode.ts`**: Pure handler (`run()`) that checks for active state files in `.agents/state/` and reinforces persistent workflow execution. Called in-process via `oma hook` on `Stop` events.
 
-**`hud.ts`**: Renders the `[OMA]` indicator in the status bar showing model name, context usage (color-coded: green/yellow/red), and active workflow state.
+**`hud.ts`**: Renders the `[OMA]` indicator in the status bar showing model name, context usage (color-coded: green/yellow/red), and active workflow state. Registered directly under `statusLine` (not routed through `oma hook`) to preserve hot-path render latency.
+
+#### Debugging a handler chain in isolation
+
+You can run any handler chain against a real payload without triggering the live agent session:
+
+```bash
+# Inspect what keyword-detector injects for a given prompt
+echo '{"prompt":"orchestrate the auth feature","cwd":"/path/to/project"}' \
+  | oma hook --vendor claude --event UserPromptSubmit
+
+# Test a pre_tool block (Bash tool)
+echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"},"cwd":"/path/to/project"}' \
+  | oma hook --vendor claude --event PreToolUse --matcher Bash
+
+# Test persistent-mode Stop enforcement
+echo '{"cwd":"/path/to/project"}' \
+  | oma hook --vendor claude --event Stop
+```
+
+`oma hook` always exits 0 (fail-open). Empty stdout means the chain produced no-op for that event. The vendor-dialect JSON (or plain text for kiro prompts) is written to stdout when a handler fires.
+
+#### Migration from pre-019 installs
+
+Existing installs that have the old `bun "$CLAUDE_PROJECT_DIR/.claude/hooks/keyword-detector.ts"` entries are automatically migrated the next time you run `oma install`, `oma update`, or `oma link`. The installer uses marker-based replacement: only OMA-managed hook groups (identified by their `name`/`command` patterns) are replaced; any hook groups you added yourself are preserved in their original order. The `statusLine`/hud path is not changed. The pi in-process bridge is not affected. See `docs/plans/designs/019-hook-oma-call-dispatch.md` for the full design and `019-appendix-handler-result-pi-mapping.md` for the daemon/pi-ext future phase.
 
 ### skills/
 

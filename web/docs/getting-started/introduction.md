@@ -181,27 +181,34 @@ The HUD is powered by `.claude/hooks/hud.ts` using Claude Code's `statusLine` ho
 
 ## Automatic workflow detection
 
-You do not need to type `/command` to trigger workflows. oh-my-agent's `UserPromptSubmit` hook scans your natural language input against keyword triggers defined in `.claude/hooks/triggers.json`, supporting 11 languages (English, Korean, Japanese, Chinese, Spanish, French, German, Portuguese, Russian, Dutch, Polish).
+You do not need to type `/command` to trigger workflows. oh-my-agent's hook system scans your natural language input against keyword triggers defined in `.claude/hooks/triggers.json` (and the equivalent file for each vendor), supporting 11 languages (English, Korean, Japanese, Chinese, Spanish, French, German, Portuguese, Russian, Dutch, Polish).
 
 - **Actionable input** (e.g., "plan the auth feature") → automatically loads the workflow
 - **Informational input** (e.g., "what is orchestrate?") → filtered out, no workflow triggered
 - **Explicit `/command`** → hook skips detection to avoid duplication
 - **Persistent workflows** reinject context on every message until you say "workflow done"
 
+Every hook event is delivered through the `oma hook` canonical ABI: the vendor fires `oma-hook.sh --vendor <v> --event <nativeEvent>`, which routes to the in-process handler chain and emits the vendor-specific dialect on stdout (always exit 0, fail-open).
+
 ---
 
 ## Cross-vendor support
 
-oh-my-agent is not limited to Claude Code. The hook system supports:
+oh-my-agent is not limited to Claude Code. All hook-model vendors share the same `oma hook` ABI:
 
-| Vendor | Integration |
-|--------|------------|
-| **Claude Code** | Native hooks (`UserPromptSubmit`, `Notification`, statusLine) |
-| **Gemini CLI** | Skills auto-loaded from `.agents/skills/`, agent spawning via `oma agent:spawn` |
-| **Codex CLI** | Skills auto-loaded, model-mediated parallel requests |
-| **Qwen Code** | Hook support for workflow detection |
+| Vendor | Hook delivery | StatusLine |
+|--------|--------------|------------|
+| **Claude Code** | `oma-hook.sh --vendor claude --event UserPromptSubmit` / `PreToolUse` / `Stop` | `bun .claude/hooks/hud.ts` (direct, unchanged) |
+| **Codex CLI** | `oma-hook.sh --vendor codex --event UserPromptSubmit` / `PreToolUse` / `Stop` | — |
+| **Gemini CLI** | `oma-hook.sh --vendor gemini --event BeforeAgent` / `BeforeTool` / `AfterAgent` | — |
+| **Qwen Code** | `oma-hook.sh --vendor qwen --event UserPromptSubmit` / `PreToolUse` / `Stop` | `bun` path via `ui.statusLine` |
+| **Cursor** | `oma-hook.sh --vendor cursor --event beforeSubmitPrompt` / `preToolUse` | — |
+| **Grok** | `oma-hook.sh --vendor grok --event UserPromptSubmit` / `Stop` | — |
+| **Kiro** | `oma-hook.sh --vendor kiro --event userPromptSubmit` / `preToolUse` / `stop` | — |
+| **Antigravity** | `oma-hook.sh --vendor antigravity --event PreInvocation` / `PreToolUse` / `Stop` | — |
+| **pi** | In-process bridge (`installPiExtension`) — not routed through `oma hook` | — |
 
-Vendor detection happens automatically. Agents adapt their spawning method based on the detected runtime environment.
+Skills and workflows are auto-loaded from `.agents/` for all vendors. Vendor detection happens automatically. Agents adapt their spawning method based on the detected runtime environment.
 
 ---
 

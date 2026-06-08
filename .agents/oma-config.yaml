@@ -108,7 +108,7 @@ docs:
 
 # Built-in: antigravity | claude | codex | qwen | cursor | mixed
 # (custom_presets entries are also valid)
-model_preset: antigravity
+model_preset: claude
 
 # Per-agent override (optional) — shallow-merged on top of the preset entry.
 # Agent ids: orchestrator, architecture, qa, pm, backend, frontend, mobile,
@@ -176,3 +176,14 @@ model_preset: antigravity
 #   2. model_preset entry     — built-in or custom_presets[model_preset]
 #   3. preset.orchestrator    — fallback when an agent is missing from the preset
 # ─────────────────────────────────────────────────────────────────────────────
+vendors:
+  - claude
+  - codex
+  - copilot
+  - cursor
+  - grok
+  - kiro
+  - qwen
+  - pi
+  - hermes
+  - antigravity

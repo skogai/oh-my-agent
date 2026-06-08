@@ -107,3 +107,6 @@ __pycache__/
 .opencode/mimic/
 .mimic/
 .omc/
+
+# deepsec workspace (vuln scanner: config, INFO.md, data/, findings/, .env.local)
+.deepsec/

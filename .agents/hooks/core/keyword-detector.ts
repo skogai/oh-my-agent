@@ -457,17 +457,15 @@ export function buildRawPatterns(
   return compiled;
 }
 
-function buildInformationalPatterns(
-  config: TriggerConfig,
-  lang: string,
-): RegExp[] {
-  const patterns = [
-    ...(config.informationalPatterns["*"] ?? []),
-    ...(config.informationalPatterns.en ?? []),
-  ];
-  if (lang !== "en") {
-    patterns.push(...(config.informationalPatterns[lang] ?? []));
-  }
+export function buildInformationalPatterns(config: TriggerConfig): RegExp[] {
+  // RC4: suppression patterns are merged across ALL languages, never gated by
+  // the configured language. Users prompt in whichever language they think in
+  // (`language` in oma-config.yaml controls the RESPONSE language, not the
+  // prompt language), so gating by config language silently disabled e.g. the
+  // Korean suppression patterns for every `language: en` project. A pattern
+  // written in language X can only match a prompt that contains X-script
+  // text, so loading all languages cannot suppress unrelated prompts.
+  const patterns = Object.values(config.informationalPatterns).flat();
   return patterns.map((p) => {
     if (/[^\p{ASCII}]/u.test(p)) return new RegExp(escapeRegex(p), "i");
     return new RegExp(`(?:^|[^\\w-])${escapeRegex(p)}(?:$|[^\\w-])`, "i");
@@ -501,6 +499,44 @@ export function isPastedContent(
   if (!isPersistent) return false;
   if (promptLength <= PERSISTENT_MATCH_LIMIT) return false;
   return matchIndex > PERSISTENT_MATCH_LIMIT;
+}
+
+/**
+ * RC3 — technical-reference guard. A workflow keyword that is part of a
+ * compound technical token is a reference to an ARTIFACT (CLI subcommand,
+ * file, property, path segment), not a request to run the workflow:
+ *
+ *   `oma ralph:verify`            keyword + ':' + word  (CLI subcommand)
+ *   `ralph.md`, `ralph.exec-tier` keyword + '.' + word  (file / property)
+ *   `.agents/workflows/ralph`     word + '/' + keyword  (path segment)
+ *
+ * Sentence punctuation is NOT technical: "run ralph." has no word char after
+ * the '.', and "ralph: do this" has none after the ':'. A mid-text slash
+ * invocation ("run /ralph") has no word char before the '/', so it still
+ * triggers. Matching is done on the cleaned text the patterns ran against;
+ * backtick-wrapped tokens are already removed by stripCodeBlocks before this
+ * guard is consulted.
+ */
+export function isTechnicalReference(
+  text: string,
+  matchIndex: number,
+  matchText: string,
+): boolean {
+  // buildPatterns boundaries capture one non-word char on each side of the
+  // keyword (unless the match touches ^ or $) — peel them off to locate the
+  // keyword span itself. CJK keywords compile without boundaries (lead/trail
+  // stay 0).
+  const lead = /^[^\w-]/.test(matchText) ? 1 : 0;
+  const trail = /[^\w-]$/.test(matchText) ? 1 : 0;
+  const kStart = matchIndex + lead;
+  const kEnd = matchIndex + matchText.length - trail;
+  const prev = kStart > 0 ? (text[kStart - 1] ?? "") : "";
+  const prev2 = kStart > 1 ? (text[kStart - 2] ?? "") : "";
+  const next = text[kEnd] ?? "";
+  const next2 = text[kEnd + 1] ?? "";
+  if ((next === ":" || next === ".") && /\w/.test(next2)) return true;
+  if (prev === "/" && /\w/.test(prev2)) return true;
+  return false;
 }
 
 /**
@@ -810,7 +846,7 @@ export async function run(
     return null;
   }
 
-  const infoPatterns = buildInformationalPatterns(config, lang);
+  const infoPatterns = buildInformationalPatterns(config);
   // Guard 2: Strip code blocks, inline code, and pasted system-echo blocks
   // before scanning for keywords. NFKC normalization collapses fullwidth Latin.
   const cleaned = normalizeForMatching(
@@ -841,6 +877,10 @@ export async function run(
     for (const pattern of patterns) {
       const match = pattern.exec(cleaned);
       if (!match) continue;
+      // RC3: compound technical tokens (ralph:verify, ralph.md,
+      // workflows/ralph) reference the workflow as an artifact, not a run
+      // request.
+      if (isTechnicalReference(cleaned, match.index, match[0])) continue;
       if (isInformationalContext(cleaned, match.index, infoPatterns)) continue;
       // Position guard must reflect the user's ACTUAL prompt, not the
       // content-stripped text. stripCodeBlocks/stripSystemEchoes remove quoted

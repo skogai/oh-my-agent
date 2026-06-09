@@ -181,8 +181,8 @@
     },
     {
       "path": ".agents/hooks/core/keyword-detector.ts",
-      "sha256": "cbd1cb90c0d9367b8984e10506b8cc42ea4822baf0ce36963be245e2a78c1d1c",
-      "size": 31234
+      "sha256": "b2ec6b4d3f713da368f28be260e3a70a0771c9450e71fffac7e117c3c1ee850c",
+      "size": 33573
     },
     {
       "path": ".agents/hooks/core/persistent-mode.ts",
@@ -216,8 +216,8 @@
     },
     {
       "path": ".agents/hooks/core/triggers.json",
-      "sha256": "17601b2491978d415553d49e51dc12f919b9d44ea7c82b5b2b0c61210cad13c0",
-      "size": 83418
+      "sha256": "1b745c59afefff3cb0166d22c8e2370244fef2a4433535a29dc3344b194af08a",
+      "size": 83477
     },
     {
       "path": ".agents/hooks/core/types.ts",

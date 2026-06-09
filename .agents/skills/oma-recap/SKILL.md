@@ -120,6 +120,17 @@ oma recap --date YYYY-MM-DD --json
 
 ### Guardrails
 
+1. **TL;DR required**: Top 3 lines of "what I accomplished". Project name + outcome. No tool names or technical details.
+2. **Overview**: After TL;DR, describe the flow. Start with "I" as subject.
+3. **Daily**: themes by time block (15+ min). Rest goes to "Miscellaneous".
+4. **Multi-day (3d+)**: sections by project, ordered by activity. Read like a sprint report, not a daily log.
+5. **2-4 bullets per theme/project**: Concise essentials only. Don't enumerate every step.
+6. **Themes by content**: Group by actual work, not by tool.
+7. **Time range (daily only)**: `(AM/PM/Evening HH:MM~HH:MM)`. AM: ~12:00, PM: 12:00~18:00, Evening: 18:00~.
+8. **Save results**: Write markdown to `.agents/results/recap/`.
+9. **Response language**: Follows `language` setting in `.agents/oma-config.yaml` if configured.
+10. **No em dashes**: Use commas, periods, or parentheses instead of `—` (em dash).
+
 ### Process
 
 ### 1. Resolve Date
@@ -147,8 +158,8 @@ oma recap --window 7d --json
 # Specific date
 oma recap --date 2026-04-10 --json
 
-# Tool filter
-oma recap --tool claude,gemini --json
+# Tool filter (supported: grok, claude, codex, qwen, cursor, antigravity)
+oma recap --tool claude,codex --json
 ```
 
 **Fallback when CLI is not installed**: process Claude history only via inline jq:
@@ -281,19 +292,6 @@ For window ranges, use `{start-date}~{end-date}.md` format.
 .agents/results/recap/2026-04-12.md
 .agents/results/recap/2026-04-06~2026-04-12.md
 ```
-
-### Core Rules
-
-1. **TL;DR required**: Top 3 lines of "what I accomplished". Project name + outcome. No tool names or technical details.
-2. **Overview**: After TL;DR, describe the flow. Start with "I" as subject.
-3. **Daily**: themes by time block (15+ min). Rest goes to "Miscellaneous".
-4. **Multi-day (3d+)**: sections by project, ordered by activity. Read like a sprint report, not a daily log.
-5. **2-4 bullets per theme/project**: Concise essentials only. Don't enumerate every step.
-6. **Themes by content**: Group by actual work, not by tool.
-7. **Time range (daily only)**: `(AM/PM/Evening HH:MM~HH:MM)`. AM: ~12:00, PM: 12:00~18:00, Evening: 18:00~.
-8. **Save results**: Write markdown to `.agents/results/recap/`.
-9. **Response language**: Follows `language` setting in `.agents/oma-config.yaml` if configured.
-10. **No em dashes**: Use commas, periods, or parentheses instead of `—` (em dash).
 
 ## References
 

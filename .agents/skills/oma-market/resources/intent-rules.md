@@ -27,15 +27,27 @@ Korean and other-locale intent routing is handled by the LLM reading the user's 
 
 ## Flag Override Examples
 
-```
+Intent is forced by passing `--intent` to `score` and `render` (there is no single
+`research` wrapper command — the pipeline is `harvest | score | fuse | cluster | render`).
+
+```bash
 # Force pain intent regardless of topic wording
-oma market research "Slack notifications" --intent pain
+oma market harvest "slack notifications (broken OR slow OR painful)" --operator-pack pain \
+  | oma market score --intent pain \
+  | oma market fuse | oma market cluster \
+  | oma market render --intent pain --topic "Slack notifications"
 
-# Force competitor intent; vs-entity triggers fan-out harvest
-oma market research "project management tools" --vs Notion --vs Asana
+# Force competitor intent; --vs entity triggers fan-out harvest
+oma market harvest "project management tools" --operator-pack competitor --vs Notion \
+  | oma market score --intent competitor \
+  | oma market fuse | oma market cluster \
+  | oma market render --intent competitor --vs Notion --topic "project management tools"
 
-# Discovery scan without operators
-oma market research "async comms" --intent discovery --no-operators
+# Discovery scan without query operators
+oma market harvest "async comms" --operator-pack none \
+  | oma market score --intent discovery \
+  | oma market fuse | oma market cluster \
+  | oma market render --intent discovery --topic "async comms"
 ```
 
 ## Notes

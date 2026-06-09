@@ -138,6 +138,7 @@ Source files live under `../_shared/runtime/execution-protocols/{vendor}.md`.
 - QA checklist: `resources/checklist.md`
 - Self-check: `resources/self-check.md`
 - Error recovery: `resources/error-playbook.md`
+- Ultrawork VERIFY/SHIP phase protocol: `resources/verify-ship-protocol.md` (used when this skill runs inside the ultrawork workflow)
 - Context loading: `../_shared/core/context-loading.md`
 - Context budget: `../_shared/core/context-budget.md`
 - Lessons learned: `../_shared/core/lessons-learned.md`

@@ -153,7 +153,7 @@ oma market detect-trap "$TOPIC" \
 | Intent | Operator pack | Auto frameworks | Notes |
 |--------|--------------|-----------------|-------|
 | `pain` | `resources/operator-packs/pain.md` | SWOT | Weights: engagement 0.40, freshness 0.30, quality 0.30 |
-| `trend` | `resources/operator-packs/positive.md` | SWOT | Weights: freshness 0.50, engagement 0.30, quality 0.20 |
+| `trend` | none (optional: `resources/operator-packs/positive.md` for pain/positive contrast) | SWOT | Weights: freshness 0.50, engagement 0.30, quality 0.20 |
 | `competitor` | `resources/operator-packs/competitor.md` | SWOT + Porter's 5F (v1.1 stub) | Weights: relevance 0.35, engagement 0.35, quality 0.30; `--vs` enables COMPARISON template |
 | `discovery` | `resources/operator-packs/discovery.md` | SWOT + PESTEL (v1.1 stub) | Weights: relevance 0.45, engagement 0.30, quality 0.25 |
 

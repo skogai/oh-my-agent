@@ -19,8 +19,9 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import { backupPathFromRoot } from "../../io/backup.js";
 import type {
   AgentId,
   AgentSpec,
@@ -195,9 +196,15 @@ function mostFrequentPresetKey(
 // Backup helpers
 // ---------------------------------------------------------------------------
 
+/** Canonical 008 failure-marker path (gitignored under the backup root). */
+function failureMarkerPath(cwd: string): string {
+  return backupPathFromRoot(cwd, "008-model-preset", "FAILED");
+}
+
 function writeFailureMarker(cwd: string): void {
-  const markerPath = join(cwd, ".agents", ".backup-pre-008-FAILED");
+  const markerPath = failureMarkerPath(cwd);
   try {
+    mkdirSync(dirname(markerPath), { recursive: true });
     writeFileSync(
       markerPath,
       `Migration 008 failed at ${new Date().toISOString()}\n`,
@@ -213,8 +220,7 @@ function backupFile(
   relativeName: string,
 ): void {
   const destPath = join(backupDir, relativeName);
-  mkdirSync(join(backupDir, "..").replace(/\.\.$/, ""), { recursive: true });
-  mkdirSync(backupDir, { recursive: true });
+  mkdirSync(dirname(destPath), { recursive: true });
   try {
     cpSync(srcPath, destPath);
   } catch {
@@ -234,13 +240,13 @@ export const migrateModelPreset: Migration = {
     const omaConfigPath = join(cwd, ".agents", "oma-config.yaml");
     const defaultsPath = join(cwd, ".agents", "config", "defaults.yaml");
     const modelsPath = join(cwd, ".agents", "config", "models.yaml");
-    const failureMarkerPath = join(cwd, ".agents", ".backup-pre-008-FAILED");
+    const markerPath = failureMarkerPath(cwd);
 
     // Check for stale failure marker — block re-run until manual removal
-    if (existsSync(failureMarkerPath)) {
+    if (existsSync(markerPath)) {
       console.error(
         `[migration 008] A previous migration 008 run failed. ` +
-          `Remove "${failureMarkerPath}" after verifying your config, then retry.`,
+          `Remove "${markerPath}" after verifying your config, then retry.`,
       );
       return actions;
     }
@@ -266,10 +272,10 @@ export const migrateModelPreset: Migration = {
     // Create backup directory with timestamp+pid for uniqueness
     const timestamp = Date.now();
     const pid = process.pid;
-    const backupDir = join(
+    const backupDir = backupPathFromRoot(
       cwd,
-      ".agents",
-      `.backup-pre-008-${timestamp}-${pid}`,
+      "008-model-preset",
+      `${timestamp}-${pid}`,
     );
 
     try {
@@ -609,7 +615,7 @@ export const migrateModelPreset: Migration = {
       throw new Error(
         `[migration 008] Migration failed: ${err instanceof Error ? err.message : String(err)}. ` +
           `Originals backed up to ${backupDir}. ` +
-          `Remove ".agents/.backup-pre-008-FAILED" after fixing the issue, then retry.`,
+          `Remove "${failureMarkerPath(cwd)}" after fixing the issue, then retry.`,
       );
     }
   },

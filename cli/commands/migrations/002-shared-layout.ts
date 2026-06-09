@@ -16,6 +16,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
+import { backupPathFromRoot } from "../../io/backup.js";
 import type { Migration } from "./index.js";
 
 const SHARED_LAYOUT_MIGRATIONS = [
@@ -120,20 +121,14 @@ const LEGACY_SHARED_DIRS = [
 
 function toBackupPath(cwd: string, legacyPath: string): string {
   const normalized = legacyPath.replace(/^\.agents\//, "");
-  return join(
-    cwd,
-    ".agents",
-    ".migration-backup",
-    "shared-layout-v2",
-    normalized,
-  );
+  return backupPathFromRoot(cwd, "002-shared-layout", normalized);
 }
 
 function toBackupLabel(legacyPath: string): string {
   // Always emit POSIX-style separators: this string is a user-facing action
   // log entry, not a filesystem path, and must not vary by OS.
   const tail = legacyPath.replace(/^\.agents\//, "");
-  return `.agents/.migration-backup/shared-layout-v2/${tail}`;
+  return `.agents/backup/002-shared-layout/${tail}`;
 }
 
 export const migrateSharedLayout: Migration = {

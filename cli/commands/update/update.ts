@@ -7,10 +7,11 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
+import { backupPathFromRoot, backupRoot } from "../../io/backup.js";
 import {
   isAlreadyStarred,
   isGhAuthenticated,
@@ -394,8 +395,11 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
         const savedMcp =
           !force && existsSync(mcpPath) ? readFileSync(mcpPath) : null;
 
-        // Preserve stack/ directories (user-generated or preset)
-        const stackBackupDir = join(tmpdir(), `oma-stack-backup-${Date.now()}`);
+        // Preserve stack/ directories (user-generated or preset).
+        // Lands under the canonical gitignored backup root; survives the bulk
+        // .agents/ cpSync below (cpSync overwrites, never prunes) and is cleared
+        // with the rest of the backup root after a successful update.
+        const stackBackupDir = backupPathFromRoot(cwd, "stack");
         const backendStackDir = join(
           cwd,
           ".agents",
@@ -553,10 +557,15 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
           setNeedsReconcile(cwd, false);
         }
 
-        // Clean up migration backups (no longer needed after successful update)
-        const migrationBackupDir = join(cwd, ".agents", ".migration-backup");
-        if (existsSync(migrationBackupDir)) {
-          rmSync(migrationBackupDir, { recursive: true, force: true });
+        // Clean up backups (no longer needed after a successful update): the
+        // canonical root plus legacy scatter from pre-consolidation versions.
+        const backupCleanupDirs = [
+          backupRoot(cwd), // .agents/backup
+          join(cwd, ".migration-backup"), // legacy (migrations 011/013)
+          join(cwd, ".agents", ".migration-backup"), // legacy (migration 002)
+        ];
+        for (const dir of backupCleanupDirs) {
+          if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
         }
 
         // --- Serena Project Setup ---

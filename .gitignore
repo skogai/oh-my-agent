@@ -62,8 +62,10 @@ web/.serena/
 .agents/state/
 .agents/results/
 
-# Transient migration backups (written by oma update migrations 002/011/013)
-.migration-backup/
+# oma backups — single gitignored root for migration snapshots, stack copies,
+# and safe-write siblings (see cli/io/backup.ts)
+.agents/backup/
+.migration-backup/   # legacy location (pre-consolidation; no longer written)
 
 # agy (Antigravity) hooks manifest — generated per-install with absolute paths
 .agents/hooks.json

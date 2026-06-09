@@ -439,7 +439,7 @@ describe("migration backup cleanup after successful update", () => {
     tempRoots.length = 0;
   });
 
-  it("migration-backup dir is created by migration 002 when content differs", () => {
+  it("backup dir is created by migration 002 when content differs", () => {
     const root = mkdtempSync(join(tmpdir(), "oma-backup-cleanup-"));
     tempRoots.push(root);
 
@@ -463,15 +463,15 @@ describe("migration backup cleanup after successful update", () => {
 
     runMigrations(root);
 
-    const backupDir = join(root, ".agents", ".migration-backup");
+    const backupDir = join(root, ".agents", "backup", "002-shared-layout");
     expect(existsSync(backupDir)).toBe(true);
 
     // Simulate: successful update would clean this up
-    rmSync(backupDir, { recursive: true, force: true });
+    rmSync(join(root, ".agents", "backup"), { recursive: true, force: true });
     expect(existsSync(backupDir)).toBe(false);
   });
 
-  it("migration-backup dir is not created when content is identical", () => {
+  it("backup dir is not created when content is identical", () => {
     const root = mkdtempSync(join(tmpdir(), "oma-backup-cleanup-"));
     tempRoots.push(root);
 
@@ -491,7 +491,7 @@ describe("migration backup cleanup after successful update", () => {
 
     runMigrations(root);
 
-    const backupDir = join(root, ".agents", ".migration-backup");
+    const backupDir = join(root, ".agents", "backup", "002-shared-layout");
     expect(existsSync(backupDir)).toBe(false);
   });
 });

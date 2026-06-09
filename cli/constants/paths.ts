@@ -28,10 +28,18 @@ export const AGENTS_STATE_ARCHIVE_DIR = `${AGENTS_STATE_DIR}/archive`;
 export const ANTIGRAVITYCLI_DIR = ".antigravitycli";
 
 /**
- * Transient backup dir written by migrations (e.g. 002/011/013) before they
- * move files. Created at both `<root>/.migration-backup/` and
- * `<root>/.agents/.migration-backup/`; the leading-slash-free gitignore
- * pattern below covers both. A local restore artifact — never committed.
+ * Canonical backup root — the single gitignored location for every on-disk
+ * backup oma writes (migration snapshots, update stack copies, safe-write
+ * siblings). See `cli/io/backup.ts` for the convention and helpers.
+ */
+export const AGENTS_BACKUP_DIR = `${AGENTS_DIR}/backup`;
+
+/**
+ * LEGACY backup dirs from pre-consolidation versions
+ * (`<root>/.migration-backup/`, `<root>/.agents/.migration-backup/`). Nothing
+ * writes these anymore; kept only so pre-existing artifacts stay gitignored
+ * and so `oma update` can clean them up. The leading-slash-free gitignore
+ * pattern covers both locations.
  */
 export const MIGRATION_BACKUP_DIR = ".migration-backup";
 
@@ -43,6 +51,7 @@ export function asGitignoreDir(relativeDir: string): string {
 export const AGENTS_RESULTS_GITIGNORE = asGitignoreDir(AGENTS_RESULTS_DIR);
 export const AGENTS_STATE_GITIGNORE = asGitignoreDir(AGENTS_STATE_DIR);
 export const ANTIGRAVITYCLI_GITIGNORE = asGitignoreDir(ANTIGRAVITYCLI_DIR);
+export const AGENTS_BACKUP_GITIGNORE = asGitignoreDir(AGENTS_BACKUP_DIR);
 export const MIGRATION_BACKUP_GITIGNORE = asGitignoreDir(MIGRATION_BACKUP_DIR);
 
 /** Lines appended by `ensureOmaProjectGitignore()` during install / link / update. */
@@ -50,7 +59,8 @@ export const OMA_PROJECT_GITIGNORE_PATTERNS = [
   ANTIGRAVITYCLI_GITIGNORE,
   AGENTS_RESULTS_GITIGNORE,
   AGENTS_STATE_GITIGNORE,
-  MIGRATION_BACKUP_GITIGNORE,
+  AGENTS_BACKUP_GITIGNORE,
+  MIGRATION_BACKUP_GITIGNORE, // legacy artifacts (no longer written)
 ] as const;
 
 /**

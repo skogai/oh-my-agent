@@ -19,7 +19,7 @@
  * - Already a symlink → idempotent no-op (warn if target differs from SSOT)
  * - SSOT target does not exist → warn and skip (no dangling symlinks)
  *
- * Backup path: <cwd>/.migration-backup/011/.<vendor>/skills/<entry>/
+ * Backup path: <cwd>/.agents/backup/011-unify-skills/.<vendor>/skills/<entry>/
  *
  * Idempotent: re-running after migration produces 0 actions.
  */
@@ -34,6 +34,7 @@ import {
   rmSync,
 } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import { backupPathFromRoot } from "../../io/backup.js";
 import { createLink } from "../../platform/fs-link.js";
 import type { Migration } from "./index.js";
 
@@ -76,10 +77,9 @@ function backupDirectory(
   vendor: MigratedVendor,
   entryName: string,
 ): void {
-  const dest = join(
+  const dest = backupPathFromRoot(
     cwd,
-    ".migration-backup",
-    "011",
+    "011-unify-skills",
     `.${vendor}`,
     "skills",
     entryName,
@@ -173,7 +173,7 @@ export const migrateUnifyWorkflowSkills: Migration = {
         try {
           backupDirectory(entryPath, cwd, vendor, entryName);
           actions.push(
-            `.migration-backup/011/.${vendor}/skills/${entryName} (backed up)`,
+            `.agents/backup/011-unify-skills/.${vendor}/skills/${entryName} (backed up)`,
           );
         } catch {
           // Best-effort backup; log and continue

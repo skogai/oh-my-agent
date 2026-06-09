@@ -34,8 +34,18 @@ function readOmaConfig(root: string): string {
   return readFileSync(join(root, ".agents", "oma-config.yaml"), "utf-8");
 }
 
+function backupPath(root: string): string {
+  return join(
+    root,
+    ".agents",
+    "backup",
+    "010-rename-preset",
+    "oma-config.yaml",
+  );
+}
+
 function backupExists(root: string): boolean {
-  return existsSync(join(root, ".agents", "oma-config.yaml.bak"));
+  return existsSync(backupPath(root));
 }
 
 describe("migration 010 — rename-preset-keys", () => {
@@ -57,7 +67,7 @@ describe("migration 010 — rename-preset-keys", () => {
   ];
 
   for (const [legacy, canonical] of renameCases) {
-    it(`renames "${legacy}" → "${canonical}" and creates .bak backup`, () => {
+    it(`renames "${legacy}" → "${canonical}" and creates a backup`, () => {
       const root = makeTempRoot();
       tempRoots.push(root);
       scaffoldAgentsDir(root);
@@ -146,7 +156,7 @@ describe("migration 010 — rename-preset-keys", () => {
     expect(readOmaConfig(root)).toContain("model_preset: gemini");
 
     // remove backup so we can detect whether a second run creates a new one
-    rmSync(join(root, ".agents", "oma-config.yaml.bak"));
+    rmSync(backupPath(root));
 
     const second = migrateRenamePresetKeys.up(root);
     expect(second).toEqual([]);

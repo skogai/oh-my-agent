@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  AGENTS_BACKUP_GITIGNORE,
   AGENTS_RESULTS_GITIGNORE,
   AGENTS_STATE_GITIGNORE,
   ANTIGRAVITYCLI_GITIGNORE,
@@ -180,6 +181,7 @@ describe("ensureOmaProjectGitignore", () => {
       ANTIGRAVITYCLI_GITIGNORE,
       AGENTS_RESULTS_GITIGNORE,
       AGENTS_STATE_GITIGNORE,
+      AGENTS_BACKUP_GITIGNORE,
       MIGRATION_BACKUP_GITIGNORE,
     ]);
 
@@ -187,6 +189,7 @@ describe("ensureOmaProjectGitignore", () => {
     expect(content).toContain(ANTIGRAVITYCLI_GITIGNORE);
     expect(content).toContain(AGENTS_RESULTS_GITIGNORE);
     expect(content).toContain(AGENTS_STATE_GITIGNORE);
+    expect(content).toContain(AGENTS_BACKUP_GITIGNORE);
     expect(content).toContain(MIGRATION_BACKUP_GITIGNORE);
     expect(content).toContain(
       "# oh-my-agent runtime (local artifacts — do not commit)",
@@ -201,6 +204,7 @@ describe("ensureOmaProjectGitignore", () => {
     expect(result.added).toEqual([
       AGENTS_RESULTS_GITIGNORE,
       AGENTS_STATE_GITIGNORE,
+      AGENTS_BACKUP_GITIGNORE,
       MIGRATION_BACKUP_GITIGNORE,
     ]);
     expect(result.alreadyPresent).toEqual([ANTIGRAVITYCLI_GITIGNORE]);
@@ -209,7 +213,7 @@ describe("ensureOmaProjectGitignore", () => {
   it("does not duplicate existing entries", () => {
     writeFileSync(
       join(repo, ".gitignore"),
-      ".antigravitycli/\n.agents/results/\n.agents/state/\n.migration-backup/\n",
+      ".antigravitycli/\n.agents/results/\n.agents/state/\n.agents/backup/\n.migration-backup/\n",
     );
 
     const result = ensureOmaProjectGitignore(repo);
@@ -219,6 +223,7 @@ describe("ensureOmaProjectGitignore", () => {
       ANTIGRAVITYCLI_GITIGNORE,
       AGENTS_RESULTS_GITIGNORE,
       AGENTS_STATE_GITIGNORE,
+      AGENTS_BACKUP_GITIGNORE,
       MIGRATION_BACKUP_GITIGNORE,
     ]);
     const content = readFileSync(join(repo, ".gitignore"), "utf-8");

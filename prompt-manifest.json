@@ -1981,13 +1981,13 @@
     },
     {
       "path": ".agents/workflows/ralph/resources/judge-protocol.md",
-      "sha256": "e602fc184d4d6beac6406572ecc80cb89a3198b7b3fa4aaa064665968236a854",
-      "size": 7875
+      "sha256": "afc84208a237685ee9407dd66e82ef9a3f3c8fe3cce771b9c731b25c645a9151",
+      "size": 9370
     },
     {
       "path": ".agents/workflows/ralph.md",
-      "sha256": "638bd44edadcce161d381040df41ed8ce24e12bb15e0985b67282937f3278301",
-      "size": 14587
+      "sha256": "03804e60f15f195e2dca983061376735eb8e8fd9ab8ef8b1e86bcd70ac8e2547",
+      "size": 17802
     },
     {
       "path": ".agents/workflows/recap.md",

@@ -1,6 +1,6 @@
 ---
 name: ralph
-description: Ralph - persistent self-referential execution loop wrapping ultrawork with independent verifier verification
+description: Ralph - persistent self-referential execution loop wrapping ultrawork with a spawned independent judge
 disable-model-invocation: true
 ---
 
@@ -45,7 +45,7 @@ criteria:
     description: "<what to achieve>"
     verification: "<how to verify — test result, build output, file existence, command output>"
     status: PENDING
-    fail_count: 0
+    fail_count: 0                   # consecutive failures only — resets to 0 on PASS
     previous_status: null           # last non-null status from prior iteration
     regressed_at_iteration: null    # iteration number when PASS → FAIL transition was detected
     affected_paths: []              # optional glob list — only set when verification takes >30s
@@ -59,11 +59,16 @@ criteria:
 
 ### Step 0.3: Initialize Session
 
-1. Set `max_iterations: 5` (default safeguard)
-2. Set `current_iteration: 0`
-3. Record session start using memory write tool:
-   - Create `session-ralph.md` in the memory base path
-   - Include: session start time, user request summary, completion criteria, max_iterations
+1. Generate a `sessionId` (`{YYYYMMDD-HHmmss}` timestamp). All ralph memory files for this run are session-scoped with this suffix, per memory-protocol session-scoped naming. Never write to an unsuffixed `session-ralph.md` — consecutive ralph runs must not overwrite each other.
+2. Set `max_iterations: 5` (default safeguard)
+3. Set `current_iteration: 0`
+4. **Load prior-session context** (cross-session memory):
+   1. Use the memory list tool to find previous `session-ralph-*.md` files. If any exist, read the most recent one and extract: final criteria statuses, BLOCKED items with their failure evidences, and any safeguard trigger.
+   2. If `lessons-learned.md` exists in the memory base path, read it.
+   3. If any current criterion overlaps a previously BLOCKED item, re-confirm with the user before proceeding: present the prior failure evidence and ask whether to retry it (carrying that evidence as context for EXEC) or pre-mark it BLOCKED for this session.
+5. Record session start using memory write tool:
+   - Create `session-ralph-{sessionId}.md` in the memory base path
+   - Include: session start time, user request summary, completion criteria, max_iterations, and prior-session findings loaded in step 4 (or `none`)
 
 ---
 
@@ -115,7 +120,7 @@ Check, using memory read / file existence tools, that the just-completed iterati
 
 - **All present** → ultrawork ran in full. Proceed to Step 1.4.
 - **A3 or A4 missing** → treat EXEC as **NOT performed** (the iteration was abridged to implementation-only, regardless of what the EXEC narration claims). Do NOT advance to JUDGE as if work completed. Instead:
-  1. Record the violation in `session-ralph.md`: `exec-circumvention detected at iteration {N}: missing {artifact}`.
+  1. Record the violation in `session-ralph-{sessionId}.md`: `exec-circumvention detected at iteration {N}: missing {artifact}`.
   2. Emit the audit event:
      ```bash
      oma_emit "decision.made" '{"subject":"ralph.exec-circumvention","decision":"EXEC artifacts incomplete — ultrawork did not run in full.","rationale":"Required VERIFY/REFINE agent result files are absent; the iteration was abridged."}'
@@ -127,17 +132,32 @@ Check, using memory read / file existence tools, that the just-completed iterati
 ### Step 1.4: Record EXEC Completion
 
 1. Increment `current_iteration`
-2. Use memory edit tool to record iteration start in `session-ralph.md`
+2. Use memory edit tool to record iteration start in `session-ralph-{sessionId}.md`
 
 ---
 
 ## Phase 2: JUDGE
 
-### Step 2.1: Independent Verification
+### Step 2.1: Independent Verification (Spawned Judge)
 
-**You are now the independent verifier, NOT the implementer.**
+**The judge is a separate agent with fresh context — not a role the orchestrator plays.** The orchestrator that drove EXEC shares context with the implementation and cannot self-judge without rationalization risk. Spawning is the default; inline judging is a recorded exception.
 
-For **EVERY criterion regardless of current status** (including PASS from prior iterations), execute the verification method defined in Phase 0:
+1. **Compose the judge brief.** It contains ONLY:
+   - The criteria table: id, description, verification method, previous_status, fail_count, affected_paths
+   - The verification cache records from `session-ralph-{sessionId}.md` (if any)
+   - The required output format (Step 2.2) and a pointer to `.agents/workflows/ralph/resources/judge-protocol.md`
+   - Do NOT include EXEC narration, implementation summaries, or any claim about what was fixed. The judge verifies what IS, not what was intended.
+2. **Spawn the judge via Per-Agent Dispatch** (see Vendor Detection):
+   - **If Claude Code and target vendor is Claude**: `Agent(subagent_type="qa-reviewer", prompt="<judge brief>. Follow .agents/workflows/ralph/resources/judge-protocol.md. Execute every verification command and write the JUDGE result to memory as result-judge-{sessionId}-iter{N}.md.")`
+   - **Otherwise, or when native dispatch is unavailable**: `oma agent:spawn qa-agent "<judge brief>" {sessionId}`
+   - Verification is mechanical (run command, check exit code/output) — a lower-cost model tier is acceptable where the runtime supports per-agent model selection.
+3. **Wait for `result-judge-{sessionId}-iter{N}.md`**, then read it as the JUDGE result.
+4. **Inline fallback (exception)**: only if subagent spawning is unavailable in the current runtime, perform the verification inline. Record `judge-inline-fallback at iteration {N}` in `session-ralph-{sessionId}.md` and emit:
+   ```bash
+   oma_emit "decision.made" '{"subject":"ralph.judge-inline-fallback","decision":"Run JUDGE inline in the orchestrator context.","rationale":"Subagent spawning unavailable in this runtime; judge independence is downgraded for this iteration."}'
+   ```
+
+For **EVERY criterion regardless of current status** (including PASS from prior iterations), the judge executes the verification method defined in Phase 0:
 
 - Run tests, then check pass/fail count
 - Run build, then check exit code
@@ -183,7 +203,7 @@ remaining:
 
 Before updating any criterion, capture the current `status` into `previous_status`. Then apply the transition rules in order:
 
-1. **Verification passed** → `PASS`. Reset `regressed_at_iteration` to null.
+1. **Verification passed** → `PASS`. Reset `fail_count` to 0 and `regressed_at_iteration` to null (`fail_count` tracks **consecutive** failures only; a pass breaks the streak).
 2. **Verification failed AND `previous_status == PASS`** → `REGRESSED`. Set `regressed_at_iteration: {current_iteration}`. Do NOT increment `fail_count` on the first regression; regression is treated as a distinct first-class signal, not a normal failure streak. Subsequent consecutive failures of the same criterion follow rules 3-4.
 3. **Verification failed AND not a regression AND `fail_count < 3`** → `FAIL`. Increment `fail_count`.
 4. **Verification failed AND `fail_count >= 3`** → `BLOCKED`.
@@ -204,7 +224,7 @@ If all criteria are either PASS or BLOCKED:
 
 1. **If any BLOCKED exists**: Report partial completion with BLOCKED items listed
 2. **If all PASS**: Report full completion
-3. Use memory edit tool to record final results in `session-ralph.md`
+3. Use memory edit tool to record final results in `session-ralph-{sessionId}.md`
 4. Output completion summary:
    ```
    ## Ralph Complete — Iteration {N}/{max}
@@ -235,7 +255,7 @@ If `current_iteration >= max_iterations`:
 
    Recommendation: Review FAILED criteria manually or increase max_iterations.
    ```
-3. Use memory edit tool to record safeguard trigger in `session-ralph.md`
+3. Use memory edit tool to record safeguard trigger in `session-ralph-{sessionId}.md`
 4. Workflow ends.
 
 ---
@@ -285,7 +305,7 @@ Compose a focused task description containing the remaining work, separating reg
 
 ### Step 3.3: Loop Back
 
-1. Use memory edit tool to record REPLAN in `session-ralph.md`
+1. Use memory edit tool to record REPLAN in `session-ralph-{sessionId}.md`
 2. Return to **Phase 1: EXEC** with the narrowed scope
 
 ---
@@ -293,11 +313,11 @@ Compose a focused task description containing the remaining work, separating reg
 ## Summary
 
 ```
-Phase 0: INIT → Define criteria, initialize session
+Phase 0: INIT → Define criteria, load prior sessions, initialize session
     ↓
 Phase 1: EXEC → Run ultrawork (full or narrowed scope)
     ↓
-Phase 2: JUDGE → Independent verification of each criterion
+Phase 2: JUDGE → Spawned fresh-context judge verifies each criterion
     ↓
 Decision: DONE? → End
           SAFEGUARD? → Force end
@@ -310,7 +330,7 @@ Phase 3: REPLAN → Extract remaining, narrow scope
 
 | Phase   | Purpose                    | Key Action                        |
 |---------|----------------------------|-----------------------------------|
-| INIT    | Define success criteria     | Verifiable criteria + session init |
+| INIT    | Define success criteria     | Verifiable criteria + prior-session load + session init |
 | EXEC    | Implementation             | Delegate to ultrawork             |
-| JUDGE   | Independent verification   | Evidence-based pass/fail per criterion |
+| JUDGE   | Independent verification   | Spawned judge; evidence-based pass/fail per criterion |
 | REPLAN  | Scope narrowing            | Extract FAIL + REGRESSED items, separated by class |

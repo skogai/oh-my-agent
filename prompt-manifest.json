@@ -1,7 +1,7 @@
 {
   "name": "oh-my-agent",
   "version": "8.52.3",
-  "releaseDate": "2026-06-10T10:27:34.341Z",
+  "releaseDate": "2026-06-10T12:46:25.627Z",
   "repository": "https://github.com/first-fluke/oh-my-agent",
   "files": [
     {
@@ -146,8 +146,8 @@
     },
     {
       "path": ".agents/hooks/core/constants.ts",
-      "sha256": "b57e5722505d424713cd60c73a2b7e94ce6d4967bf96e6001b37fdfb2b88aa25",
-      "size": 1877
+      "sha256": "e21b64b6b15eca687a715932c89ae1399308a1c2c09caf2407606e93a2125e45",
+      "size": 1894
     },
     {
       "path": ".agents/hooks/core/filter-test-output.sh",
@@ -166,8 +166,8 @@
     },
     {
       "path": ".agents/hooks/core/hook-output.ts",
-      "sha256": "a546646005651f2bd376be48c62c7db45121271c27dd0d0b81d700410fb85c63",
-      "size": 4965
+      "sha256": "0b01dd8715d6b99e399bd197295ebcaf74e6f101ee94b80a961ac2e4d46f5b3d",
+      "size": 6165
     },
     {
       "path": ".agents/hooks/core/hud.ts",
@@ -186,8 +186,8 @@
     },
     {
       "path": ".agents/hooks/core/persistent-mode.ts",
-      "sha256": "c824a8bc4ebeb8d1212e5a518a7fd5b71b4cfccac8020f8968a8ef77bbf565aa",
-      "size": 10844
+      "sha256": "ea10a6626dcf40fe6fb973254eff66a95d8460df1e7fd2949fd6c37a96cb9412",
+      "size": 10965
     },
     {
       "path": ".agents/hooks/core/serena-primer.ts",
@@ -216,8 +216,8 @@
     },
     {
       "path": ".agents/hooks/core/test-filter.ts",
-      "sha256": "1a967e00b0fff53dfdf62b844f7194491438cf606d36505a71593306de34d8eb",
-      "size": 7063
+      "sha256": "677f486f079f31ea5fa276369cc0d03b36e783bb15c593bf8d38764103e53dd8",
+      "size": 7665
     },
     {
       "path": ".agents/hooks/core/triggers.json",
@@ -231,8 +231,8 @@
     },
     {
       "path": ".agents/hooks/core/vendor-renderer.ts",
-      "sha256": "ee74ce6ba5c2a3654c24b766c2c8730e2916bf6b5bc15b229caf9946cee1aad8",
-      "size": 1466
+      "sha256": "2ef4aed12d9efa642d8e2d7641dfbc6eb408978961f80f939484a876f1af4c7f",
+      "size": 1490
     },
     {
       "path": ".agents/hooks/variants/antigravity.json",
@@ -251,13 +251,13 @@
     },
     {
       "path": ".agents/hooks/variants/commandcode.json",
-      "sha256": "f65c980df0b75fdccff2f83aaf6ca8b44bdd73ecdd9a8104c9a20f2c7bab2afd",
-      "size": 732
+      "sha256": "440470df751ed9535b6bbd95d9e732af10f97af79491152903e16bac6e06c779",
+      "size": 295
     },
     {
       "path": ".agents/hooks/variants/cursor.json",
-      "sha256": "d27bf27a76dcd4c5bf8a47c717f8b995b8c965ce69c419abcfb15f74fa5ef795",
-      "size": 904
+      "sha256": "5e71cd75017783ff25471f755e2da53ffda9c1a2c429e839680ed1df488fb37e",
+      "size": 598
     },
     {
       "path": ".agents/hooks/variants/gemini.json",
@@ -271,8 +271,8 @@
     },
     {
       "path": ".agents/hooks/variants/hook-variant.schema.json",
-      "sha256": "97afcf3d4aba265cabea01ef02f0a62dc60691255a42cb4cd2841625fb4553bb",
-      "size": 4412
+      "sha256": "9b6bdc18ddb704a631ec705659bfed793f7dd0d6a8300c13cd554c6dbac35217",
+      "size": 4752
     },
     {
       "path": ".agents/hooks/variants/kiro.json",

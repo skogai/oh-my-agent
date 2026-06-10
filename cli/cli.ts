@@ -98,36 +98,47 @@ program
     }),
   );
 
-registerAuthStatus(program);
-registerUninstall(program);
-registerUpdate(program);
-registerLink(program);
-registerIntelCommand(program);
-registerMarketCommand(program);
-registerDoctor(program);
-registerHook(program);
-registerEmit(program);
-registerState(program);
-registerRalph(program);
-registerStats(program);
-registerRetro(program);
-registerRecap(program);
-registerDocsCommands(program);
-registerCleanup(program);
-registerBridge(program);
-registerAgentCommands(program);
-registerModelCommands(program);
-registerMemory(program);
-registerVerify(program);
-registerVault(program);
-registerStar(program);
-registerVisualize(program);
-registerSearchCommand(program);
-registerSkillsCommand(program);
-registerSlideCommand(program);
-registerScholarCommand(program);
-registerImageCommand(program);
-registerVideoCommand(program);
+/**
+ * Every command slice exposes a `register*(program)` entry point
+ * (cli/ARCHITECTURE.md). Adding a command = import it + add it here;
+ * order determines `--help` listing order.
+ */
+const COMMAND_REGISTRARS: ReadonlyArray<(program: Command) => void> = [
+  registerAuthStatus,
+  registerUninstall,
+  registerUpdate,
+  registerLink,
+  registerIntelCommand,
+  registerMarketCommand,
+  registerDoctor,
+  registerHook,
+  registerEmit,
+  registerState,
+  registerRalph,
+  registerStats,
+  registerRetro,
+  registerRecap,
+  registerDocsCommands,
+  registerCleanup,
+  registerBridge,
+  registerAgentCommands,
+  registerModelCommands,
+  registerMemory,
+  registerVerify,
+  registerVault,
+  registerStar,
+  registerVisualize,
+  registerSearchCommand,
+  registerSkillsCommand,
+  registerSlideCommand,
+  registerScholarCommand,
+  registerImageCommand,
+  registerVideoCommand,
+];
+
+for (const register of COMMAND_REGISTRARS) {
+  register(program);
+}
 
 program
   .command("help")

@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { safeWriteFile } from "../../utils/safe-write.js";
 
 /**
  * Escape all regex metacharacters in a string so it can be safely embedded
@@ -26,14 +26,13 @@ export function ensureFeatureFlags(
   section: string,
   flags: Record<string, boolean>,
 ): void {
-  mkdirSync(dirname(configPath), { recursive: true });
-
   let content = "";
   if (existsSync(configPath)) {
     content = readFileSync(configPath, "utf-8");
   }
 
   const safeSection = escapeRegExp(section);
+  let dirty = false;
 
   for (const [key, value] of Object.entries(flags)) {
     const safeKey = escapeRegExp(key);
@@ -46,7 +45,7 @@ export function ensureFeatureFlags(
     const replacement = `${key} = ${value}`;
     if (disabledRe.test(content)) {
       content = content.replace(disabledRe, () => replacement);
-      writeFileSync(configPath, content);
+      dirty = true;
       continue;
     }
 
@@ -56,10 +55,11 @@ export function ensureFeatureFlags(
         new RegExp(`(\\[${safeSection}\\][^[]*)`, "i"),
         (match) => `${match}${replacement}\n`,
       );
-      writeFileSync(configPath, content);
     } else {
       content = `${content.trimEnd()}\n\n[${section}]\n${replacement}\n`;
-      writeFileSync(configPath, content);
     }
+    dirty = true;
   }
+
+  if (dirty) safeWriteFile(configPath, content);
 }

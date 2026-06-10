@@ -1,6 +1,7 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { safeWriteJson } from "../../utils/safe-write.js";
 import { isRecord } from "../../utils/type-guards.js";
 import {
   hasSerenaDashboardOpenDisabled,
@@ -57,7 +58,7 @@ export function disableCursorAgentAttribution(
     attributeCommitsToAgent: false,
     attributePRsToAgent: false,
   };
-  writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  safeWriteJson(configPath, config);
   return true;
 }
 

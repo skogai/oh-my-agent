@@ -2,8 +2,9 @@ import { isPlainObject } from "../../utils/type-guards.js";
 
 export { isPlainObject };
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
+import { safeWriteJson } from "../../utils/safe-write.js";
 
 /** True for non-null, non-array plain objects (used for shallow settings merges). */
 /**
@@ -156,5 +157,5 @@ export function mergeIntoSettings(
       }
     }
   }
-  writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+  safeWriteJson(settingsPath, settings);
 }

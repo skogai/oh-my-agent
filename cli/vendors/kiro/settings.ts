@@ -1,6 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+import { safeWriteJson } from "../../utils/safe-write.js";
 import { isRecord } from "../../utils/type-guards.js";
 import {
   hasSerenaDashboardOpenDisabled,
@@ -71,8 +72,7 @@ function readJson(path: string): JsonRecord {
 }
 
 function writeJson(path: string, data: JsonRecord): void {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);
+  safeWriteJson(path, data);
 }
 
 /**

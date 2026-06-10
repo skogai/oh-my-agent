@@ -35,11 +35,11 @@ import {
   readdirSync,
   readFileSync,
   unlinkSync,
-  writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { clearNonDirectory } from "../../utils/fs-utils.js";
+import { safeWriteJson } from "../../utils/safe-write.js";
 
 /**
  * agy `settings.json` allowlist — the ONLY top-level keys agy persists in
@@ -245,10 +245,7 @@ export function installAntigravityHud(
   let writtenHooksJson: string | undefined;
   if (existsSync(coreHooksDir)) {
     mkdirSync(join(sourceDir, ".agents"), { recursive: true });
-    writeFileSync(
-      hooksJsonPath,
-      `${JSON.stringify(buildAgyHooksDoc(coreHooksDir, variant), null, 2)}\n`,
-    );
+    safeWriteJson(hooksJsonPath, buildAgyHooksDoc(coreHooksDir, variant));
     writtenHooksJson = hooksJsonPath;
   }
 
@@ -274,8 +271,7 @@ export function installAntigravityHud(
     settings.enableTelemetry = false;
     settings.showFeedbackSurvey = false;
   }
-  mkdirSync(agyConfigDir, { recursive: true });
-  writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+  safeWriteJson(settingsPath, settings);
 
   // Remove the stale HOME hooks.json written by earlier (incorrect) installs —
   // agy never loaded it from there.

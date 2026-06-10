@@ -46,6 +46,21 @@ vi.mock("node:fs", () => ({
   unlinkSync: vi.fn(),
 }));
 
+// Shim safe-write through the mocked fs so assertions keep observing the
+// final target path + content (the atomic tmp/rename dance is covered by
+// utils/safe-write.test.ts).
+vi.mock("../../utils/safe-write.js", async () => {
+  const mockedFs = await import("node:fs");
+  return {
+    safeWriteJson: vi.fn((path: string, value: unknown) => {
+      mockedFs.writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+    }),
+    safeWriteFile: vi.fn((path: string, content: string) => {
+      mockedFs.writeFileSync(path, content);
+    }),
+  };
+});
+
 describe("installAntigravityHud", () => {
   beforeEach(() => {
     vi.clearAllMocks();

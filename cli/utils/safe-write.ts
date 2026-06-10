@@ -45,10 +45,24 @@ export const FORBIDDEN_VENDOR_FILES: ReadonlySet<string> = new Set<string>([
  * @throws {Error} if `path.basename(targetPath)` is in `FORBIDDEN_VENDOR_FILES`
  */
 export function safeWriteJson(targetPath: string, value: unknown): void {
+  safeWriteFile(targetPath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+/**
+ * Atomically write raw text to `targetPath` with the same backup / temp-file /
+ * rename strategy as `safeWriteJson` (see above). Use this for non-JSON
+ * config formats (TOML, YAML) that need the same crash-safety and rollback
+ * guarantees as JSON settings files.
+ *
+ * @param targetPath absolute path
+ * @param content full file content, written verbatim
+ * @throws {Error} if `path.basename(targetPath)` is in `FORBIDDEN_VENDOR_FILES`
+ */
+export function safeWriteFile(targetPath: string, content: string): void {
   const basename = path.basename(targetPath);
   if (FORBIDDEN_VENDOR_FILES.has(basename)) {
     throw new Error(
-      `safeWriteJson: refusing to write ${basename} — vendor-owned file (FORBIDDEN_VENDOR_FILES). targetPath=${targetPath}`,
+      `safeWriteFile: refusing to write ${basename} — vendor-owned file (FORBIDDEN_VENDOR_FILES). targetPath=${targetPath}`,
     );
   }
 
@@ -70,8 +84,7 @@ export function safeWriteJson(targetPath: string, value: unknown): void {
 
   // Step 2: write to temp file (sibling to target — atomic rename needs same fs)
   const tmpPath = path.join(dir, `.${basename}.tmp-${stamp}`);
-  const payload = `${JSON.stringify(value, null, 2)}\n`;
-  fs.writeFileSync(tmpPath, payload, "utf-8");
+  fs.writeFileSync(tmpPath, content, "utf-8");
 
   // Step 3: atomic rename, EXDEV fallback
   try {

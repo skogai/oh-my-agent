@@ -1,47 +1,10 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { registerAgentCommands } from "./commands/agent/command.js";
-import { registerAuthStatus } from "./commands/auth-status/command.js";
-import { registerBridge } from "./commands/bridge/command.js";
-import { registerCleanup } from "./commands/cleanup/command.js";
-import { registerDocsCommands } from "./commands/docs/command.js";
-import { registerDoctor } from "./commands/doctor/command.js";
-import { registerHook } from "./commands/hook/command.js";
-import { registerImageCommand } from "./commands/image/index.js";
-import {
-  registerDefaultInstallAction,
-  registerInstall,
-} from "./commands/install/command.js";
-import { registerIntelCommand } from "./commands/intel/command.js";
-import { registerLink } from "./commands/link/command.js";
-import { registerMarketCommand } from "./commands/market/index.js";
-import { registerMemory } from "./commands/memory/command.js";
-import { registerModelCommands } from "./commands/model/command.js";
-import { registerRalph } from "./commands/ralph/command.js";
-import { registerRecap } from "./commands/recap/command.js";
-import { registerRetro } from "./commands/retro/command.js";
-import { registerScholarCommand } from "./commands/scholar/index.js";
-import { registerSearchCommand } from "./commands/search/index.js";
-import { registerSkillsCommand } from "./commands/skills/command.js";
-import { registerSlideCommand } from "./commands/slide/index.js";
-import { registerStar } from "./commands/star/command.js";
-import { registerState } from "./commands/state/command.js";
-import { registerEmit } from "./commands/state/emit.js";
-import { registerStats } from "./commands/stats/command.js";
-import { registerUninstall } from "./commands/uninstall/command.js";
-import { registerUpdate } from "./commands/update/command.js";
-import { registerVault } from "./commands/vault/command.js";
-import { registerVerify } from "./commands/verify/command.js";
-import { registerVideoCommand } from "./commands/video/index.js";
-import { registerVisualize } from "./commands/visualize/command.js";
-import { startDashboard } from "./dashboard.js";
 import pkg from "./package.json";
 import {
   resolveInstallContext,
   setInstallContext,
 } from "./platform/install-context.js";
-import { startTerminalDashboard } from "./terminal-dashboard.js";
-import { printDescribe, runAction } from "./utils/cli-framework.js";
 
 const VERSION = pkg.version;
 
@@ -65,97 +28,120 @@ program.hook("preAction", () => {
   setInstallContext(ctx);
 });
 
-registerDefaultInstallAction(program);
-registerInstall(program);
-
-program
-  .command("describe [command-path]")
-  .description("Describe CLI commands as JSON for runtime introspection")
-  .action(
-    runAction(
-      (commandPath) => {
-        printDescribe(program, commandPath);
-      },
-      { supportsJsonOutput: true },
-    ),
-  );
-
-program
-  .command("dashboard")
-  .description("Start terminal dashboard (real-time agent monitoring)")
-  .action(
-    runAction(async () => {
-      await startTerminalDashboard();
-    }),
-  );
-
-program
-  .command("dashboard:web")
-  .description("Start web dashboard on http://127.0.0.1:9847")
-  .action(
-    runAction(() => {
-      startDashboard();
-    }),
-  );
-
 /**
- * Every command slice exposes a `register*(program)` entry point
- * (cli/ARCHITECTURE.md). Adding a command = import it + add it here;
- * order determines `--help` listing order.
+ * Register the full command tree. Every command module is imported lazily so
+ * the `oma hook` fast path below never pays their module-evaluation cost.
+ * `Promise.all` order determines `--help` listing order.
  */
-const COMMAND_REGISTRARS: ReadonlyArray<(program: Command) => void> = [
-  registerAuthStatus,
-  registerUninstall,
-  registerUpdate,
-  registerLink,
-  registerIntelCommand,
-  registerMarketCommand,
-  registerDoctor,
-  registerHook,
-  registerEmit,
-  registerState,
-  registerRalph,
-  registerStats,
-  registerRetro,
-  registerRecap,
-  registerDocsCommands,
-  registerCleanup,
-  registerBridge,
-  registerAgentCommands,
-  registerModelCommands,
-  registerMemory,
-  registerVerify,
-  registerVault,
-  registerStar,
-  registerVisualize,
-  registerSearchCommand,
-  registerSkillsCommand,
-  registerSlideCommand,
-  registerScholarCommand,
-  registerImageCommand,
-  registerVideoCommand,
-];
+async function registerFullCli(): Promise<void> {
+  const { printDescribe, runAction } = await import("./utils/cli-framework.js");
+  const { registerDefaultInstallAction, registerInstall } = await import(
+    "./commands/install/command.js"
+  );
 
-for (const register of COMMAND_REGISTRARS) {
-  register(program);
+  registerDefaultInstallAction(program);
+  registerInstall(program);
+
+  program
+    .command("describe [command-path]")
+    .description("Describe CLI commands as JSON for runtime introspection")
+    .action(
+      runAction(
+        (commandPath) => {
+          printDescribe(program, commandPath);
+        },
+        { supportsJsonOutput: true },
+      ),
+    );
+
+  program
+    .command("dashboard")
+    .description("Start terminal dashboard (real-time agent monitoring)")
+    .action(
+      runAction(async () => {
+        const { startTerminalDashboard } = await import(
+          "./terminal-dashboard.js"
+        );
+        await startTerminalDashboard();
+      }),
+    );
+
+  program
+    .command("dashboard:web")
+    .description("Start web dashboard on http://127.0.0.1:9847")
+    .action(
+      runAction(async () => {
+        const { startDashboard } = await import("./dashboard.js");
+        startDashboard();
+      }),
+    );
+
+  const registrars = await Promise.all([
+    import("./commands/auth-status/command.js").then(
+      (m) => m.registerAuthStatus,
+    ),
+    import("./commands/uninstall/command.js").then((m) => m.registerUninstall),
+    import("./commands/update/command.js").then((m) => m.registerUpdate),
+    import("./commands/link/command.js").then((m) => m.registerLink),
+    import("./commands/intel/command.js").then((m) => m.registerIntelCommand),
+    import("./commands/market/index.js").then((m) => m.registerMarketCommand),
+    import("./commands/doctor/command.js").then((m) => m.registerDoctor),
+    import("./commands/hook/command.js").then((m) => m.registerHook),
+    import("./commands/state/emit.js").then((m) => m.registerEmit),
+    import("./commands/state/command.js").then((m) => m.registerState),
+    import("./commands/ralph/command.js").then((m) => m.registerRalph),
+    import("./commands/stats/command.js").then((m) => m.registerStats),
+    import("./commands/retro/command.js").then((m) => m.registerRetro),
+    import("./commands/recap/command.js").then((m) => m.registerRecap),
+    import("./commands/docs/command.js").then((m) => m.registerDocsCommands),
+    import("./commands/cleanup/command.js").then((m) => m.registerCleanup),
+    import("./commands/bridge/command.js").then((m) => m.registerBridge),
+    import("./commands/agent/command.js").then((m) => m.registerAgentCommands),
+    import("./commands/model/command.js").then((m) => m.registerModelCommands),
+    import("./commands/memory/command.js").then((m) => m.registerMemory),
+    import("./commands/verify/command.js").then((m) => m.registerVerify),
+    import("./commands/vault/command.js").then((m) => m.registerVault),
+    import("./commands/star/command.js").then((m) => m.registerStar),
+    import("./commands/visualize/command.js").then((m) => m.registerVisualize),
+    import("./commands/search/index.js").then((m) => m.registerSearchCommand),
+    import("./commands/skills/command.js").then((m) => m.registerSkillsCommand),
+    import("./commands/slide/index.js").then((m) => m.registerSlideCommand),
+    import("./commands/scholar/index.js").then((m) => m.registerScholarCommand),
+    import("./commands/image/index.js").then((m) => m.registerImageCommand),
+    import("./commands/video/index.js").then((m) => m.registerVideoCommand),
+  ]);
+  for (const register of registrars) {
+    register(program);
+  }
+
+  program
+    .command("help")
+    .description("Show help information")
+    .action(
+      runAction(() => {
+        program.help();
+      }),
+    );
+
+  program
+    .command("version")
+    .description("Show version number")
+    .action(
+      runAction(() => {
+        console.log(VERSION);
+      }),
+    );
 }
 
-program
-  .command("help")
-  .description("Show help information")
-  .action(
-    runAction(() => {
-      program.help();
-    }),
-  );
-
-program
-  .command("version")
-  .description("Show version number")
-  .action(
-    runAction(() => {
-      console.log(VERSION);
-    }),
-  );
+// Fast path: `oma hook …` runs on every user prompt via the vendor hook
+// wrappers (oma-hook.sh), so it must not pay the full command tree's
+// module-evaluation cost (~0.4s). Register only the hook slice; any other
+// argv shape (including `oma -g hook`) falls through to the full CLI.
+if (process.argv[2] === "hook") {
+  const { registerHook } = await import("./commands/hook/command.js");
+  registerHook(program);
+} else {
+  await registerFullCli();
+}
 
 program.parse();

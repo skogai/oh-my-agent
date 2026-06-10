@@ -10,6 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { Manifest, ManifestFile } from "./types/manifest.js";
 import { sha256Hex } from "./utils/hash.js";
 
 const AGENT_DIR = ".agents";
@@ -44,28 +45,6 @@ export function isExcluded(fullPath: string): boolean {
 interface FileInfo {
   path: string;
   fullPath: string;
-}
-
-export interface ManifestFile {
-  path: string;
-  sha256: string;
-  size: number;
-}
-
-export interface Manifest {
-  name: string;
-  version: string;
-  releaseDate: string;
-  repository: string;
-  files: ManifestFile[];
-  checksums: {
-    algorithm: string;
-  };
-  metadata: {
-    skillCount: number;
-    workflowCount: number;
-    totalFiles: number;
-  };
 }
 
 function calculateSha256(filePath: string): string {

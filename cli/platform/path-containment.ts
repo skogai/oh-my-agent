@@ -1,6 +1,23 @@
 import { isAbsolute, join, resolve, sep } from "node:path";
 
 /**
+ * Normalize a resolved path for containment comparison.
+ *
+ * On case-insensitive filesystems (macOS APFS/HFS+, Windows NTFS) a
+ * differently-cased path would bypass a raw byte-level `startsWith` check.
+ * Lowercasing both sides before comparing closes that bypass while keeping
+ * the original casing intact in the returned value.
+ *
+ * Linux filesystems are case-sensitive, so no normalization is applied there.
+ */
+export function normalizeCaseForContainment(p: string): string {
+  if (process.platform === "win32" || process.platform === "darwin") {
+    return p.toLowerCase();
+  }
+  return p;
+}
+
+/**
  * Assert that a variant-supplied relative path stays inside `root` after
  * resolution. Throws on absolute paths or any `..` traversal that escapes
  * `root`.
@@ -31,7 +48,9 @@ export function assertContainedRelPath(
   }
   const resolvedRoot = resolve(root);
   const resolved = resolve(join(resolvedRoot, relPath));
-  if (resolved !== resolvedRoot && !resolved.startsWith(resolvedRoot + sep)) {
+  const normRoot = normalizeCaseForContainment(resolvedRoot);
+  const normResolved = normalizeCaseForContainment(resolved);
+  if (normResolved !== normRoot && !normResolved.startsWith(normRoot + sep)) {
     throw new Error(
       `Refusing ${label} "${relPath}" — resolves outside the project root.`,
     );

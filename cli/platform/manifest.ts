@@ -11,6 +11,7 @@ import type { Manifest, ManifestFile } from "../types/index.js";
 import { parseFrontmatter } from "../utils/frontmatter.js";
 import { sha256Hex } from "../utils/hash.js";
 import { safeReadJson } from "../utils/safe-json.js";
+import { assertContainedRelPath } from "./path-containment.js";
 import { INSTALLED_SKILLS_DIR, REPO } from "./skills-installer.js";
 
 export function calculateSHA256(content: string): string {
@@ -251,6 +252,7 @@ export async function fetchRemoteManifest(): Promise<Manifest> {
 
 export async function downloadFile(
   manifestFile: ManifestFile,
+  installRoot: string = process.cwd(),
 ): Promise<{ path: string; success: boolean; error?: string }> {
   const url = `https://raw.githubusercontent.com/${REPO}/main/${manifestFile.path}`;
   let content: string;
@@ -278,10 +280,19 @@ export async function downloadFile(
     };
   }
 
-  const targetPath = join(
-    process.cwd(),
-    mapManifestPathToTargetPath(manifestFile.path),
-  );
+  const mappedRelPath = mapManifestPathToTargetPath(manifestFile.path);
+
+  try {
+    assertContainedRelPath(installRoot, mappedRelPath, "manifest file path");
+  } catch (err) {
+    return {
+      path: manifestFile.path,
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  const targetPath = join(installRoot, mappedRelPath);
   const targetDir = dirname(targetPath);
 
   if (!existsSync(targetDir)) {
@@ -290,7 +301,7 @@ export async function downloadFile(
 
   writeFileSync(targetPath, content, "utf-8");
   return {
-    path: mapManifestPathToTargetPath(manifestFile.path),
+    path: mappedRelPath,
     success: true,
   };
 }

@@ -122,6 +122,39 @@ export function installWorkflows(sourceDir: string, installRoot: string): void {
   fs.cpSync(src, dest, { recursive: true, force: true });
 }
 
+/**
+ * Copy the SSOT hook runtime (`.agents/hooks/` — core scripts, vendor
+ * variants, pi bridge) into the install root. `link()` reads
+ * `.agents/hooks/variants/<vendor>.json` from the PROJECT (not the extracted
+ * repo), so without this copy a fresh `oma install` silently skips hook and
+ * HUD (statusLine) installation for every vendor.
+ */
+export function installHooks(sourceDir: string, installRoot: string): void {
+  const src = join(sourceDir, ".agents", "hooks");
+  if (!fs.existsSync(src)) return;
+
+  const dest = join(installRoot, ".agents", "hooks");
+  clearNonDirectory(dest);
+  fs.mkdirSync(dest, { recursive: true });
+  fs.cpSync(src, dest, { recursive: true, force: true });
+}
+
+/**
+ * Copy the abstract agent definitions (`.agents/agents/*.md`) into the
+ * install root. Same project-read contract as {@link installHooks}:
+ * `link()`'s `installVendorAgents` reads these from the PROJECT, so a fresh
+ * `oma install` without this copy generates no vendor subagents.
+ */
+export function installAgents(sourceDir: string, installRoot: string): void {
+  const src = join(sourceDir, ".agents", "agents");
+  if (!fs.existsSync(src)) return;
+
+  const dest = join(installRoot, ".agents", "agents");
+  clearNonDirectory(dest);
+  fs.mkdirSync(dest, { recursive: true });
+  fs.cpSync(src, dest, { recursive: true, force: true });
+}
+
 const WORKFLOW_GENERATED_MARKER = "<!-- oma:generated -->";
 
 function extractWorkflowDescription(filePath: string): string | null {

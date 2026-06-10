@@ -73,6 +73,8 @@ const skillsState = vi.hoisted(() => ({
     { name: "oma-pm", desc: "PM skill" },
   ]),
   installShared: vi.fn(),
+  installHooks: vi.fn(),
+  installAgents: vi.fn(),
   installWorkflows: vi.fn(),
   installCopilotWorkflowPrompts: vi.fn(),
   installRules: vi.fn(),

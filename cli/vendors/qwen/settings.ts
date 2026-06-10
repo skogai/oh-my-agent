@@ -1,3 +1,4 @@
+import { isRecord } from "../../utils/type-guards.js";
 import {
   hasSerenaDashboardOpenDisabled,
   isLegacyUvxSerena,
@@ -36,8 +37,6 @@ export const RECOMMENDED_QWEN_MCP = {
   },
 };
 
-type JsonRecord = Record<string, unknown>;
-
 interface QwenMcpServer {
   command?: string;
   args?: string[];
@@ -59,10 +58,6 @@ interface QwenMcpServer {
 export interface QwenSettings {
   mcpServers?: Record<string, QwenMcpServer>;
   [key: string]: unknown;
-}
-
-function isRecord(value: unknown): value is JsonRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 const QWEN_ALLOWED_MCP_SERVER_KEYS = new Set([

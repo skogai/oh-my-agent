@@ -2,3 +2,6 @@
 .antigravitycli/
 .agents/results/
 .agents/state/
+
+.agents/backup/
+.migration-backup/

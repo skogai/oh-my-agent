@@ -1,6 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+import { safeWriteJson } from "../../utils/safe-write.js";
+import { isRecord } from "../../utils/type-guards.js";
 import {
   hasSerenaDashboardOpenDisabled,
   RECOMMENDED_CHROME_DEVTOOLS_MCP,
@@ -33,27 +35,31 @@ const OMA_KIRO_HOOKS_AGENT = {
   prompt:
     "You are Kiro CLI running in an oh-my-agent workspace. Follow project instructions and use hook-provided context when present.",
   includeMcpJson: true,
+  // Hooks route through oma-hook.sh → `oma hook` (design 019): handler .ts
+  // files are no longer materialized in .kiro/hooks/, so per-script `bun`
+  // commands would point at missing files. One wrapper call runs the whole
+  // in-process chain for the event.
   hooks: {
     userPromptSubmit: [
-      { command: "bun .kiro/hooks/keyword-detector.ts" },
-      { command: "bun .kiro/hooks/state-boundary.ts" },
-      { command: "bun .kiro/hooks/skill-injector.ts" },
+      {
+        command:
+          "bash .kiro/hooks/oma-hook.sh --vendor kiro --event userPromptSubmit",
+      },
     ],
     preToolUse: [
       {
         matcher: "execute_bash",
-        command: "bun .kiro/hooks/test-filter.ts",
+        command:
+          "bash .kiro/hooks/oma-hook.sh --vendor kiro --event preToolUse --matcher shell",
       },
     ],
-    stop: [{ command: "bun .kiro/hooks/persistent-mode.ts" }],
+    stop: [
+      { command: "bash .kiro/hooks/oma-hook.sh --vendor kiro --event stop" },
+    ],
   },
 };
 
 type JsonRecord = Record<string, unknown>;
-
-function isRecord(value: unknown): value is JsonRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function readJson(path: string): JsonRecord {
   if (!existsSync(path)) return {};
@@ -66,8 +72,7 @@ function readJson(path: string): JsonRecord {
 }
 
 function writeJson(path: string, data: JsonRecord): void {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);
+  safeWriteJson(path, data);
 }
 
 /**

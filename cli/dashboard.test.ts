@@ -52,6 +52,98 @@ describe("dashboard templates", () => {
   });
 });
 
+async function httpGetFull(
+  url: string,
+  headers: Record<string, string> = {},
+): Promise<{ status: number; body: string; headers: Headers }> {
+  const res = await fetch(url, { headers });
+  return { status: res.status, body: await res.text(), headers: res.headers };
+}
+
+describe("dashboard /api/recap top parameter", () => {
+  let memoriesDir = "";
+  let dashboard: Awaited<ReturnType<typeof startDashboard>> | undefined;
+
+  beforeEach(() => {
+    memoriesDir = mkdtempSync(join(tmpdir(), "oma-dashboard-test-"));
+    vi.stubEnv("MEMORIES_DIR", memoriesDir);
+    vi.stubEnv(
+      "DASHBOARD_PORT",
+      String(40_000 + Math.floor(Math.random() * 5_000)),
+    );
+  });
+
+  afterEach(async () => {
+    if (dashboard) {
+      await dashboard.close();
+      dashboard = undefined;
+    }
+    vi.unstubAllEnvs();
+  });
+
+  it("rejects a non-finite top value with 400", async () => {
+    dashboard = startDashboard();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const res = await httpGet(
+      `http://${dashboard.host}:${dashboard.port}/api/recap?top=abc`,
+      { "X-OMA-Dashboard-Token": dashboard.token },
+    );
+    expect(res.status).toBe(400);
+    expect(JSON.parse(res.body)).toMatchObject({ error: /finite/i });
+  });
+});
+
+describe("dashboard HTML security headers", () => {
+  let memoriesDir = "";
+  let dashboard: Awaited<ReturnType<typeof startDashboard>> | undefined;
+
+  beforeEach(() => {
+    memoriesDir = mkdtempSync(join(tmpdir(), "oma-dashboard-test-"));
+    vi.stubEnv("MEMORIES_DIR", memoriesDir);
+    vi.stubEnv(
+      "DASHBOARD_PORT",
+      String(45_000 + Math.floor(Math.random() * 5_000)),
+    );
+  });
+
+  afterEach(async () => {
+    if (dashboard) {
+      await dashboard.close();
+      dashboard = undefined;
+    }
+    vi.unstubAllEnvs();
+  });
+
+  it("sets security headers on the root HTML page", async () => {
+    dashboard = startDashboard();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const res = await httpGetFull(
+      `http://${dashboard.host}:${dashboard.port}/`,
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(res.headers.get("content-security-policy")).toContain(
+      "script-src 'self' 'unsafe-inline'",
+    );
+  });
+
+  it("sets security headers on the /recap HTML page", async () => {
+    dashboard = startDashboard();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const res = await httpGetFull(
+      `http://${dashboard.host}:${dashboard.port}/recap`,
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(res.headers.get("content-security-policy")).toContain("connect-src");
+  });
+});
+
 describe("startDashboard", () => {
   let memoriesDir = "";
   let dashboard: Awaited<ReturnType<typeof startDashboard>> | undefined;

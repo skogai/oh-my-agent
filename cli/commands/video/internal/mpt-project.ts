@@ -46,7 +46,9 @@ export interface MptProjectStatus {
 
 /** Absolute path of the venv python inside an MPT checkout (may not exist). */
 export function mptVenvPython(dir: string): string {
-  return join(dir, ".venv", "bin", "python");
+  return process.platform === "win32"
+    ? join(dir, ".venv", "Scripts", "python.exe")
+    : join(dir, ".venv", "bin", "python");
 }
 
 /**

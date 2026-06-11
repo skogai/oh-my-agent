@@ -1,7 +1,9 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { parse as parseToml, stringify as stringifyToml } from "smol-toml";
+import { safeWriteFile } from "../../utils/safe-write.js";
+import { isRecord } from "../../utils/type-guards.js";
 import {
   hasSerenaDashboardOpenDisabled,
   isLegacyUvxSerena,
@@ -28,10 +30,6 @@ export const RECOMMENDED_GROK_MCP = {
 };
 
 type TomlValue = Record<string, unknown>;
-
-function isRecord(value: unknown): value is TomlValue {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 /**
  * Ensures that Grok's global config has telemetry disabled when the user has
@@ -83,8 +81,7 @@ export function applyGrokTelemetryConfig(
     return; // No change needed.
   }
 
-  mkdirSync(dirname(GROK_GLOBAL_CONFIG_PATH), { recursive: true });
-  writeFileSync(GROK_GLOBAL_CONFIG_PATH, newContent);
+  safeWriteFile(GROK_GLOBAL_CONFIG_PATH, newContent);
 }
 
 /**
@@ -179,8 +176,7 @@ export function applyGrokProjectMcp(cwd: string): void {
     return;
   }
 
-  mkdirSync(dirname(projectConfigPath), { recursive: true });
-  writeFileSync(projectConfigPath, newContent);
+  safeWriteFile(projectConfigPath, newContent);
 }
 
 export function needsGrokProjectMcpUpdate(cwd: string): boolean {

@@ -81,8 +81,9 @@ function realpath(path: string): string {
 function backupPath(root: string, vendor: string, skillName: string): string {
   return join(
     root,
-    ".migration-backup",
-    "011",
+    ".agents",
+    "backup",
+    "011-unify-skills",
     `.${vendor}`,
     "skills",
     skillName,
@@ -178,8 +179,9 @@ describe("migration 011 — unify-workflow-skills", () => {
     expect(
       actions.some(
         (a) =>
-          a.includes(".migration-backup/011/.codex/skills/orchestrate") &&
-          a.includes("backed up"),
+          a.includes(
+            ".agents/backup/011-unify-skills/.codex/skills/orchestrate",
+          ) && a.includes("backed up"),
       ),
     ).toBe(true);
     expect(
@@ -302,8 +304,9 @@ describe("migration 011 — unify-workflow-skills", () => {
       expect(
         actions.some(
           (a) =>
-            a.includes(`.migration-backup/011/.${vendor}/skills/orchestrate`) &&
-            a.includes("backed up"),
+            a.includes(
+              `.agents/backup/011-unify-skills/.${vendor}/skills/orchestrate`,
+            ) && a.includes("backed up"),
         ),
         `${vendor} backup action should be present`,
       ).toBe(true);

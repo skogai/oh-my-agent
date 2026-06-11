@@ -46,6 +46,21 @@ vi.mock("node:fs", () => ({
   unlinkSync: vi.fn(),
 }));
 
+// Shim safe-write through the mocked fs so assertions keep observing the
+// final target path + content (the atomic tmp/rename dance is covered by
+// utils/safe-write.test.ts).
+vi.mock("../../utils/safe-write.js", async () => {
+  const mockedFs = await import("node:fs");
+  return {
+    safeWriteJson: vi.fn((path: string, value: unknown) => {
+      mockedFs.writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+    }),
+    safeWriteFile: vi.fn((path: string, content: string) => {
+      mockedFs.writeFileSync(path, content);
+    }),
+  };
+});
+
 describe("installAntigravityHud", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -250,6 +265,61 @@ describe("installAntigravityHud", () => {
       mockAgyPresent(JSON.stringify({ enableTelemetry: true }));
       installAntigravityHud("/repo", { telemetry: true });
       expect(writtenSettings().enableTelemetry).toBe(true);
+    });
+  });
+
+  // agy honors a top-level `showFeedbackSurvey` boolean (json:"…,omitempty" in
+  // the binary) that gates the recurring "How's the CLI experience so far?"
+  // prompt. oma rides it on the same opt-out lever as telemetry — survey
+  // responses are feedback data.
+  describe("feedback survey opt-out", () => {
+    const mockAgyPresent = (settingsJson: string) => {
+      (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        (p: string) => {
+          const norm = p.replace(/\\/g, "/");
+          if (norm.endsWith(".gemini/antigravity-cli")) return true;
+          if (norm === SETTINGS) return true;
+          if (norm.includes(".agents/hooks/core")) return true;
+          if (norm.includes(".agents/hooks/variants/antigravity.json"))
+            return true;
+          return false;
+        },
+      );
+      (
+        fs.readFileSync as unknown as ReturnType<typeof vi.fn>
+      ).mockImplementation((p: string) =>
+        p === VARIANT ? variantJson : settingsJson,
+      );
+    };
+    const writtenSettings = () => {
+      const call = (
+        fs.writeFileSync as unknown as ReturnType<typeof vi.fn>
+      ).mock.calls.find((c: string[]) => c[0] === SETTINGS);
+      return JSON.parse(call?.[1] as string);
+    };
+
+    it("disables the survey by default (no telemetry option)", () => {
+      mockAgyPresent("{}");
+      installAntigravityHud("/repo");
+      expect(writtenSettings().showFeedbackSurvey).toBe(false);
+    });
+
+    it("forces showFeedbackSurvey:false even when the user had it true", () => {
+      mockAgyPresent(JSON.stringify({ showFeedbackSurvey: true }));
+      installAntigravityHud("/repo", { telemetry: false });
+      expect(writtenSettings().showFeedbackSurvey).toBe(false);
+    });
+
+    it("opting in (telemetry:true) removes oma's showFeedbackSurvey:false override", () => {
+      mockAgyPresent(JSON.stringify({ showFeedbackSurvey: false }));
+      installAntigravityHud("/repo", { telemetry: true });
+      expect("showFeedbackSurvey" in writtenSettings()).toBe(false);
+    });
+
+    it("opting in leaves a user's explicit showFeedbackSurvey:true intact", () => {
+      mockAgyPresent(JSON.stringify({ showFeedbackSurvey: true }));
+      installAntigravityHud("/repo", { telemetry: true });
+      expect(writtenSettings().showFeedbackSurvey).toBe(true);
     });
   });
 

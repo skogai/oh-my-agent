@@ -1,12 +1,8 @@
-export const VIDEO_EXIT_CODES = {
-  ok: 0,
-  generic: 1,
-  safety: 2,
-  notFound: 3,
-  invalidInput: 4,
-  authRequired: 5,
-  timeout: 6,
-} as const;
+import { EXIT_CODES } from "../../utils/exit-codes.js";
+
+// Alias of the shared scale (cli/utils/exit-codes.ts); kept under the
+// video-local name for existing imports.
+export const VIDEO_EXIT_CODES = EXIT_CODES;
 
 export type VideoExitCode =
   (typeof VIDEO_EXIT_CODES)[keyof typeof VIDEO_EXIT_CODES];

@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { isHookVendor } from "../platform/skills-installer.js";
 import type { VendorType } from "../types/index.js";
 
 const VARIANTS_DIR = join(__dirname, "../../.agents/hooks/variants");
@@ -11,6 +12,7 @@ const KNOWN_VENDORS: VendorType[] = [
   "antigravity",
   "claude",
   "codex",
+  "commandcode",
   "cursor",
   "gemini",
   "grok",
@@ -55,6 +57,15 @@ describe("hook variant files", () => {
       expect(v.settingsFile).toBeTruthy();
       expect(v.runtime).toBeTruthy();
       expect(Object.keys(v.events).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("every vendor with a hook variant is registered in HOOK_VENDORS", () => {
+    for (const v of KNOWN_VENDORS) {
+      expect(
+        isHookVendor(v),
+        `${v} has a hook variant JSON but is missing from HOOK_VENDORS in skills-installer.ts`,
+      ).toBe(true);
     }
   });
 

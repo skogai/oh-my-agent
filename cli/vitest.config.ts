@@ -13,5 +13,11 @@ export default defineConfig({
   },
   test: {
     setupFiles: ["./test/setup-install-context.ts"],
+    // The suite spawns many `bun cli.ts …` subprocesses (hook e2e, vendor
+    // probes, install flows). Under full parallel load those routinely blow
+    // vitest's 5s default even though they pass in isolation, so give every
+    // test the headroom of the slowest spawn chain instead of per-file
+    // overrides chasing whichever file flakes next.
+    testTimeout: 30_000,
   },
 });

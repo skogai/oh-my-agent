@@ -23,7 +23,7 @@
  *   (regenerable; rebuilt as a file-symlink by reconcile)
  * - vendor entry that is a real dir / file → leave untouched
  *
- * Backup path: <cwd>/.migration-backup/013/.agents/skills/<name>/
+ * Backup path: <cwd>/.agents/backup/013-workflow-symlinks/.agents/skills/<name>/
  *
  * Idempotent: re-running after migration produces 0 actions.
  */
@@ -39,6 +39,7 @@ import {
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { CLI_SKILLS_DIR } from "../../constants/index.js";
+import { backupPathFromRoot } from "../../io/backup.js";
 import type { CliTool } from "../../types/index.js";
 import type { Migration } from "./index.js";
 
@@ -124,10 +125,9 @@ export const migrateWorkflowDirectSymlinks: Migration = {
         const skillDir = join(ssotSkillsDir, entry.name);
         if (!isGeneratedWrapper(skillDir)) continue;
 
-        const backup = join(
+        const backup = backupPathFromRoot(
           cwd,
-          ".migration-backup",
-          "013",
+          "013-workflow-symlinks",
           ".agents",
           "skills",
           entry.name,

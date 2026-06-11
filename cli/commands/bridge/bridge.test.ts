@@ -1005,6 +1005,46 @@ describe("bridge command", () => {
   });
 });
 
+describe("bridge hostname validation", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it("throws synchronously when the parsed URL hostname is empty", async () => {
+    // Stub the global URL constructor so that the stub URL for our sentinel
+    // input returns an object with an empty hostname, letting us exercise the
+    // guard without a real invalid-URL parse error.
+    const OrigURL = globalThis.URL;
+    const SENTINEL = "http://EMPTY-HOST-SENTINEL/mcp";
+
+    class PatchedURL extends OrigURL {
+      constructor(input: string, base?: string | URL) {
+        if (input === SENTINEL) {
+          // Call with a valid URL to satisfy the parent, then override hostname.
+          super("http://localhost/mcp", base);
+          Object.defineProperty(this, "hostname", {
+            value: "",
+            writable: true,
+            configurable: true,
+          });
+        } else {
+          super(input, base);
+        }
+      }
+    }
+
+    vi.stubGlobal("URL", PatchedURL);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      await expect(bridge(SENTINEL)).rejects.toThrow(/non-empty hostname/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
 describe("validateSerenaConfigs", () => {
   let consoleErrorSpy: MockInstance;
 
@@ -1046,6 +1086,24 @@ describe("validateSerenaConfigs", () => {
     validateSerenaConfigs();
 
     expect(mockFs.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  it("should skip and warn when a project directory does not exist on disk", () => {
+    mockFs.existsSync.mockImplementation((path: string) => {
+      // global config exists; project dir itself does not
+      if (n(path) === "/mock/home/.serena/serena_config.yml") return true;
+      return false;
+    });
+    mockFs.readFileSync.mockReturnValue(
+      "projects:\n  - /nonexistent-project\n",
+    );
+
+    validateSerenaConfigs();
+
+    expect(mockFs.writeFileSync).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Skipping non-existent project path"),
+    );
   });
 
   it("should not modify project.yml if languages key already exists", () => {

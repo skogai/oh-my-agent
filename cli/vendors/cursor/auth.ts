@@ -1,4 +1,6 @@
-import { execSync } from "node:child_process";
+import { safeParseJson } from "../../utils/safe-json.js";
+import { isRecord } from "../../utils/type-guards.js";
+import { cliStatusOutput } from "../auth-utils.js";
 
 const CURSOR_STATUS_COMMANDS = [
   "cursor agent status",
@@ -10,15 +12,15 @@ function hasCursorApiKey(env: NodeJS.ProcessEnv): boolean {
 }
 
 function parseCursorStatus(output: string): boolean {
-  try {
-    const parsed = JSON.parse(output);
-    if (typeof parsed?.authenticated === "boolean") {
+  const parsed = safeParseJson(output);
+  if (isRecord(parsed)) {
+    if (typeof parsed.authenticated === "boolean") {
       return parsed.authenticated;
     }
-    if (typeof parsed?.loggedIn === "boolean") {
+    if (typeof parsed.loggedIn === "boolean") {
       return parsed.loggedIn;
     }
-  } catch {}
+  }
 
   const normalized = output.toLowerCase();
 
@@ -39,15 +41,9 @@ export function isCursorAuthenticated(
   if (hasCursorApiKey(env)) return true;
 
   for (const command of CURSOR_STATUS_COMMANDS) {
-    try {
-      const output = execSync(command, {
-        stdio: ["pipe", "pipe", "ignore"],
-        encoding: "utf-8",
-      });
-      if (parseCursorStatus(output)) return true;
-    } catch {
-      // Try the next supported Cursor CLI command shape.
-    }
+    // Try each supported Cursor CLI command shape until one reports success.
+    const output = cliStatusOutput(command);
+    if (output !== null && parseCursorStatus(output)) return true;
   }
 
   return false;

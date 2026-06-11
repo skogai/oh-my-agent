@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { safeReadJson } from "../../utils/safe-json.js";
 
 /**
  * Antigravity CLI (agy) keeps its state under `~/.gemini/antigravity-cli/`.
@@ -15,26 +15,15 @@ export function isAntigravityAuthenticated(
 ): boolean {
   if (env.ANTIGRAVITY_API_KEY?.trim()) return true;
 
-  const onboardingPath = join(
-    homedir(),
-    ".gemini",
-    "antigravity-cli",
-    "cache",
-    "onboarding.json",
+  const parsed = safeReadJson<{
+    onboardingComplete?: unknown;
+    consumerOnboardingComplete?: unknown;
+    enterpriseOnboardingComplete?: unknown;
+  }>(join(homedir(), ".gemini", "antigravity-cli", "cache", "onboarding.json"));
+  if (!parsed) return false;
+  return (
+    parsed.onboardingComplete === true ||
+    parsed.consumerOnboardingComplete === true ||
+    parsed.enterpriseOnboardingComplete === true
   );
-  if (!existsSync(onboardingPath)) return false;
-  try {
-    const parsed = JSON.parse(readFileSync(onboardingPath, "utf-8")) as {
-      onboardingComplete?: unknown;
-      consumerOnboardingComplete?: unknown;
-      enterpriseOnboardingComplete?: unknown;
-    };
-    return (
-      parsed.onboardingComplete === true ||
-      parsed.consumerOnboardingComplete === true ||
-      parsed.enterpriseOnboardingComplete === true
-    );
-  } catch {
-    return false;
-  }
 }

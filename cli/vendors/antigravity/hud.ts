@@ -20,8 +20,9 @@
  *      settings allowlist there and STRIPS unknown keys on launch — verified
  *      that `hooks` and `defaultHooksPath` are both dropped, so we never write
  *      them. The HUD command runs from a HOME copy of the core hooks. We also
- *      manage the allowlisted `enableTelemetry` boolean here (telemetry opt-out
- *      by default; see installAntigravityHud).
+ *      manage the allowlisted `enableTelemetry` and `showFeedbackSurvey`
+ *      booleans here (telemetry + feedback-survey opt-out by default; see
+ *      installAntigravityHud).
  *
  * NOTE: agy hooks fire on the interactive execution loop; headless `agy --print`
  * does not run them, so live firing must be confirmed in an interactive session.
@@ -34,12 +35,37 @@ import {
   readdirSync,
   readFileSync,
   unlinkSync,
-  writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { clearNonDirectory } from "../../utils/fs-utils.js";
+import { safeWriteJson } from "../../utils/safe-write.js";
 
+/**
+ * agy `settings.json` allowlist — the ONLY top-level keys agy persists in
+ * `~/.gemini/antigravity-cli/settings.json`. agy STRIPS every unknown key on
+ * launch, so this is the full surface oma may write. Reverse-engineered from
+ * the `agy` Go binary's struct tags (`json:"…"`); recorded here so nobody has
+ * to crack open the ~140 MB binary again. Verified against agy build 2026-06.
+ *
+ *   | key                  | type     | tag         | notes                          |
+ *   |----------------------|----------|-------------|--------------------------------|
+ *   | colorScheme          | string   | (required)  | e.g. "light" | "dark" | "system" |
+ *   | theme                | string   | omitempty   | named theme (e.g. "solarized dark") |
+ *   | model                | string   | (required)  | e.g. "Gemini 3.1 Pro (High)"   |
+ *   | modelPreferences     | object   | omitempty   | per-model prefs                |
+ *   | statusLine           | object   | (required)  | { type:"command", command }    |
+ *   | toolPermission       | string   | omitempty   | tool-confirm mode (e.g. "always proceeds" / "asks for review") |
+ *   | enableTelemetry      | bool     | (required)  | usage-stats opt-out lever      |
+ *   | showFeedbackSurvey   | bool     | omitempty   | the "How's the CLI experience so far?" prompt |
+ *   | showTips             | bool     | omitempty   | startup tips banner            |
+ *   | vimMode              | bool     | omitempty   | vim keybindings                |
+ *   | sandbox              | object   | omitempty   | sandbox/bypass config          |
+ *   | trustedWorkspaces    | string[] | omitempty   | workspace trust allowlist      |
+ *
+ * oma only ever writes/manages: `statusLine` (HUD), `enableTelemetry`, and
+ * `showFeedbackSurvey`. All other keys are user/agy-owned and preserved as-is.
+ */
 const AGY_HOME_DIR = ".gemini/antigravity-cli";
 const ANTIGRAVITY_VARIANT = ".agents/hooks/variants/antigravity.json";
 // agy's customization directory in the workspace is `.agents/`; hooks.json
@@ -168,8 +194,10 @@ interface AgyInstallResult {
 export interface AntigravityHudOptions {
   /**
    * Vendor telemetry preference (from oma-config.yaml, default `false`). When
-   * `false`/unset, oma writes `enableTelemetry: false` to agy's settings. When
-   * `true`, oma removes its own opt-out so agy falls back to its own default.
+   * `false`/unset, oma writes `enableTelemetry: false` AND
+   * `showFeedbackSurvey: false` to agy's settings (silencing both usage stats
+   * and the "How's the CLI experience so far?" survey). When `true`, oma
+   * removes its own opt-outs so agy falls back to its own defaults.
    */
   telemetry?: boolean;
 }
@@ -179,11 +207,13 @@ export interface AntigravityHudOptions {
  * the HOME `statusLine` (HUD). Idempotent. Preserves unrelated settings keys
  * (colorScheme, toolPermission, trustedWorkspaces, ...).
  *
- * Telemetry: agy honors a top-level `enableTelemetry` boolean in its settings
- * allowlist (it survives agy's key-stripping on launch). Mirroring the other
- * vendors, oma disables it by default and only steps aside when the user opts
- * in via `telemetry: true` in oma-config.yaml. agy exposes no separate survey
- * key — `enableTelemetry` is the single lever.
+ * Telemetry + feedback survey: agy honors top-level `enableTelemetry` and
+ * `showFeedbackSurvey` booleans in its settings allowlist (both survive agy's
+ * key-stripping on launch). `showFeedbackSurvey` gates the recurring
+ * "How's the CLI experience so far?" prompt. Mirroring the other vendors, oma
+ * disables BOTH by default — survey responses are feedback data, so they ride
+ * the same opt-out lever — and only steps aside when the user opts in via
+ * `telemetry: true` in oma-config.yaml.
  *
  * Returns `installed: false` with a `reason` when agy's HOME config dir doesn't
  * exist (agy not installed / never run) — we don't bootstrap it ourselves.
@@ -215,10 +245,7 @@ export function installAntigravityHud(
   let writtenHooksJson: string | undefined;
   if (existsSync(coreHooksDir)) {
     mkdirSync(join(sourceDir, ".agents"), { recursive: true });
-    writeFileSync(
-      hooksJsonPath,
-      `${JSON.stringify(buildAgyHooksDoc(coreHooksDir, variant), null, 2)}\n`,
-    );
+    safeWriteJson(hooksJsonPath, buildAgyHooksDoc(coreHooksDir, variant));
     writtenHooksJson = hooksJsonPath;
   }
 
@@ -231,16 +258,20 @@ export function installAntigravityHud(
   };
   if ("hooks" in settings) delete settings.hooks;
   if ("defaultHooksPath" in settings) delete settings.defaultHooksPath;
-  // Telemetry opt-out (default) / opt-in. agy honors `enableTelemetry`; oma
-  // disables it unless the user opts in, in which case oma removes only the
-  // opt-out it would have written so agy keeps its own default.
+  // Telemetry + feedback-survey opt-out (default) / opt-in. agy honors both
+  // `enableTelemetry` and `showFeedbackSurvey`; oma disables them unless the
+  // user opts in, in which case oma removes only the opt-out it would have
+  // written so agy keeps its own default. `showFeedbackSurvey: false` silences
+  // the recurring "How's the CLI experience so far?" prompt.
   if (options.telemetry === true) {
     if (settings.enableTelemetry === false) delete settings.enableTelemetry;
+    if (settings.showFeedbackSurvey === false)
+      delete settings.showFeedbackSurvey;
   } else {
     settings.enableTelemetry = false;
+    settings.showFeedbackSurvey = false;
   }
-  mkdirSync(agyConfigDir, { recursive: true });
-  writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+  safeWriteJson(settingsPath, settings);
 
   // Remove the stale HOME hooks.json written by earlier (incorrect) installs —
   // agy never loaded it from there.

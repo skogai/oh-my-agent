@@ -10,6 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { Manifest, ManifestFile } from "./types/manifest.js";
 import { sha256Hex } from "./utils/hash.js";
 
 const AGENT_DIR = ".agents";
@@ -28,33 +29,23 @@ const EXCLUDED_PATTERNS = [
   // files. The skill's tracked source (src/, package.json, config) still ships.
   "node_modules/",
   ".remotion/",
+  // Local runtime state (L1 session events, hook state, skill sessions):
+  // written by hooks/CLI at run time on the developer's machine and never
+  // shipped via the manifest. Without this exclusion, regenerating on a used
+  // checkout sweeps hundreds of session files into the manifest.
+  ".agents/state/",
+  // Generated at install time with machine-local absolute paths (gitignored).
+  ".agents/hooks.json",
+  ".agents/eval/",
 ];
+
+export function isExcluded(fullPath: string): boolean {
+  return EXCLUDED_PATTERNS.some((p) => fullPath.includes(p));
+}
 
 interface FileInfo {
   path: string;
   fullPath: string;
-}
-
-export interface ManifestFile {
-  path: string;
-  sha256: string;
-  size: number;
-}
-
-export interface Manifest {
-  name: string;
-  version: string;
-  releaseDate: string;
-  repository: string;
-  files: ManifestFile[];
-  checksums: {
-    algorithm: string;
-  };
-  metadata: {
-    skillCount: number;
-    workflowCount: number;
-    totalFiles: number;
-  };
 }
 
 function calculateSha256(filePath: string): string {
@@ -72,7 +63,7 @@ function getAllFiles(
     const fullPath = path.join(dirPath, file);
     const relativePath = path.join(basePath, file);
 
-    if (EXCLUDED_PATTERNS.some((p) => fullPath.includes(p))) {
+    if (isExcluded(fullPath)) {
       continue;
     }
 

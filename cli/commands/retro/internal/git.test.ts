@@ -4,6 +4,7 @@ import {
   getCommitsWithStats,
   getDefaultBranch,
   getFileChanges,
+  getShippingStreak,
 } from "./git.js";
 
 // Repo-sourced git calls now run through execFileSync (argv, no shell) after
@@ -76,5 +77,41 @@ describe("retro/git.ts", () => {
         author: "Grace",
       },
     ]);
+  });
+
+  it("getShippingStreak: passes --date=format-local flag so git emits local-timezone dates", () => {
+    // Return two consecutive local-date strings. We don't know today's exact
+    // local date in the test runner, so we compute it the same way the
+    // implementation does: via new Date() with hours zeroed to local midnight.
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const fmt = (d: Date): string => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    vi.mocked(child_process.execFileSync).mockReturnValue(
+      [fmt(today), fmt(yesterday)].join("\n"),
+    );
+
+    const streak = getShippingStreak("/repo", "main");
+
+    // Verify the git args included the local-format flag
+    const callArgs = vi.mocked(child_process.execFileSync).mock.calls[0];
+    const gitArgs = callArgs?.[1] as string[];
+    expect(gitArgs).toContain("--date=format-local:%Y-%m-%d");
+
+    // Two consecutive days (today + yesterday) → streak of 2
+    expect(streak).toBe(2);
+  });
+
+  it("getShippingStreak: returns 0 when git output is empty", () => {
+    vi.mocked(child_process.execFileSync).mockReturnValue("");
+    expect(getShippingStreak("/repo", "main")).toBe(0);
   });
 });

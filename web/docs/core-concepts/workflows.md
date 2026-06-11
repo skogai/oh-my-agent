@@ -439,13 +439,13 @@ Noun whitelist (15): app, api, service, server, cli, tool, website, dashboard, s
 
 ### The hook system
 
-oh-my-agent uses a `UserPromptSubmit` hook that runs before each user message is processed. The hook system consists of:
+oh-my-agent uses a `UserPromptSubmit` hook that runs before each user message is processed. The vendor's settings register a single `<hookDir>/oma-hook.sh --vendor <v> --event <e>` entry that routes into `oma hook`, where the handler chain runs in-process. The chain consists of:
 
-1. **`triggers.json`** (`.claude/hooks/triggers.json`): Defines keyword-to-workflow mappings for all 11 supported languages (English, Korean, Japanese, Chinese, Spanish, French, German, Portuguese, Russian, Dutch, Polish).
+1. **`triggers.json`** (`.agents/hooks/core/triggers.json`, inlined into the `oma` binary): Defines keyword-to-workflow mappings for all 11 supported languages (English, Korean, Japanese, Chinese, Spanish, French, German, Portuguese, Russian, Dutch, Polish).
 
-2. **`keyword-detector.ts`** (`.claude/hooks/keyword-detector.ts`): TypeScript logic that scans the user's input against the trigger keywords, respects language-specific matching, and injects workflow activation context.
+2. **`keyword-detector.ts`** (`.agents/hooks/core/keyword-detector.ts`): TypeScript logic that scans the user's input against the trigger keywords, respects language-specific matching, and injects workflow activation context.
 
-3. **`persistent-mode.ts`** (`.claude/hooks/persistent-mode.ts`): Enforces persistent workflow execution by checking for active state files and reinjecting workflow context.
+3. **`persistent-mode.ts`** (`.agents/hooks/core/persistent-mode.ts`): Enforces persistent workflow execution by checking for active state files and reinjecting workflow context.
 
 ### Detection flow
 

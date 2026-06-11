@@ -4,8 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createCliSymlinks,
   createVendorSymlinks,
+  installAgents,
   installClaudeSkills,
   installConfigs,
+  installHooks,
   installSkill,
   installVendorAdaptations,
   installWorkflows,
@@ -66,6 +68,69 @@ describe("skills.ts - Workflow and Config Installation", () => {
 
       const src = join(mockSourceDir, ".agents", "workflows");
       const dest = join(mockTargetDir, ".agents", "workflows");
+      expect(fs.mkdirSync).toHaveBeenCalledWith(dest, { recursive: true });
+      expect(fs.cpSync).toHaveBeenCalledWith(src, dest, {
+        recursive: true,
+        force: true,
+      });
+    });
+  });
+
+  describe("installHooks", () => {
+    it("should skip if source directory does not exist", () => {
+      (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+        false,
+      );
+
+      installHooks(mockSourceDir, mockTargetDir);
+
+      expect(fs.cpSync).not.toHaveBeenCalled();
+    });
+
+    // Regression: fresh `oma install` never copied .agents/hooks/ into the
+    // project, so link()'s installVendorAdaptations found no
+    // .agents/hooks/variants/<vendor>.json and silently skipped hook + HUD
+    // (statusLine) installation.
+    it("should copy hooks directory from source to target", () => {
+      (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+        true,
+      );
+
+      installHooks(mockSourceDir, mockTargetDir);
+
+      const src = join(mockSourceDir, ".agents", "hooks");
+      const dest = join(mockTargetDir, ".agents", "hooks");
+      expect(fs.mkdirSync).toHaveBeenCalledWith(dest, { recursive: true });
+      expect(fs.cpSync).toHaveBeenCalledWith(src, dest, {
+        recursive: true,
+        force: true,
+      });
+    });
+  });
+
+  describe("installAgents", () => {
+    it("should skip if source directory does not exist", () => {
+      (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+        false,
+      );
+
+      installAgents(mockSourceDir, mockTargetDir);
+
+      expect(fs.cpSync).not.toHaveBeenCalled();
+    });
+
+    // Regression: same fresh-install gap as installHooks — link()'s
+    // installVendorAgents reads .agents/agents/ from the project, so a
+    // fresh install without this copy generated no vendor subagents.
+    it("should copy agent definitions from source to target", () => {
+      (fs.existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+        true,
+      );
+
+      installAgents(mockSourceDir, mockTargetDir);
+
+      const src = join(mockSourceDir, ".agents", "agents");
+      const dest = join(mockTargetDir, ".agents", "agents");
       expect(fs.mkdirSync).toHaveBeenCalledWith(dest, { recursive: true });
       expect(fs.cpSync).toHaveBeenCalledWith(src, dest, {
         recursive: true,

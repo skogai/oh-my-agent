@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as p from "@clack/prompts";
@@ -240,12 +240,15 @@ function detectCompetitors(cwd: string): Competitor[] {
   // Only detect if the global CLI package is installed.
   // Project-level .omx dirs are leftover artifacts — cleaned silently by cleanLeftoverDirs.
   try {
-    execSync("npm ls -g oh-my-codex", { stdio: "pipe", timeout: 10_000 });
+    execFileSync("npm", ["ls", "-g", "oh-my-codex"], {
+      stdio: "pipe",
+      timeout: 10_000,
+    });
     competitors.push({
       name: "omx",
       displayName: "oh-my-codex",
       uninstall: () => {
-        execSync("npx -y oh-my-codex@latest uninstall --yes", {
+        execFileSync("npx", ["oh-my-codex@latest", "uninstall", "--yes"], {
           stdio: "pipe",
           timeout: 60_000,
         });

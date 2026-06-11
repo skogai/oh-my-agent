@@ -1,5 +1,186 @@
 # Changelog
 
+## [8.52.8](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.52.7...cli-v8.52.8) (2026-06-11)
+
+
+### Documentation
+
+* **readme:** drop cli section, fold per-agent models into how it works ([253d658](https://github.com/first-fluke/oh-my-agent/commit/253d65836353f7f33827adc90962c54f78259b16))
+
+## [8.52.7](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.52.6...cli-v8.52.7) (2026-06-11)
+
+
+### Refactoring
+
+* **cli:** drop the unused CLI i18n catalog ([ceac2eb](https://github.com/first-fluke/oh-my-agent/commit/ceac2eb4a2944d3cedd0c5c5ccaea9d7f4668c89))
+
+## [8.52.6](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.52.5...cli-v8.52.6) (2026-06-11)
+
+
+### Performance
+
+* **cli:** lazy-load command tree with an argv fast path for oma hook ([b31d08b](https://github.com/first-fluke/oh-my-agent/commit/b31d08bf75fb833455f1819488b91bc6964aa9d5))
+
+
+### Refactoring
+
+* **cli:** back terminal dashboard with dashboard/state parser ([9e193b7](https://github.com/first-fluke/oh-my-agent/commit/9e193b757446d6ac8ce5d53bec38b33da0f3d04c))
+* **cli:** centralize the standard exit-code scale ([04ad3a0](https://github.com/first-fluke/oh-my-agent/commit/04ad3a0c833636db4dd3be6349eebbb9392323aa))
+* **cli:** consolidate findFileUp into utils/fs-utils ([cfef58e](https://github.com/first-fluke/oh-my-agent/commit/cfef58ec308080937cd39a74e9c5866c5c41bf5c))
+* **cli:** consolidate isRecord type guards into utils/type-guards ([7aba567](https://github.com/first-fluke/oh-my-agent/commit/7aba5679aebee0fd285108cd734649cf333b9c3e))
+* **cli:** deduplicate search subcommand action boilerplate ([4a28d90](https://github.com/first-fluke/oh-my-agent/commit/4a28d9042e13045b76486bdbfd2497a095bf6a36))
+* **cli:** derive vendor type unions from canonical constants ([9213c07](https://github.com/first-fluke/oh-my-agent/commit/9213c07f379609ee42e60ca9ada75e2379ca6be4))
+* **cli:** extract shared MarkdownRecordStore for session memories ([e612e7f](https://github.com/first-fluke/oh-my-agent/commit/e612e7f1f04998eb86672d1b275d0f3b26e7bc4e))
+* **cli:** extract shared run naming and dir-guard helpers from image/video ([632c83b](https://github.com/first-fluke/oh-my-agent/commit/632c83b8f859a59abf8b35020e7603ea27a408fd))
+* **cli:** make command registration data-driven in cli.ts ([a57cd52](https://github.com/first-fluke/oh-my-agent/commit/a57cd52d32aaa713ec9d3a19edeff070c13c27fa))
+* **cli:** restore the cross-slice boundary gate to green ([8e772f4](https://github.com/first-fluke/oh-my-agent/commit/8e772f4c647d1a1def8c27bf772e6d664aec2f17))
+* **cli:** route vendor config writes through safe-write ([c46aad2](https://github.com/first-fluke/oh-my-agent/commit/c46aad27b9f56499175478b65a68c06c1664b640))
+* **cli:** share auth-probe boilerplate across vendor adapters ([b5b3d73](https://github.com/first-fluke/oh-my-agent/commit/b5b3d73522c54701a5cc771ff1b21d1cf2936d9b))
+* **cli:** share gemini-family settings helpers between gemini/qwen ([f0792da](https://github.com/first-fluke/oh-my-agent/commit/f0792da7a9fb1080a57ddeefcdb046d647084f51))
+* **cli:** share untrusted-variant loading between composers ([cb9dcf3](https://github.com/first-fluke/oh-my-agent/commit/cb9dcf377032f1bab3371f00ae0f40c9fe51c090))
+* **cli:** split agentmemory-service into file/command/orchestration layers ([5aa9cca](https://github.com/first-fluke/oh-my-agent/commit/5aa9cca211f81a39605297cd1708b6a107d69e9e))
+* **cli:** use shared isRecord in qwen settings ([2948f31](https://github.com/first-fluke/oh-my-agent/commit/2948f31e5b4e7949024276bb28feb04f48115046))
+
+## [8.52.5](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.52.4...cli-v8.52.5) (2026-06-10)
+
+
+### Refactoring
+
+* **cli:** split files over 500 lines into sub-modules ([e3100c3](https://github.com/first-fluke/oh-my-agent/commit/e3100c30c202faced370a7f27d75d95675881a14))
+
+
+### Documentation
+
+* **rules:** add self-describing file naming convention for frontend ([543002e](https://github.com/first-fluke/oh-my-agent/commit/543002e49c993c35c92257d8e8ad0f00f7f40a3f))
+
+## [8.52.4](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.52.3...cli-v8.52.4) (2026-06-10)
+
+
+### Bug Fixes
+
+* **hooks:** align vendor hook dialects with official specs, wire commandcode ([95eedeb](https://github.com/first-fluke/oh-my-agent/commit/95eedeb26acbf199e9dac4514fa8bf194505c9d2))
+* **install:** materialize only variant-required hook scripts per vendor ([d8c59fd](https://github.com/first-fluke/oh-my-agent/commit/d8c59fd9f328fcaf1155f9fb3e209118310d0f09))
+
+## [8.52.3](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.52.2...cli-v8.52.3) (2026-06-10)
+
+
+### Bug Fixes
+
+* **cli:** cross-platform process and resource lifecycle hardening ([f332e1e](https://github.com/first-fluke/oh-my-agent/commit/f332e1e05ad54d5c6b37ede9b97a6b34e6fc9a22))
+* **install:** copy hook runtime and agent definitions on install ([6f3993c](https://github.com/first-fluke/oh-my-agent/commit/6f3993c0c94e69caad5e5633894f57975e750153))
+* **market:** deterministic clustering and diversity threshold wiring ([095775a](https://github.com/first-fluke/oh-my-agent/commit/095775aa856484931d1e7dc990a3e7e577cbcd2e))
+* **platform:** case-insensitive containment and manifest hardening ([c5b8533](https://github.com/first-fluke/oh-my-agent/commit/c5b85337bb4b95e92a32248a32f29d72f4f68f2f))
+* **recap:** pair responses by full prompt in claude/grok parsers ([169e621](https://github.com/first-fluke/oh-my-agent/commit/169e6213a00b5f398e73e662e135409e4dd2e29e))
+* **retro:** format git dates in local timezone for shipping streak ([bbbf47c](https://github.com/first-fluke/oh-my-agent/commit/bbbf47c43e1b39de152061835449b7bf6535cbc1))
+* **security:** replace shell execs and validate runtime inputs ([a802343](https://github.com/first-fluke/oh-my-agent/commit/a802343dc65b6f8ea3dccb361d2f93ed65ef79a1))
+
+## [8.52.2](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.52.1...cli-v8.52.2) (2026-06-10)
+
+
+### Bug Fixes
+
+* **agent:** add auth probe timeouts and close log fd on spawn failure ([c422ce9](https://github.com/first-fluke/oh-my-agent/commit/c422ce9d7f760678bf19d598bcf7de2c6bac3f50))
+* **recap:** stamp single-turn cursor sessions at file birth time ([c022b3b](https://github.com/first-fluke/oh-my-agent/commit/c022b3b1c02c85f7ec32caf9ddc5f0d18ac55d3b))
+* **security:** harden cli against ssrf and injection vectors ([4ecaf22](https://github.com/first-fluke/oh-my-agent/commit/4ecaf22b9c18b79f342c39c2bb81d29e7aedf165))
+
+## [8.52.1](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.52.0...cli-v8.52.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* **hooks:** cap oma hook stdin read with fail-open timeout ([dffcf55](https://github.com/first-fluke/oh-my-agent/commit/dffcf556bd7797408eb67e7b5e4decb9c37e9800))
+
+## [8.52.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.51.1...cli-v8.52.0) (2026-06-10)
+
+
+### Features
+
+* **hooks:** add serena-primer to inject serena tool guidance per session ([e6eea37](https://github.com/first-fluke/oh-my-agent/commit/e6eea37d9dceb00f9322fc26091f5ee5b7c9435a))
+
+## [8.51.1](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.51.0...cli-v8.51.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* **workflows:** resolve workflow review findings across all severities ([1ecf200](https://github.com/first-fluke/oh-my-agent/commit/1ecf20076025c46c8c30ddb493b21e0c582e75ef))
+
+## [8.51.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.50.0...cli-v8.51.0) (2026-06-09)
+
+
+### Features
+
+* **cli:** add oma ralph:verify for the EXEC anti-circumvention gate ([f2502e8](https://github.com/first-fluke/oh-my-agent/commit/f2502e83ec1a0a7289cdfa4b0cf88cd2d987cb8b))
+
+
+### Bug Fixes
+
+* **hooks:** stop workflow-name artifact mentions re-triggering ralph ([5478ceb](https://github.com/first-fluke/oh-my-agent/commit/5478cebdb466f334bdf7d6ad306ee9525c38d6c6))
+* **skills:** correct drifted commands, refs, and defaults across skills ([7dc29bb](https://github.com/first-fluke/oh-my-agent/commit/7dc29bbbfdf785dd727498ff9ba97a59f251406b))
+* **skills:** resolve remaining low-severity review findings ([9284c6c](https://github.com/first-fluke/oh-my-agent/commit/9284c6c3ac0e3f19512126e0fd2f2d9082228151))
+
+## [8.50.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.49.1...cli-v8.50.0) (2026-06-09)
+
+
+### Features
+
+* **workflows:** harden ralph judge independence and session memory ([2ad2796](https://github.com/first-fluke/oh-my-agent/commit/2ad279694ba2d0c4d5e159da91588e6eabb6aa9a))
+
+
+### Bug Fixes
+
+* **cli:** exclude local runtime state from prompt manifest ([ad15b6f](https://github.com/first-fluke/oh-my-agent/commit/ad15b6f1ab0e01239ad6108adcaa375f03ce6161))
+
+
+### Refactoring
+
+* **backup:** route `oma skills opt` SKILL.md backups to .agents/backup/ ([77df982](https://github.com/first-fluke/oh-my-agent/commit/77df982975ec9ac15fa7a4acda6d8beca133e4c5))
+
+## [8.49.1](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.49.0...cli-v8.49.1) (2026-06-09)
+
+
+### Refactoring
+
+* **backup:** consolidate all on-disk backups under .agents/backup/ ([fb909ac](https://github.com/first-fluke/oh-my-agent/commit/fb909aca5a10719225dbae98353eb654eb0bbe51))
+
+## [8.49.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.48.0...cli-v8.49.0) (2026-06-09)
+
+
+### Features
+
+* **antigravity:** disable feedback survey prompt on install/update ([3344a30](https://github.com/first-fluke/oh-my-agent/commit/3344a30aa6099a70904ee9ac933c717534b6fbe8))
+
+
+### Bug Fixes
+
+* **gitignore:** ignore .migration-backup created by update migrations ([22d224c](https://github.com/first-fluke/oh-my-agent/commit/22d224c40437f2e865a70b0cf0f0991de4a69588))
+
+## [8.48.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.47.1...cli-v8.48.0) (2026-06-09)
+
+
+### Features
+
+* **ralph:** gate EXEC on ultrawork artifacts and L1 checkpoint ([31b5ff4](https://github.com/first-fluke/oh-my-agent/commit/31b5ff460c6df1b52d60a606de7995e7cfef91b3))
+
+
+### Bug Fixes
+
+* **hooks:** stop meta-discussion from activating persistent workflows ([2a7649b](https://github.com/first-fluke/oh-my-agent/commit/2a7649b3fa3996ce6605fd7e50cded1f3bbddda1))
+
+## [8.47.1](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.47.0...cli-v8.47.1) (2026-06-09)
+
+
+### Bug Fixes
+
+* **skills-installer:** add commandcode to HOOK_VENDORS ([4e0b1e5](https://github.com/first-fluke/oh-my-agent/commit/4e0b1e5872965e226d13dfe3916916a496347c2e))
+
+## [8.47.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.46.0...cli-v8.47.0) (2026-06-08)
+
+
+### Features
+
+* add commandcode vendor support ([27f072d](https://github.com/first-fluke/oh-my-agent/commit/27f072d5fd0486bb7dde2696f6416ae7930a5afe))
+* **install:** revamp preset options and vendor default selection ([860f20e](https://github.com/first-fluke/oh-my-agent/commit/860f20eb653558d79c4a1ac533251aa00114362a))
+
 ## [8.46.0](https://github.com/first-fluke/oh-my-agent/compare/cli-v8.45.1...cli-v8.46.0) (2026-06-08)
 
 

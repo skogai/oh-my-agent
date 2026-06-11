@@ -9,14 +9,21 @@
  *   cursor-only  → cursor
  *
  * Idempotent: skips when model_preset is already a canonical key or absent.
- * Creates a .bak backup of oma-config.yaml before writing.
+ * Backs up oma-config.yaml into `.agents/backup/010-rename-preset/` before writing.
  *
  * Historical note: `antigravity` previously aliased to `mixed`. As of the agy
  * CLI launch (Antigravity 2.0), `antigravity` is a first-class preset that
  * targets the agy binary directly — no rename is performed for it.
  */
-import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
+import { backupPathFromRoot } from "../../io/backup.js";
 import type { Migration } from "./index.js";
 
 // ---------------------------------------------------------------------------
@@ -78,12 +85,17 @@ export const migrateRenamePresetKeys: Migration = {
       return actions;
     }
 
-    // Create .bak backup before writing
-    const backupPath = `${omaConfigPath}.bak`;
+    // Back up into the canonical backup root before writing
+    const backupPath = backupPathFromRoot(
+      cwd,
+      "010-rename-preset",
+      "oma-config.yaml",
+    );
     try {
+      mkdirSync(dirname(backupPath), { recursive: true });
       copyFileSync(omaConfigPath, backupPath);
       actions.push(
-        `Backed up .agents/oma-config.yaml → .agents/oma-config.yaml.bak`,
+        `Backed up .agents/oma-config.yaml → .agents/backup/010-rename-preset/oma-config.yaml`,
       );
     } catch {
       // best-effort backup; proceed with rename anyway

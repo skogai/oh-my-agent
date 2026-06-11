@@ -234,7 +234,7 @@ export function getShippingStreak(
     "log",
     safeBranch,
     "--format=%ad",
-    "--date=format:%Y-%m-%d",
+    "--date=format-local:%Y-%m-%d",
     ...(author ? [`--author=${author}`] : []),
   ];
   const raw = execGitArgs(cwd, args);

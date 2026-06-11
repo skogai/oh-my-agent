@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { safeReadJson } from "../../utils/safe-json.js";
+import { isRecord } from "../../utils/type-guards.js";
 
 const AUTH_PATH = join(homedir(), ".grok", "auth.json");
 
@@ -18,37 +19,27 @@ export function isGrokAuthenticated(
     return true;
   }
 
-  if (!existsSync(AUTH_PATH)) {
+  // auth.json structure is an object where keys are issuer::client_id
+  // and values contain at minimum: key (access token) or refresh_token
+  const data = safeReadJson(AUTH_PATH);
+  if (!isRecord(data)) {
     return false;
   }
 
-  try {
-    const data = JSON.parse(readFileSync(AUTH_PATH, "utf-8"));
-
-    // auth.json structure is an object where keys are issuer::client_id
-    // and values contain at minimum: key (access token) or refresh_token
-    if (typeof data !== "object" || data === null) {
-      return false;
-    }
-
-    // Check if there's at least one entry with a token
-    for (const entry of Object.values(data)) {
-      if (entry && typeof entry === "object") {
-        const rec = entry as Record<string, unknown>;
-        if (typeof rec.key === "string" && rec.key.length > 0) {
-          return true;
-        }
-        if (
-          typeof rec.refresh_token === "string" &&
-          rec.refresh_token.length > 0
-        ) {
-          return true;
-        }
+  // Check if there's at least one entry with a token
+  for (const entry of Object.values(data)) {
+    if (isRecord(entry)) {
+      if (typeof entry.key === "string" && entry.key.length > 0) {
+        return true;
+      }
+      if (
+        typeof entry.refresh_token === "string" &&
+        entry.refresh_token.length > 0
+      ) {
+        return true;
       }
     }
-
-    return false;
-  } catch {
-    return false;
   }
+
+  return false;
 }

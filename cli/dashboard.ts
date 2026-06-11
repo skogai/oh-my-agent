@@ -104,9 +104,17 @@ export function startDashboard(
       try {
         const window = requestUrl.searchParams.get("window") || "7d";
         const tool = requestUrl.searchParams.get("tool") || undefined;
-        const top = requestUrl.searchParams.get("top")
-          ? Number.parseInt(requestUrl.searchParams.get("top") as string, 10)
-          : undefined;
+        const topRaw = requestUrl.searchParams.get("top");
+        let top: number | undefined;
+        if (topRaw !== null) {
+          const parsed = Number.parseInt(topRaw, 10);
+          if (!Number.isFinite(parsed)) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "top must be a finite integer" }));
+            return;
+          }
+          top = Math.min(200, Math.max(1, parsed));
+        }
         const output = await collectRecap({ window, tool, top });
         const graph = buildGraphData(output.entries, top);
         res.writeHead(200, { "Content-Type": "application/json" });
@@ -118,12 +126,18 @@ export function startDashboard(
     } else if (requestUrl.pathname === "/recap") {
       res.writeHead(200, {
         "Content-Type": "text/html",
+        "Content-Security-Policy":
+          "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:* ws://localhost:*; style-src 'self' 'unsafe-inline';",
+        "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "no-referrer",
       });
       res.end(withDashboardToken(RECAP_HTML, token));
     } else {
       res.writeHead(200, {
         "Content-Type": "text/html",
+        "Content-Security-Policy":
+          "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws://127.0.0.1:* ws://localhost:*; style-src 'self' 'unsafe-inline';",
+        "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "no-referrer",
       });
       res.end(withDashboardToken(DASHBOARD_HTML, token));
@@ -200,12 +214,12 @@ export function startDashboard(
       });
     });
 
-  process.on("SIGINT", () => {
+  process.once("SIGINT", () => {
     console.log("\nShutting down...");
     void close().then(() => process.exit(0));
     setTimeout(() => process.exit(1), 3000).unref();
   });
-  process.on("SIGTERM", () => process.emit("SIGINT"));
+  process.once("SIGTERM", () => process.emit("SIGINT"));
 
   server.on("error", (err: NodeJS.ErrnoException) => {
     if (err.code === "EADDRINUSE") {

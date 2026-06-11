@@ -1,5 +1,5 @@
 import * as fs from "node:fs";
-import { join, sep } from "node:path";
+import { dirname, join, parse, resolve, sep } from "node:path";
 
 /**
  * Normalize a filesystem path to POSIX (forward-slash) form so reason strings,
@@ -45,4 +45,24 @@ export function clearConflictingEntries(
   } catch {
     // Best-effort cleanup
   }
+}
+
+/**
+ * Walk up from `startDir` to the filesystem root looking for
+ * `<dir>/<relativePath>`; return the first existing match or null. The root
+ * directory itself is not checked (matches the historical behavior of the
+ * per-module copies this consolidates).
+ */
+export function findFileUpwards(
+  startDir: string,
+  relativePath: string,
+): string | null {
+  let current = resolve(startDir);
+  const root = parse(current).root;
+  while (current !== root) {
+    const candidate = join(current, relativePath);
+    if (fs.existsSync(candidate)) return candidate;
+    current = dirname(current);
+  }
+  return null;
 }

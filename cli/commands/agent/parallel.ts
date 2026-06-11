@@ -155,6 +155,7 @@ export async function parallelRun(
     });
 
     if (!child.pid) {
+      fs.closeSync(logStream);
       console.error(color.red(`[${idx}] Failed to spawn ${agent} process`));
       continue;
     }
@@ -205,7 +206,7 @@ export async function parallelRun(
     for (const { pid, agent } of childProcesses) {
       if (!isProcessRunning(pid)) continue;
       try {
-        process.kill(pid);
+        process.kill(pid, "SIGTERM");
         console.log(
           `${color.yellow("[Parallel]")} Killed PID ${pid} (${agent})`,
         );

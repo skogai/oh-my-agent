@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import color from "picocolors";
-import { findChromeExecutable } from "../search/strategies/browser.js";
+import { findChromeExecutable } from "../../io/chrome.js";
 
 interface CheckResult {
   name: string;

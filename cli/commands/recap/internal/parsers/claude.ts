@@ -37,7 +37,7 @@ function extractText(
 }
 
 interface SessionPair {
-  prefix: string; // first 80 chars of user prompt in session file
+  prompt: string; // full user prompt text from the session file
   response: string; // response preview
 }
 
@@ -97,7 +97,7 @@ function loadSessionResponses(
           if (msg?.role !== "user") continue;
           const resp = findResponse(msgs, i, "first");
           pairs.push({
-            prefix: msg.text.slice(0, 80),
+            prompt: msg.text,
             response: resp ? preview(resp) : "",
           });
         }
@@ -233,9 +233,13 @@ registerParser({
       if (raw.sessionId) {
         const pairs = sessionResponses.get(raw.sessionId);
         if (pairs) {
-          // Primary: match by prompt prefix.
-          const key = raw.prompt.slice(0, 80);
-          const prefixMatch = pairs.find((p) => p.prefix === key);
+          // Primary: match by full prompt text.
+          // The history.jsonl display field may be truncated, so we compare
+          // raw.prompt against the same-length prefix of the session file text
+          // to stay robust when display strings are shorter than the full text.
+          const prefixMatch = pairs.find(
+            (p) => p.prompt === raw.prompt || p.prompt.startsWith(raw.prompt),
+          );
           if (prefixMatch) {
             response = prefixMatch.response || undefined;
           } else {

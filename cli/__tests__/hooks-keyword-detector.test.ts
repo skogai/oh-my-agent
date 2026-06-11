@@ -15,8 +15,11 @@ const {
   escapeRegex,
   buildPatterns,
   buildRawPatterns,
+  buildInformationalPatterns,
   isInformationalContext,
   isAnalyticalQuestion,
+  isPastedContent,
+  isTechnicalReference,
   stripCodeBlocks,
   stripSystemEchoes,
   startsWithSlashCommand,
@@ -699,6 +702,238 @@ describe("keyword-detector", () => {
           ).toBe(false);
         }
       }
+    });
+  });
+
+  describe("meta-discussion false-positive regression (ultrawork/ralph)", () => {
+    // Live incident: a multi-turn discussion ABOUT the ultrawork/ralph
+    // workflows repeatedly activated those persistent workflows. Root cause:
+    // a workflow-name keyword is matched as a bare substring, with no
+    // distinction between "run ultrawork" and "why is ultrawork designed
+    // this way". Two ROOT-CAUSE fixes (no per-incident word lists):
+    //   RC1 — grammatical interrogative detection (isAnalyticalQuestion):
+    //         a first line that leads with an interrogative AND ends with '?'
+    //         is a question about a topic, not a command.
+    //   RC2 — the position guard (isPastedContent) is computed on the
+    //         ORIGINAL prompt, not the content-stripped text, which
+    //         stripCodeBlocks shrinks (pulling deep keywords under the limit).
+
+    // RC1 — grammatical interrogative: questions naming a workflow are
+    // suppressed regardless of topic words.
+    const questionDiscussions = [
+      "그리고 max_iterations = 5 (ralph 안전장치). 이걸 왜 지멋대로 설계하는거지?",
+      "왜 ralph 가 자꾸 트리거되는거야?",
+      "ralph랑 ultrawork 차이가 뭐야?",
+      "why is ultrawork triggering here?",
+      "what's wrong with the ralph workflow?",
+    ];
+    for (const prompt of questionDiscussions) {
+      it(`RC1 suppresses interrogative discussion: ${prompt.slice(0, 26)}…`, () => {
+        expect(isAnalyticalQuestion(prompt), prompt).toBe(true);
+      });
+    }
+
+    it("RC1 does NOT fire on commands that merely contain '?' mid-prompt", () => {
+      // A leading question followed by a real command must still activate:
+      // the first line does not END with '?'.
+      expect(
+        isAnalyticalQuestion("왜 안 고쳐져? ultrawork로 끝까지 고쳐줘"),
+      ).toBe(false);
+    });
+
+    it("RC2 suppresses a long declarative discussion via ORIGINAL position", () => {
+      // Faithful long meta-discussion: the keyword sits genuinely deep
+      // (>200 chars) in the user's prompt, but quoted/code spans before it
+      // get stripped, shrinking the text and pulling the keyword forward.
+      const longDiscussion =
+        '핵심부터: **prose로 쓰인 워크플로우는 본질적으로 "권고"라 에이전트가 ' +
+        "합리화로 우회할 수 있습니다.** 그래서 방어는 ① 행동 규칙으로 우회를 " +
+        '"막고", ② 기계적/검증가능 장치로 우회를 "탐지·차단"하는 두 축으로 ' +
+        '가야 합니다.\n## 1. 가장 강력 — "이탈 전 강제 질문" 룰\n이번 실패의 ' +
+        '본질은 *"환경이 불안정하다 → 내가 워크플로우를 축약한다"* 였습니다. ' +
+        "이걸 봉쇄하는 룰을 `CLAUDE.md` 또는 ralph/ultrawork 문서 최상단에 명시.";
+
+      const origIdx = normalizeForMatching(longDiscussion).indexOf("ralph");
+      const cleanedIdx = normalizeForMatching(
+        stripSystemEchoes(stripCodeBlocks(longDiscussion)),
+      ).indexOf("ralph");
+
+      // The bug: stripping pulls the keyword forward, past the 200 limit.
+      expect(origIdx).toBeGreaterThan(200);
+      expect(cleanedIdx).toBeLessThan(origIdx);
+      expect(cleanedIdx).toBeLessThan(200); // would have leaked pre-fix
+
+      // Post-fix run() evaluates the ORIGINAL position → suppressed.
+      const orig = normalizeForMatching(longDiscussion);
+      expect(isPastedContent(origIdx, true, orig.length)).toBe(true);
+      // Pre-fix behaviour (cleaned index) would NOT have suppressed it.
+      expect(isPastedContent(cleanedIdx, true, cleanedIdx + 50)).toBe(false);
+    });
+
+    it("still allows genuine persistent-workflow requests", () => {
+      // Real run requests put the workflow keyword near the START (command
+      // position) and are not interrogative — neither RC1 nor RC2 fires.
+      const genuine = [
+        "랄프로 끝까지 해줘",
+        "ralph this task",
+        "ultrawork로 로그인 기능 구현해줘",
+        "ulw 이 버그 끝까지 고쳐줘",
+        "왜 안 고쳐져? ultrawork로 끝까지 고쳐줘",
+        "정리해서 ultrawork로 리팩토링 해줘",
+        "ralph 돌려서 테스트 다 통과시켜",
+        "ultrawork 시작",
+        "이거 ralph로 끝까지 해줘",
+      ];
+      for (const prompt of genuine) {
+        expect(isAnalyticalQuestion(prompt), prompt).toBe(false);
+        const orig = normalizeForMatching(prompt);
+        for (const kw of ["ultrawork", "ralph", "ulw", "랄프"]) {
+          const idx = orig.indexOf(kw);
+          if (idx >= 0) {
+            expect(
+              isPastedContent(idx, true, orig.length),
+              `${prompt} :: ${kw}`,
+            ).toBe(false);
+          }
+        }
+      }
+    });
+  });
+
+  describe("RC3 — technical-reference false-positive regression (ralph)", () => {
+    // Live incident: a session DEVELOPING the ralph workflow (editing
+    // ralph.md, adding `oma ralph:verify`) re-triggered ralph persistent mode
+    // on every prompt that named those artifacts in plain text. Root cause:
+    // a workflow keyword inside a compound technical token (CLI subcommand,
+    // filename, path segment) is a reference to an artifact, not a request to
+    // run the workflow — but the word-boundary patterns treat ':', '.', '/'
+    // as boundaries, so `ralph:verify` and `ralph.md` matched like prose.
+
+    // Realistic match[0] shapes produced by buildPatterns boundaries: one
+    // non-word char captured on each side of the keyword.
+    function findMatch(text: string): { index: number; matchText: string } {
+      const pattern = /(?:^|[^\w-])ralph(?:$|[^\w-])/i;
+      const m = pattern.exec(text);
+      if (!m) throw new Error(`no ralph match in: ${text}`);
+      return { index: m.index, matchText: m[0] };
+    }
+
+    const technical = [
+      "확장해서 oma ralph:verify 같은 결정적 CLI 명령으로 내리세요",
+      "ralph.md 수정해줘",
+      "ralph.exec-tier 체크포인트를 등록해야 해요",
+      ".agents/workflows/ralph 파일 구조를 바꾸자",
+    ];
+    for (const prompt of technical) {
+      it(`suppresses technical reference: ${prompt.slice(0, 32)}…`, () => {
+        const { index, matchText } = findMatch(prompt);
+        expect(isTechnicalReference(prompt, index, matchText), prompt).toBe(
+          true,
+        );
+      });
+    }
+
+    const genuine = [
+      "ralph 돌려서 테스트 다 통과시켜", // plain keyword + space
+      "run ralph.", // sentence-ending period is not a file extension
+      "ralph: do this until done", // colon followed by space is prose
+      "이거 ralph로 끝까지 해줘", // CJK particle after keyword
+      "run /ralph now", // mid-text slash invocation (space before /)
+    ];
+    for (const prompt of genuine) {
+      it(`still allows genuine request: ${prompt.slice(0, 32)}…`, () => {
+        const { index, matchText } = findMatch(prompt);
+        expect(isTechnicalReference(prompt, index, matchText), prompt).toBe(
+          false,
+        );
+      });
+    }
+
+    it("[live incident] dev-work prompt is suppressed by RC3 + informational window", () => {
+      // Faithful reproduction of the prompt that re-triggered ralph
+      // (2026-06-09T22:57Z): first keyword occurrence is "ralph 아티팩트",
+      // which RC3 alone cannot catch (plain space after the keyword) — the
+      // informational window must catch it via 아티팩트; the second
+      // occurrence (ralph:verify) is caught by RC3.
+      const prompt =
+        "우선순위: 높음, 항목: prose 규율 → 기계적 강제로 이동. " +
+        "oma state:verify가 좋은 방향이니 확장해서 ralph 아티팩트 체크(Step 1.3) " +
+        "같은 것도 oma ralph:verify 같은 결정적 CLI 명령으로 내리세요";
+
+      const postFixInfo = ["아티팩트", "고도화", "artifact"].map(
+        (p) => new RegExp(p, "i"),
+      );
+
+      const first = findMatch(prompt);
+      expect(isTechnicalReference(prompt, first.index, first.matchText)).toBe(
+        false,
+      );
+      expect(isInformationalContext(prompt, first.index, postFixInfo)).toBe(
+        true,
+      );
+
+      const secondIdx = prompt.indexOf("ralph:verify");
+      expect(isTechnicalReference(prompt, secondIdx - 1, " ralph:")).toBe(true);
+    });
+
+    it("hyphenated tokens never match at the pattern level (ralph-state)", () => {
+      // The word-boundary regex excludes '-' so `ralph-state-*.json` cannot
+      // match at all — no RC3 needed for hyphen compounds.
+      const pattern = /(?:^|[^\w-])ralph(?:$|[^\w-])/i;
+      expect(pattern.test("rm .agents/state/ralph-state-5666c801.json")).toBe(
+        false,
+      );
+    });
+
+    it("[live incident] enhancement request is suppressed via 고도화", () => {
+      const prompt = "ralph 를 고도화할 부분이 있는지 확인해줘";
+      const postFixInfo = ["아티팩트", "고도화"].map((p) => new RegExp(p, "i"));
+      const { index } = findMatch(prompt);
+      expect(isInformationalContext(prompt, index, postFixInfo)).toBe(true);
+    });
+  });
+
+  describe("RC4 — informational patterns must not be gated by config language", () => {
+    // Live incident root cause: every prior ko suppression pattern (보강할,
+    // 에 대해, 아티팩트, …) was silently DEAD in projects configured with
+    // `language: en` (this repo included), because buildInformationalPatterns
+    // only loaded `*` + en + configLang. Users prompt in whichever language
+    // they think in — the config `language` controls the response language,
+    // not the prompt language. Suppression patterns are now merged across all
+    // languages: a Korean pattern can only ever match Korean text, so
+    // cross-language loading cannot over-suppress.
+    const rawPatterns = {
+      "*": ["artifact"],
+      en: ["what is"],
+      ko: ["아티팩트", "고도화"],
+      ja: ["とは"],
+    };
+    const config = {
+      informationalPatterns: rawPatterns,
+    } as unknown as Parameters<typeof buildInformationalPatterns>[0];
+
+    it("[AS-IS] config-language gating dropped ko patterns under language:en", () => {
+      // Frozen pre-fix behaviour: `*` + en only (lang === "en").
+      const preFix = [...rawPatterns["*"], ...rawPatterns.en].map(
+        (p) => new RegExp(escapeRegex(p), "i"),
+      );
+      const prompt = "확장해서 ralph 아티팩트 체크 같은 것도 만들어줘";
+      const idx = prompt.indexOf("ralph");
+      expect(isInformationalContext(prompt, idx, preFix)).toBe(false); // leaked
+    });
+
+    it("[TO-BE] all-language merge suppresses Korean dev-context under language:en", () => {
+      const patterns = buildInformationalPatterns(config);
+      const prompt = "확장해서 ralph 아티팩트 체크 같은 것도 만들어줘";
+      const idx = prompt.indexOf("ralph");
+      expect(isInformationalContext(prompt, idx, patterns)).toBe(true);
+    });
+
+    it("[TO-BE] cross-language load does not suppress unrelated prompts", () => {
+      const patterns = buildInformationalPatterns(config);
+      const prompt = "ralph 돌려서 테스트 다 통과시켜";
+      const idx = prompt.indexOf("ralph");
+      expect(isInformationalContext(prompt, idx, patterns)).toBe(false);
     });
   });
 

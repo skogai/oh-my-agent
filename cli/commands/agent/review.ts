@@ -149,7 +149,7 @@ export async function reviewAgent(options: {
 
   const cleanAndExit = () => {
     if (child.pid && isProcessRunning(child.pid)) {
-      process.kill(child.pid);
+      process.kill(child.pid, "SIGTERM");
     }
     unregisterSignalCleanup();
     cleanup();

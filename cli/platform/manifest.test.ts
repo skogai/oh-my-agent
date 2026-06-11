@@ -1,9 +1,10 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   diffArtifacts,
+  downloadFile,
   hasArtifactChanges,
   readArtifactDescription,
   readSkillDescription,
@@ -156,5 +157,32 @@ describe("readArtifactDescription", () => {
     expect(readWorkflowDescription(root, "plan")).toBe(
       "Plan workflow summary.",
     );
+  });
+});
+
+describe("downloadFile path containment", () => {
+  it("rejects a manifest path containing ../ traversal", async () => {
+    // Mock the HTTP layer so no network request is made.
+    // The containment check runs after the (mocked) download succeeds.
+    const { http } = await import("../io/http.js");
+    const getSpy = vi
+      .spyOn(http, "get")
+      .mockResolvedValue({ data: "content" } as never);
+
+    // Use a mock SHA256 that matches calculateSHA256("content").
+    const { calculateSHA256 } = await import("./manifest.js");
+    const sha256 = calculateSHA256("content");
+
+    const installRoot = mkdtempSync(join(tmpdir(), "oma-dl-test-"));
+    tempRoots.push(installRoot);
+
+    const result = await downloadFile(
+      { path: "../../../etc/passwd", sha256, size: 7 },
+      installRoot,
+    );
+
+    getSpy.mockRestore();
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/outside the project root/);
   });
 });

@@ -59,6 +59,9 @@ describe("required decision verifier", () => {
         "impl-plan-locked": [{ subject: "ultrawork.impl-plan-locked" }],
         "refine-outcome": [{ subject: "ultrawork.refine-outcome" }],
       },
+      ralph: {
+        "exec-delegated": [{ subject: "ralph.exec-delegated" }],
+      },
       orchestrate: {
         "fanout-strategy": [{ subject: "orchestrate.fanout-strategy" }],
         "qa-verdict": [{ subject: "orchestrate.qa-verdict" }],

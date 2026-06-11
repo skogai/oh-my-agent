@@ -125,7 +125,7 @@ export async function cleanup(
   const killProcess = async (pid: number) => {
     if (dryRun) return;
     try {
-      process.kill(pid);
+      process.kill(pid, "SIGTERM");
     } catch {}
     await new Promise((resolve) => setTimeout(resolve, 1000));
     try {

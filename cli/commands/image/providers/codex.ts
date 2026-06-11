@@ -237,6 +237,8 @@ export function runCapture(
     });
     const timer = timeoutMs
       ? setTimeout(() => {
+          child.stdout?.destroy();
+          child.stderr?.destroy();
           child.kill("SIGTERM");
           resolve({ code: 124, stdout, stderr, timedOut: true });
         }, timeoutMs)

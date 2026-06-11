@@ -1,6 +1,12 @@
 import type { Command } from "commander";
 import color from "picocolors";
+import { EXIT_CODES, exitCodeForStatus } from "../../utils/exit-codes.js";
 import { codeSearch } from "./code.js";
+import {
+  checkBinary,
+  checkCurlCffi,
+  type DoctorCheck,
+} from "./doctor-checks.js";
 import { fetchMedia } from "./media.js";
 import { metadataFromUrl, parseMetadata } from "./metadata.js";
 import { runPipeline } from "./pipeline.js";
@@ -70,17 +76,45 @@ function printResult(result: unknown, pretty: boolean) {
 }
 
 function attachExitCode(result: FetchResult | null): void {
-  if (!result) {
-    process.exitCode = 1;
-    return;
-  }
-  if (result.status === "ok") process.exitCode = 0;
-  else if (result.status === "blocked") process.exitCode = 2;
-  else if (result.status === "not-found") process.exitCode = 3;
-  else if (result.status === "invalid-input") process.exitCode = 4;
-  else if (result.status === "auth-required") process.exitCode = 5;
-  else if (result.status === "timeout") process.exitCode = 6;
-  else process.exitCode = 1;
+  process.exitCode = result
+    ? exitCodeForStatus(result.status)
+    : EXIT_CODES.generic;
+}
+
+interface UrlActionOpts {
+  timeout?: string;
+  locale?: string;
+  pretty?: boolean;
+}
+
+/**
+ * Shared action shape for the URL-based subcommands: parse the URL, build
+ * the fetch context, run the strategy, print the JSON result, and map the
+ * result status to the standard exit code. Thrown errors print red and set
+ * the generic exit code.
+ */
+function urlAction<O extends UrlActionOpts>(
+  run: (url: URL, ctx: FetchContext, opts: O) => Promise<FetchResult>,
+  options: { stripContent?: boolean } = {},
+): (urlArg: string, opts: O) => Promise<void> {
+  return async (urlArg, opts) => {
+    try {
+      const url = parseUrl(urlArg);
+      const ctx = buildContext(opts);
+      const result = await run(url, ctx, opts);
+      if (options.stripContent) {
+        const { content: _content, ...rest } = result;
+        void _content;
+        printResult(rest, Boolean(opts.pretty));
+      } else {
+        printResult(result, Boolean(opts.pretty));
+      }
+      attachExitCode(result);
+    } catch (err) {
+      console.error(color.red((err as Error).message));
+      process.exitCode = 1;
+    }
+  };
 }
 
 export function registerSearchCommand(program: Command): void {
@@ -101,32 +135,22 @@ export function registerSearchCommand(program: Command): void {
     .option("--locale <value>", "Accept-Language header", "en-US,en;q=0.9")
     .option("--pretty", "Pretty-print JSON output")
     .action(
-      async (
-        urlArg: string,
-        opts: {
-          only?: string;
-          skip?: string;
-          includeArchive?: boolean;
-          timeout?: string;
-          locale?: string;
-          pretty?: boolean;
-        },
-      ) => {
-        try {
-          const url = parseUrl(urlArg);
-          const ctx = buildContext(opts);
-          const result = await runPipeline(url, ctx, {
+      urlAction(
+        (
+          url,
+          ctx,
+          opts: UrlActionOpts & {
+            only?: string;
+            skip?: string;
+            includeArchive?: boolean;
+          },
+        ) =>
+          runPipeline(url, ctx, {
             only: parseStrategyList(opts.only),
             skip: parseStrategyList(opts.skip),
             includeArchive: opts.includeArchive,
-          });
-          printResult(result, Boolean(opts.pretty));
-          attachExitCode(result);
-        } catch (err) {
-          console.error(color.red((err as Error).message));
-          process.exitCode = 1;
-        }
-      },
+          }),
+      ),
     );
 
   search
@@ -147,13 +171,13 @@ export function registerSearchCommand(program: Command): void {
             console.error(
               color.yellow(`No API handler matches host ${url.hostname}`),
             );
-            process.exitCode = 3;
+            process.exitCode = EXIT_CODES.notFound;
             return;
           }
           const ctx = buildContext(opts);
           const result = await apiStrategy(url, ctx);
           if (!result) {
-            process.exitCode = 3;
+            process.exitCode = EXIT_CODES.notFound;
             return;
           }
           printResult(result, Boolean(opts.pretty));
@@ -201,23 +225,9 @@ export function registerSearchCommand(program: Command): void {
     .option("--locale <value>", "Accept-Language", "en-US,en;q=0.9")
     .option("--pretty", "Pretty-print JSON")
     .action(
-      async (
-        urlArg: string,
-        opts: { timeout?: string; locale?: string; pretty?: boolean },
-      ) => {
-        try {
-          const url = parseUrl(urlArg);
-          const ctx = buildContext(opts);
-          const result = await metadataFromUrl(url, ctx);
-          const { content: _content, ...rest } = result;
-          void _content;
-          printResult(rest, Boolean(opts.pretty));
-          attachExitCode(result);
-        } catch (err) {
-          console.error(color.red((err as Error).message));
-          process.exitCode = 1;
-        }
-      },
+      urlAction((url, ctx) => metadataFromUrl(url, ctx), {
+        stripContent: true,
+      }),
     );
 
   search
@@ -227,23 +237,7 @@ export function registerSearchCommand(program: Command): void {
     .option("--locale <value>", "Accept-Language", "en-US,en;q=0.9")
     .option("--pretty", "Pretty-print JSON")
     .action(
-      async (
-        urlArg: string,
-        opts: { timeout?: string; locale?: string; pretty?: boolean },
-      ) => {
-        try {
-          const url = parseUrl(urlArg);
-          const ctx = buildContext(opts);
-          const result = await discoverFeed(url, ctx);
-          const { content: _content, ...rest } = result;
-          void _content;
-          printResult(rest, Boolean(opts.pretty));
-          attachExitCode(result);
-        } catch (err) {
-          console.error(color.red((err as Error).message));
-          process.exitCode = 1;
-        }
-      },
+      urlAction((url, ctx) => discoverFeed(url, ctx), { stripContent: true }),
     );
 
   search
@@ -264,37 +258,29 @@ export function registerSearchCommand(program: Command): void {
     .option("--timeout <seconds>", "Timeout", "30")
     .option("--pretty", "Pretty-print JSON")
     .action(
-      async (
-        urlArg: string,
-        opts: {
-          subs?: boolean;
-          subLang?: string;
-          format?: string;
-          timeout?: string;
-          pretty?: boolean;
-        },
-      ) => {
-        try {
-          const url = parseUrl(urlArg);
-          const ctx = buildContext(opts);
+      urlAction(
+        (
+          url,
+          ctx,
+          opts: UrlActionOpts & {
+            subs?: boolean;
+            subLang?: string;
+            format?: string;
+          },
+        ) => {
           const subLangs = opts.subLang
             ? opts.subLang
                 .split(",")
                 .map((s) => s.trim())
                 .filter(Boolean)
             : undefined;
-          const result = await fetchMedia(url, ctx, {
+          return fetchMedia(url, ctx, {
             subtitles: opts.subs,
             ...(subLangs ? { subLangs } : {}),
             ...(opts.format ? { format: opts.format } : {}),
           });
-          printResult(result, Boolean(opts.pretty));
-          attachExitCode(result);
-        } catch (err) {
-          console.error(color.red((err as Error).message));
-          process.exitCode = 1;
-        }
-      },
+        },
+      ),
     );
 
   search
@@ -303,23 +289,7 @@ export function registerSearchCommand(program: Command): void {
     .option("--timeout <seconds>", "Timeout", "15")
     .option("--locale <value>", "Accept-Language", "en-US,en;q=0.9")
     .option("--pretty", "Pretty-print JSON")
-    .action(
-      async (
-        urlArg: string,
-        opts: { timeout?: string; locale?: string; pretty?: boolean },
-      ) => {
-        try {
-          const url = parseUrl(urlArg);
-          const ctx = buildContext(opts);
-          const result = await archiveStrategy(url, ctx);
-          printResult(result, Boolean(opts.pretty));
-          attachExitCode(result);
-        } catch (err) {
-          console.error(color.red((err as Error).message));
-          process.exitCode = 1;
-        }
-      },
-    );
+    .action(urlAction((url, ctx) => archiveStrategy(url, ctx)));
 
   search
     .command("trust <domain>")
@@ -369,11 +339,7 @@ export function registerSearchCommand(program: Command): void {
     .command("doctor")
     .description("Check dependencies (Chrome, python3 curl_cffi, yt-dlp, gh)")
     .action(async () => {
-      const checks: Array<{
-        name: string;
-        ok: boolean;
-        detail: string;
-      }> = [];
+      const checks: DoctorCheck[] = [];
 
       const chrome = findChromeExecutable();
       checks.push({
@@ -396,66 +362,3 @@ export function registerSearchCommand(program: Command): void {
 }
 
 export { parseFeed, parseMetadata };
-
-async function checkBinary(
-  bin: string,
-  args: string[],
-): Promise<{ name: string; ok: boolean; detail: string }> {
-  return new Promise((resolve) => {
-    const { spawn } =
-      require("node:child_process") as typeof import("node:child_process");
-    const child = spawn(bin, args, { stdio: ["ignore", "pipe", "pipe"] });
-    let out = "";
-    child.stdout?.on("data", (chunk: Buffer) => {
-      out += chunk.toString();
-    });
-    child.on("error", () =>
-      resolve({ name: bin, ok: false, detail: "not found" }),
-    );
-    child.on("close", (code: number | null) => {
-      if (code === 0) resolve({ name: bin, ok: true, detail: out.trim() });
-      else resolve({ name: bin, ok: false, detail: `exit code ${code}` });
-    });
-  });
-}
-
-async function checkCurlCffi(): Promise<{
-  name: string;
-  ok: boolean;
-  detail: string;
-}> {
-  return new Promise((resolve) => {
-    const { spawn } =
-      require("node:child_process") as typeof import("node:child_process");
-    const child = spawn(
-      "python3",
-      ["-c", "import curl_cffi; print(curl_cffi.__version__)"],
-      { stdio: ["ignore", "pipe", "pipe"] },
-    );
-    let out = "";
-    child.stdout?.on("data", (chunk: Buffer) => {
-      out += chunk.toString();
-    });
-    child.on("error", () =>
-      resolve({
-        name: "curl_cffi",
-        ok: false,
-        detail: "python3 not found",
-      }),
-    );
-    child.on("close", (code: number | null) => {
-      if (code === 0)
-        resolve({
-          name: "curl_cffi",
-          ok: true,
-          detail: `v${out.trim()}`,
-        });
-      else
-        resolve({
-          name: "curl_cffi",
-          ok: false,
-          detail: "not installed (pip install curl_cffi)",
-        });
-    });
-  });
-}

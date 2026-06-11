@@ -80,8 +80,8 @@ describe("migrateSharedLayout", () => {
     const backupPath = join(
       root,
       ".agents",
-      ".migration-backup",
-      "shared-layout-v2",
+      "backup",
+      "002-shared-layout",
       "skills",
       "_shared",
       "phase-gates.md",
@@ -98,7 +98,7 @@ describe("migrateSharedLayout", () => {
     const actions = migrateSharedLayout(root);
 
     expect(actions).toContain(
-      ".agents/skills/_shared/phase-gates.md → .agents/.migration-backup/shared-layout-v2/skills/_shared/phase-gates.md (backup)",
+      ".agents/skills/_shared/phase-gates.md → .agents/backup/002-shared-layout/skills/_shared/phase-gates.md (backup)",
     );
     expect(existsSync(oldPath)).toBe(false);
     expect(readFileSync(newPath, "utf-8")).toBe("new canonical content\n");

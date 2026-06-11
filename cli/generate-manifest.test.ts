@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { createManifest, REPOSITORY_URL } from "./generate-manifest.js";
+import {
+  createManifest,
+  isExcluded,
+  REPOSITORY_URL,
+} from "./generate-manifest.js";
 
 function readJson(path: URL) {
   return JSON.parse(readFileSync(path, "utf-8")) as Record<string, unknown>;
@@ -35,6 +39,30 @@ describe("package metadata", () => {
     expect(workspacePackage.name).toBe("oh-my-agent-workspace");
     const cliPackage = readJson(new URL("./package.json", import.meta.url));
     expect(workspacePackage.version).toBe(cliPackage.version);
+  });
+});
+
+describe("excluded patterns", () => {
+  it("should exclude local runtime state from the manifest", () => {
+    expect(
+      isExcluded(".agents/state/sessions/oma-00mq6mk0b9w9hj319d/events.jsonl"),
+    ).toBe(true);
+    expect(isExcluded(".agents/state/keyword-detector-state.json")).toBe(true);
+    expect(isExcluded(".agents/state/skill-sessions.json")).toBe(true);
+  });
+
+  it("should exclude the install-generated hooks.json but not hook sources", () => {
+    expect(isExcluded(".agents/hooks.json")).toBe(true);
+    expect(isExcluded(".agents/hooks/core/keyword-detector.ts")).toBe(false);
+    expect(isExcluded(".agents/hooks/core/triggers.json")).toBe(false);
+  });
+
+  it("should not exclude shipped files whose names merely contain 'state'", () => {
+    expect(isExcluded(".agents/workflows/stack-set.md")).toBe(false);
+    expect(isExcluded(".agents/skills/oma-pm/resources/state-machine.md")).toBe(
+      false,
+    );
+    expect(isExcluded(".agents/workflows/ralph.md")).toBe(false);
   });
 });
 

@@ -16,12 +16,14 @@ import {
   metaPath,
   readIndex,
   sessionDir,
+  sessionsDir,
 } from "../../state/events.js";
 import {
   activateStateSession,
   archiveStateSessions,
   collectArchivedState,
   collectState,
+  isValidSid,
   listInjectLogs,
   parseOlderThan,
   purgeStateSessions,
@@ -464,5 +466,89 @@ describe("state command helpers", () => {
     expect(
       renderInjectLogView(viewInjectLog("oma-nolog", { projectDir })),
     ).toContain("(none)");
+  });
+});
+
+describe("isValidSid", () => {
+  it("accepts typical oma session ids", () => {
+    expect(isValidSid("oma-main")).toBe(true);
+    expect(isValidSid("oma-view")).toBe(true);
+    expect(isValidSid("sid-1")).toBe(true);
+    expect(isValidSid("oma-active-old")).toBe(true);
+    expect(isValidSid("Session123")).toBe(true);
+    expect(isValidSid("a")).toBe(true);
+    expect(isValidSid("a.b-c_d")).toBe(true);
+  });
+
+  it("rejects names containing path traversal (..) sequences", () => {
+    expect(isValidSid("..")).toBe(false);
+    expect(isValidSid("../etc")).toBe(false);
+    expect(isValidSid("foo/../bar")).toBe(false);
+    expect(isValidSid("oma-..main")).toBe(false);
+  });
+
+  it("rejects names with disallowed characters", () => {
+    expect(isValidSid("foo/bar")).toBe(false);
+    expect(isValidSid("foo\\bar")).toBe(false);
+    expect(isValidSid("foo bar")).toBe(false);
+    expect(isValidSid("foo;bar")).toBe(false);
+    expect(isValidSid("")).toBe(false);
+  });
+
+  it("rejects names longer than 128 characters", () => {
+    const long = "a".repeat(129);
+    expect(isValidSid(long)).toBe(false);
+    const exact = "a".repeat(128);
+    expect(isValidSid(exact)).toBe(true);
+  });
+});
+
+describe("collectState / repairStateSessions sid filtering", () => {
+  let projectDir: string;
+
+  beforeEach(() => {
+    projectDir = mkdtempSync(join(tmpdir(), "oma-sid-filter-"));
+  });
+
+  afterEach(() => {
+    rmSync(projectDir, { recursive: true, force: true });
+  });
+
+  it("collectState ignores directories with path-traversal names", () => {
+    activateWorkflowSession({
+      projectDir,
+      sid: "oma-safe",
+      workflow: "work",
+    });
+
+    // Manually create a directory with a dangerous name inside the sessions dir
+    const dangerous = join(sessionsDir(projectDir), "..evil");
+    mkdirSync(dangerous, { recursive: true });
+
+    const state = collectState(projectDir);
+    const sids = state.sessions.map((s) => s.sid);
+    expect(sids).toContain("oma-safe");
+    expect(sids).not.toContain("..evil");
+  });
+
+  it("repairStateSessions ignores directories with path-traversal names", () => {
+    activateWorkflowSession({
+      projectDir,
+      sid: "oma-repair",
+      workflow: "work",
+    });
+
+    // Create a dir whose name starts with ".." — isValidSid rejects it
+    const sessDir = sessionsDir(projectDir);
+    const dangerous = join(sessDir, "..escape");
+    mkdirSync(dangerous, { recursive: true });
+
+    const result = repairStateSessions({ projectDir, dryRun: true });
+    // Only oma-repair should appear; the traversal name must never be processed
+    const allSids = [
+      ...result.repairedMeta,
+      ...result.quarantinedEvents.map((q) => q.sid),
+    ];
+    expect(allSids.some((s) => s.includes("..") || s === "escape")).toBe(false);
   });
 });

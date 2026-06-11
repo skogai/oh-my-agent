@@ -37,3 +37,12 @@ export function safeReadJson<T = unknown>(
   if (validator && !validator(parsed)) return null;
   return parsed as T;
 }
+
+/** Parse a JSON string, returning `null` instead of throwing on bad input. */
+export function safeParseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}

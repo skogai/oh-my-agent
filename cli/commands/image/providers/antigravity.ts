@@ -4,6 +4,7 @@ import {
   mkdtemp,
   readFile,
   rename,
+  rm,
   stat,
 } from "node:fs/promises";
 import os from "node:os";
@@ -71,74 +72,80 @@ export class AntigravityProvider implements VendorProvider {
     );
 
     const refs = await prepareReferenceDir(input.referenceImages ?? []);
-    const instruction = buildInstruction({
-      prompt: input.prompt,
-      size: input.size,
-      quality: input.quality,
-      n: input.n,
-      targets,
-      refPaths: refs?.refPaths ?? [],
-    });
-
-    const timeoutMs = (input.timeoutSec ?? 180) * 1000;
-    const args = [
-      "--dangerously-skip-permissions",
-      "--add-dir",
-      input.outDir,
-      "--print-timeout",
-      `${Math.ceil(timeoutMs / 1000)}s`,
-    ];
-    if (refs) args.push("--add-dir", refs.dir);
-    args.push("-p", instruction);
-
-    const start = Date.now();
-    // Force cwd to outDir so agy doesn't pick up a "recently active workspace"
-    // (e.g., the project we ran `oma image` from) and confuse its agent loop
-    // with that workspace's CLAUDE.md / docs / test commands.
-    const res = await runCapture("agy", args, input.signal, timeoutMs, {
-      cwd: input.outDir,
-    });
-    const durationMs = Date.now() - start;
-
-    if (res.timedOut)
-      throw { kind: "timeout", after_ms: timeoutMs } as VendorError;
-    if (res.code !== 0) throw classifyAgyError(res);
-
-    const replyKind = classifyReplyKeyword(res.stdout);
-    if (replyKind) throw replyKind;
-
-    const results: GenerateResult[] = [];
-    for (let i = 0; i < targets.length; i += 1) {
-      const src = targets[i] as string;
-      const st = await stat(src).catch(() => null);
-      if (!st || st.size === 0) {
-        throw {
-          kind: "other",
-          cause: new Error(
-            `agy did not produce image[${i}] at ${src}. stdout: ${res.stdout.slice(0, 400)}`,
-          ),
-        } as VendorError;
-      }
-      const { ext, mime } = await detectImageFormat(src);
-      const finalPath = src.replace(/\.img$/, `.${ext}`);
-      if (finalPath !== src) await rename(src, finalPath);
-      results.push({
-        vendor: this.name,
-        model: "agy-internal",
-        strategy: "agy-print",
-        strategyAttempts: [
-          {
-            strategy: "agy-print",
-            status: "ok",
-            duration_ms: Math.round(durationMs / targets.length),
-          },
-        ],
-        filePath: finalPath,
-        mime,
-        durationMs,
+    try {
+      const instruction = buildInstruction({
+        prompt: input.prompt,
+        size: input.size,
+        quality: input.quality,
+        n: input.n,
+        targets,
+        refPaths: refs?.refPaths ?? [],
       });
+
+      const timeoutMs = (input.timeoutSec ?? 180) * 1000;
+      const args = [
+        "--dangerously-skip-permissions",
+        "--add-dir",
+        input.outDir,
+        "--print-timeout",
+        `${Math.ceil(timeoutMs / 1000)}s`,
+      ];
+      if (refs) args.push("--add-dir", refs.dir);
+      args.push("-p", instruction);
+
+      const start = Date.now();
+      // Force cwd to outDir so agy doesn't pick up a "recently active workspace"
+      // (e.g., the project we ran `oma image` from) and confuse its agent loop
+      // with that workspace's CLAUDE.md / docs / test commands.
+      const res = await runCapture("agy", args, input.signal, timeoutMs, {
+        cwd: input.outDir,
+      });
+      const durationMs = Date.now() - start;
+
+      if (res.timedOut)
+        throw { kind: "timeout", after_ms: timeoutMs } as VendorError;
+      if (res.code !== 0) throw classifyAgyError(res);
+
+      const replyKind = classifyReplyKeyword(res.stdout);
+      if (replyKind) throw replyKind;
+
+      const results: GenerateResult[] = [];
+      for (let i = 0; i < targets.length; i += 1) {
+        const src = targets[i] as string;
+        const st = await stat(src).catch(() => null);
+        if (!st || st.size === 0) {
+          throw {
+            kind: "other",
+            cause: new Error(
+              `agy did not produce image[${i}] at ${src}. stdout: ${res.stdout.slice(0, 400)}`,
+            ),
+          } as VendorError;
+        }
+        const { ext, mime } = await detectImageFormat(src);
+        const finalPath = src.replace(/\.img$/, `.${ext}`);
+        if (finalPath !== src) await rename(src, finalPath);
+        results.push({
+          vendor: this.name,
+          model: "agy-internal",
+          strategy: "agy-print",
+          strategyAttempts: [
+            {
+              strategy: "agy-print",
+              status: "ok",
+              duration_ms: Math.round(durationMs / targets.length),
+            },
+          ],
+          filePath: finalPath,
+          mime,
+          durationMs,
+        });
+      }
+      return results;
+    } finally {
+      if (refs) {
+        await rm(refs.dir, { recursive: true, force: true }).catch(() => {});
+      }
     }
-    return results;
   }
 }
 

@@ -1,6 +1,10 @@
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { sha256Hex } from "../../utils/hash.js";
+import { isoWithOffset } from "../../utils/run-naming.js";
+
+export { isoWithOffset } from "../../utils/run-naming.js";
+
 import type { Manifest, ManifestRun } from "./types.js";
 
 export interface WriteManifestArgs {
@@ -39,16 +43,4 @@ export async function writeManifest(args: WriteManifestArgs): Promise<string> {
     "utf8",
   );
   return manifestPath;
-}
-
-export function isoWithOffset(d: Date): string {
-  const pad = (n: number, w = 2) => String(n).padStart(w, "0");
-  const offsetMin = -d.getTimezoneOffset();
-  const sign = offsetMin >= 0 ? "+" : "-";
-  const abs = Math.abs(offsetMin);
-  const offset = `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
-  return (
-    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
-    `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${offset}`
-  );
 }

@@ -1,8 +1,15 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  rmSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
+  entriesFromAgentTranscript,
   extractMessageContent,
   extractUserPrompt,
   projectSlugToName,
@@ -333,5 +340,45 @@ describe("cursor store locking (D68)", () => {
     expect(lockWarning).toContain("--force-partial");
 
     rmSync(join(tempHome, ".cursor"), { recursive: true, force: true });
+  });
+});
+
+describe("entriesFromAgentTranscript timestamps", () => {
+  it("stamps a single-turn session at file birth, not file mtime", () => {
+    const dir = join(tempHome, "transcript-single");
+    mkdirSync(dir, { recursive: true });
+    const filePath = join(dir, "session.jsonl");
+    writeFileSync(
+      filePath,
+      [
+        JSON.stringify({
+          role: "user",
+          message: { content: "hello single turn" },
+        }),
+        JSON.stringify({
+          role: "assistant",
+          message: { content: "hi there" },
+        }),
+      ].join("\n"),
+    );
+    // Push mtime one hour past creation to simulate a long-running session.
+    const birth = statSync(filePath).birthtimeMs || statSync(filePath).ctimeMs;
+    const laterSec = (birth + 60 * 60 * 1000) / 1000;
+    utimesSync(filePath, laterSec, laterSec);
+
+    const entries = entriesFromAgentTranscript(
+      { filePath, projectSlug: "Users-alice-Documents-demo", sessionId: "s1" },
+      0,
+      Number.MAX_SAFE_INTEGER,
+    );
+
+    expect(entries).toHaveLength(1);
+    const entry = entries[0];
+    // Within 5s of birth; far (>30min) from the mtime an unfixed parser used.
+    expect(Math.abs((entry?.timestamp ?? 0) - birth)).toBeLessThan(5000);
+    expect(
+      statSync(filePath).mtimeMs - (entry?.timestamp ?? 0),
+    ).toBeGreaterThan(30 * 60 * 1000);
+    rmSync(dir, { recursive: true, force: true });
   });
 });

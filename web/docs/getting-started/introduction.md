@@ -181,7 +181,7 @@ The HUD is powered by `.claude/hooks/hud.ts` using Claude Code's `statusLine` ho
 
 ## Automatic workflow detection
 
-You do not need to type `/command` to trigger workflows. oh-my-agent's hook system scans your natural language input against keyword triggers defined in `.claude/hooks/triggers.json` (and the equivalent file for each vendor), supporting 11 languages (English, Korean, Japanese, Chinese, Spanish, French, German, Portuguese, Russian, Dutch, Polish).
+You do not need to type `/command` to trigger workflows. oh-my-agent's hook system scans your natural language input against keyword triggers defined in `.agents/hooks/core/triggers.json` (inlined into the `oma` binary and shared by every vendor), supporting 11 languages (English, Korean, Japanese, Chinese, Spanish, French, German, Portuguese, Russian, Dutch, Polish).
 
 - **Actionable input** (e.g., "plan the auth feature") → automatically loads the workflow
 - **Informational input** (e.g., "what is orchestrate?") → filtered out, no workflow triggered

@@ -66,6 +66,8 @@ const skillsState = vi.hoisted(() => ({
     { name: "oma-pm", desc: "PM skill" },
   ]),
   installShared: vi.fn(),
+  installHooks: vi.fn(),
+  installAgents: vi.fn(),
   installWorkflows: vi.fn(),
   installCopilotWorkflowPrompts: vi.fn(),
   installRules: vi.fn(),
@@ -188,10 +190,10 @@ describe("install home policy", () => {
       .mockResolvedValueOnce("en")
       .mockResolvedValueOnce("claude")
       .mockResolvedValueOnce("custom");
-    // 2 multiselect prompts: skills, vendors
+    // 2 multiselect prompts: vendors (after preset), skills (after project type)
     promptState.multiselect
-      .mockResolvedValueOnce(["oma-frontend"])
-      .mockResolvedValueOnce(["gemini"]);
+      .mockResolvedValueOnce(["gemini"])
+      .mockResolvedValueOnce(["oma-frontend"]);
     // Default: any consent prompt receives "false"
     promptState.confirm.mockResolvedValue(false);
 
@@ -242,8 +244,8 @@ describe("install home policy", () => {
   it("does NOT add hermes to selectedClis when consent declined", async () => {
     promptState.multiselect.mockReset();
     promptState.multiselect
-      .mockResolvedValueOnce(["oma-frontend"])
-      .mockResolvedValueOnce(["hermes"]);
+      .mockResolvedValueOnce(["hermes"])
+      .mockResolvedValueOnce(["oma-frontend"]);
     promptState.confirm.mockResolvedValue(false); // consent denied
 
     await install();
@@ -260,8 +262,8 @@ describe("install home policy", () => {
   it("adds hermes to selectedClis when consent granted", async () => {
     promptState.multiselect.mockReset();
     promptState.multiselect
-      .mockResolvedValueOnce(["oma-frontend"])
-      .mockResolvedValueOnce(["hermes"]);
+      .mockResolvedValueOnce(["hermes"])
+      .mockResolvedValueOnce(["oma-frontend"]);
     promptState.confirm.mockResolvedValue(true); // consent granted
 
     await install();
@@ -274,8 +276,8 @@ describe("install home policy", () => {
   it("never passes hermes to installVendorAdaptations (no hook bridge)", async () => {
     promptState.multiselect.mockReset();
     promptState.multiselect
-      .mockResolvedValueOnce(["oma-frontend"])
-      .mockResolvedValueOnce(["claude", "hermes"]);
+      .mockResolvedValueOnce(["claude", "hermes"])
+      .mockResolvedValueOnce(["oma-frontend"]);
     promptState.confirm.mockResolvedValue(true); // hermes consent granted
 
     await install();
@@ -291,8 +293,8 @@ describe("install home policy", () => {
   it("isolates HOME write — gemini selected does NOT trigger gemini HOME write", async () => {
     promptState.multiselect.mockReset();
     promptState.multiselect
-      .mockResolvedValueOnce(["oma-frontend"])
-      .mockResolvedValueOnce(["gemini", "hermes"]);
+      .mockResolvedValueOnce(["gemini", "hermes"])
+      .mockResolvedValueOnce(["oma-frontend"]);
     promptState.confirm.mockResolvedValue(true); // hermes consent granted
 
     await install();

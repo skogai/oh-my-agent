@@ -16,7 +16,7 @@
 //  8.  Customized defaults.yaml → custom_presets.user-customized + WARN
 //  9.  Empty oma-config.yaml (only language: en) → model_preset added
 // 10.  Idempotent re-run: model_preset present → skip, no modifications
-// 11.  Failure marker: .backup-pre-008-FAILED present → refuses to run
+// 11.  Failure marker: backup/008-model-preset/FAILED present → refuses to run
 // 12.  models.yaml inline → oma-config.yaml.models populated
 // 13.  .agents/config/ removed when empty after migration
 // 14.  .agents/config/ preserved when non-yaml files remain
@@ -386,16 +386,18 @@ describe("migration 008 — model_preset", () => {
   // -------------------------------------------------------------------------
   // Fixture 11: failure marker → refuses to run
   // -------------------------------------------------------------------------
-  it("(11) .backup-pre-008-FAILED present → migration refuses to run, returns empty actions", () => {
+  it("(11) failure marker present → migration refuses to run, returns empty actions", () => {
     const root = makeTempRoot();
     tempRoots.push(root);
     scaffoldAgentsDir(root);
 
     writeOmaConfig(root, "language: en\n");
 
-    // Write failure marker
+    // Write failure marker at the canonical backup-root location
+    const markerDir = join(root, ".agents", "backup", "008-model-preset");
+    mkdirSync(markerDir, { recursive: true });
     writeFileSync(
-      join(root, ".agents", ".backup-pre-008-FAILED"),
+      join(markerDir, "FAILED"),
       "Migration 008 failed at 2026-04-25T00:00:00Z\n",
       "utf-8",
     );
@@ -405,7 +407,7 @@ describe("migration 008 — model_preset", () => {
 
     expect(actions).toHaveLength(0);
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining(".backup-pre-008-FAILED"),
+      expect.stringContaining(join("backup", "008-model-preset", "FAILED")),
     );
 
     // oma-config.yaml must be unmodified (no model_preset added)
@@ -508,11 +510,11 @@ describe("migration 008 — model_preset", () => {
     const pidDescriptor = Object.getOwnPropertyDescriptor(process, "pid");
     Object.defineProperty(process, "pid", { value: 11111, configurable: true });
     const actions1 = runMigration(root1);
-    const backupAction1 = actions1.find((a) => a.includes(".backup-pre-008-"));
+    const backupAction1 = actions1.find((a) => a.includes("008-model-preset"));
 
     Object.defineProperty(process, "pid", { value: 22222, configurable: true });
     const actions2 = runMigration(root2);
-    const backupAction2 = actions2.find((a) => a.includes(".backup-pre-008-"));
+    const backupAction2 = actions2.find((a) => a.includes("008-model-preset"));
 
     // Restore pid
     if (pidDescriptor) {

@@ -1,16 +1,13 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { safeReadJson } from "../../utils/safe-json.js";
 
 export function isQwenAuthenticated(): boolean {
-  const settingsPath = join(homedir(), ".qwen", "settings.json");
-  if (!existsSync(settingsPath)) return false;
-  try {
-    const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
-    return !!settings.security?.auth?.selectedType;
-  } catch {
-    return false;
-  }
+  const settings = safeReadJson<{
+    security?: { auth?: { selectedType?: unknown } };
+  }>(join(homedir(), ".qwen", "settings.json"));
+  return !!settings?.security?.auth?.selectedType;
 }
 
 /**

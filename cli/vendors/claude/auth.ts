@@ -1,14 +1,10 @@
-import { execSync } from "node:child_process";
+import { safeParseJson } from "../../utils/safe-json.js";
+import { isRecord } from "../../utils/type-guards.js";
+import { cliStatusOutput } from "../auth-utils.js";
 
 export function isClaudeAuthenticated(): boolean {
-  try {
-    const output = execSync("claude auth status", {
-      stdio: ["pipe", "pipe", "ignore"],
-      encoding: "utf-8",
-    });
-    const parsed = JSON.parse(output);
-    return parsed.loggedIn === true;
-  } catch {
-    return false;
-  }
+  const output = cliStatusOutput("claude auth status");
+  if (output === null) return false;
+  const parsed = safeParseJson(output);
+  return isRecord(parsed) && parsed.loggedIn === true;
 }

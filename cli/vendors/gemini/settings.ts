@@ -1,10 +1,16 @@
+import { isRecord } from "../../utils/type-guards.js";
 import {
-  hasSerenaDashboardOpenDisabled,
-  isLegacyUvxSerena,
   RECOMMENDED_CHROME_DEVTOOLS_MCP,
   serenaStartMcpArgs,
-  withSerenaDashboardOpenDisabled,
 } from "../serena.js";
+import {
+  applyPrivacyTelemetry,
+  applyRecommendedMcpServers,
+  filterMcpServerKeys,
+  type McpServerEntry,
+  needsPrivacyTelemetryUpdate,
+  needsRecommendedMcpUpdate,
+} from "../settings-shared.js";
 
 /**
  * Recommended Gemini CLI settings managed by oh-my-agent.
@@ -47,15 +53,10 @@ export interface GeminiSettingsOptions {
 
 type JsonRecord = Record<string, unknown>;
 
-interface GeminiMcpServer {
-  command?: string;
-  args?: string[];
+interface GeminiMcpServer extends McpServerEntry {
   env?: Record<string, string>;
   cwd?: string;
-  url?: string;
-  httpUrl?: string;
   headers?: Record<string, string>;
-  tcp?: string;
   type?: string;
   timeout?: number;
   trust?: boolean;
@@ -67,7 +68,6 @@ interface GeminiMcpServer {
   authProviderType?: string;
   targetAudience?: string;
   targetServiceAccount?: string;
-  [key: string]: unknown;
 }
 
 export interface GeminiSettings {
@@ -75,10 +75,6 @@ export interface GeminiSettings {
   experimental?: JsonRecord;
   mcpServers?: Record<string, GeminiMcpServer>;
   [key: string]: unknown;
-}
-
-function isRecord(value: unknown): value is JsonRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 const GEMINI_ALLOWED_MCP_SERVER_KEYS = new Set([
@@ -104,13 +100,10 @@ const GEMINI_ALLOWED_MCP_SERVER_KEYS = new Set([
 ]);
 
 function sanitizeGeminiMcpServer(server: GeminiMcpServer): GeminiMcpServer {
-  const nextServer: GeminiMcpServer = {};
-
-  for (const [key, value] of Object.entries(server)) {
-    if (value === undefined || value === null) continue;
-    if (!GEMINI_ALLOWED_MCP_SERVER_KEYS.has(key)) continue;
-    nextServer[key] = value;
-  }
+  const nextServer = filterMcpServerKeys(
+    server,
+    GEMINI_ALLOWED_MCP_SERVER_KEYS,
+  );
 
   const legacyAvailableTools = server.available_tools;
   if (
@@ -123,19 +116,6 @@ function sanitizeGeminiMcpServer(server: GeminiMcpServer): GeminiMcpServer {
   }
 
   return nextServer;
-}
-
-function hasGeminiMcpTransport(
-  server: GeminiMcpServer | undefined,
-): server is GeminiMcpServer {
-  if (!server) return false;
-
-  return (
-    typeof server.command === "string" ||
-    typeof server.url === "string" ||
-    typeof server.httpUrl === "string" ||
-    typeof server.tcp === "string"
-  );
 }
 
 export function sanitizeGeminiSettings(rawSettings: unknown): GeminiSettings {
@@ -199,24 +179,9 @@ export function needsGeminiSettingsUpdate(
     if (experimental[key] !== expected) return true;
   }
 
-  const serenaServer = geminiSettings.mcpServers?.serena;
-  if (!hasGeminiMcpTransport(serenaServer)) return true;
-  if (isLegacyUvxSerena(serenaServer)) return true;
-  if (!hasSerenaDashboardOpenDisabled(serenaServer)) return true;
+  if (needsRecommendedMcpUpdate(geminiSettings.mcpServers)) return true;
 
-  const chromeDevtools = geminiSettings.mcpServers?.["chrome-devtools"];
-  if (!hasGeminiMcpTransport(chromeDevtools)) return true;
-
-  const privacy = isRecord(geminiSettings.privacy)
-    ? geminiSettings.privacy
-    : undefined;
-  if (options.telemetry === true) {
-    if (privacy && "usageStatisticsEnabled" in privacy) return true;
-  } else {
-    if (privacy?.usageStatisticsEnabled !== false) return true;
-  }
-
-  return false;
+  return needsPrivacyTelemetryUpdate(geminiSettings, options.telemetry);
 }
 
 export function applyGeminiSettings(
@@ -224,15 +189,6 @@ export function applyGeminiSettings(
   options: GeminiSettingsOptions = {},
 ): GeminiSettings {
   const geminiSettings = sanitizeGeminiSettings(rawSettings);
-  const currentSerena = geminiSettings.mcpServers?.serena;
-  const nextSerena = withSerenaDashboardOpenDisabled(
-    hasGeminiMcpTransport(currentSerena)
-      ? currentSerena
-      : {
-          ...(currentSerena || {}),
-          ...RECOMMENDED_GEMINI_MCP.serena,
-        },
-  );
 
   geminiSettings.general = {
     ...(geminiSettings.general || {}),
@@ -244,27 +200,12 @@ export function applyGeminiSettings(
     ...RECOMMENDED_GEMINI_EXPERIMENTAL,
   };
 
-  geminiSettings.mcpServers = {
-    ...(geminiSettings.mcpServers || {}),
-    "chrome-devtools":
-      geminiSettings.mcpServers?.["chrome-devtools"] ??
-      RECOMMENDED_GEMINI_MCP["chrome-devtools"],
-    serena: nextSerena,
-  };
+  geminiSettings.mcpServers = applyRecommendedMcpServers(
+    geminiSettings.mcpServers,
+    RECOMMENDED_GEMINI_MCP,
+  );
 
-  const currentPrivacy = isRecord(geminiSettings.privacy)
-    ? { ...geminiSettings.privacy }
-    : {};
-  if (options.telemetry === true) {
-    delete currentPrivacy.usageStatisticsEnabled;
-  } else {
-    currentPrivacy.usageStatisticsEnabled = false;
-  }
-  if (Object.keys(currentPrivacy).length > 0) {
-    geminiSettings.privacy = currentPrivacy;
-  } else if ("privacy" in geminiSettings) {
-    delete geminiSettings.privacy;
-  }
+  applyPrivacyTelemetry(geminiSettings, options.telemetry);
 
   return geminiSettings;
 }

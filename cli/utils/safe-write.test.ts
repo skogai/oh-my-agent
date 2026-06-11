@@ -165,3 +165,30 @@ describe("listBackups", () => {
     }
   });
 });
+
+describe("safeWriteJson — canonical backup routing", () => {
+  it("T8: in-project targets back up under .agents/backup/safe-write, not as a sibling", () => {
+    // tmpDir is a project (has .agents/), so backups centralize.
+    fs.mkdirSync(path.join(tmpDir, ".agents"), { recursive: true });
+    const target = path.join(tmpDir, ".claude", "settings.json");
+
+    safeWriteJson(target, { v: 1 });
+    safeWriteJson(target, { v: 2 }); // second write produces one backup
+
+    const backupDir = path.join(tmpDir, ".agents", "backup", "safe-write");
+    expect(fs.existsSync(backupDir)).toBe(true);
+
+    const backups = listBackups(target);
+    expect(backups).toHaveLength(1);
+    expect(backups[0]?.startsWith(backupDir)).toBe(true);
+    // no sibling dotfile next to the target
+    const siblings = fs
+      .readdirSync(path.dirname(target))
+      .filter((n) => n.includes(".backup-"));
+    expect(siblings).toEqual([]);
+    // backup holds the pre-overwrite content
+    expect(JSON.parse(fs.readFileSync(backups[0] as string, "utf-8"))).toEqual({
+      v: 1,
+    });
+  });
+});

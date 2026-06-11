@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import type { OmaConfig } from "../../platform/agent-config.js";
+import { findFileUpwards } from "../../utils/fs-utils.js";
 import { ConfigError } from "./config-error.js";
 
 // ---------------------------------------------------------------------------
@@ -45,17 +46,6 @@ function assertNotLegacyPreset(modelPreset: string, filePath: string): void {
   }
 }
 
-function findFileUp(startDir: string, relativePath: string): string | null {
-  let current = path.resolve(startDir);
-  const root = path.parse(current).root;
-  while (current !== root) {
-    const candidate = path.join(current, relativePath);
-    if (fs.existsSync(candidate)) return candidate;
-    current = path.dirname(current);
-  }
-  return null;
-}
-
 /**
  * Load user config from the canonical .agents/oma-config.yaml.
  * Returns partial OmaConfig shape — only fields present in the file are set.
@@ -67,7 +57,7 @@ function findFileUp(startDir: string, relativePath: string): string | null {
  * to prompt the user to run `oma update`.
  */
 export function loadUserConfig(cwd: string): Partial<OmaConfig> {
-  const canonicalPath = findFileUp(
+  const canonicalPath = findFileUpwards(
     cwd,
     path.join(".agents", "oma-config.yaml"),
   );

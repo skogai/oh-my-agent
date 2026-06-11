@@ -239,12 +239,10 @@ your-project/
 │
 ├── .claude/                           ← IDE Integration Layer
 │   ├── settings.json                  ← Hooks registration and permissions
-│   ├── hooks/
-│   │   ├── triggers.json              ← Keyword-to-workflow mapping (11 languages)
+│   ├── hooks/                         ← Only the variant's runtime-required files (see below)
 │   │   ├── oma-hook.sh                ← Generated wrapper: resolves oma binary, exec oma hook "$@"
-│   │   ├── keyword-detector.ts        ← Auto-detection handler (pure run() fn, bundled into oma)
-│   │   ├── persistent-mode.ts         ← Persistent workflow handler (pure run() fn, bundled into oma)
-│   │   └── hud.ts                     ← [OMA] statusline indicator (bun path, not routed via oma hook)
+│   │   ├── hud.ts                     ← [OMA] statusline indicator (bun path, not routed via oma hook)
+│   │   └── filter-test-output.sh      ← Test-output filter; in-process test-filter pipes Bash test commands through it
 │   ├── skills/                        ← Symlinks → .agents/skills/
 │   │   ├── oma-frontend -> ../../.agents/skills/oma-frontend
 │   │   ├── oma-backend -> ../../.agents/skills/oma-backend
@@ -372,7 +370,28 @@ The `statusLine` entry stays on a direct `bun` path (hot-path display, not route
 
 ### hooks/
 
-**`triggers.json`**: The keyword-to-workflow mapping. Defines:
+A vendor's `hooks/` directory contains **only the files that something executes or reads from that directory at runtime**. The handler chain itself (keyword detection, persistent mode, skill injection, …) runs in-process inside the `oma` binary via `oma hook` — handler `.ts` files are bundled into the CLI at build time and are NOT materialized into vendor directories.
+
+**`oma-hook.sh`**: Generated wrapper script written by `oma link`/`oma install`/`oma update`. Every vendor hook event routes through this file. Resolution order at runtime: `command -v oma` (PATH) → recorded absolute path from install time → `exit 0` (fail-open, never blocks the agent). Passes `"$@"` verbatim so `--vendor`, `--event`, and `--matcher` args reach `oma hook` unchanged. Includes the self-dedup preamble that suppresses double-fire when both a project and a global install register the same event.
+
+**`hud.ts`**: Renders the `[OMA]` indicator in the status bar showing model name, context usage (color-coded: green/yellow/red), and active workflow state. Registered directly under `statusLine` (not routed through `oma hook`) to preserve hot-path render latency. Materialized only for vendors whose variant registers a `statusLine` or hud-only event (claude, antigravity, qwen, gemini). It infers its vendor dialect from its own installed path, so the per-vendor copy is load-bearing.
+
+**`filter-test-output.sh`**: Shell filter that trims noisy test-runner output. The in-process test-filter handler rewrites detected Bash test commands to pipe through `<hookDir>/filter-test-output.sh`, so this file is materialized for every vendor whose variant registers `test-filter.ts` (all except cursor).
+
+#### Where the handler logic actually lives
+
+The handler sources are the SSOT at `.agents/hooks/core/` and run in-process via `oma hook`:
+
+**`keyword-detector.ts`**: Pure handler (`run(input, ctx): HandlerResult | null`) for keyword detection. Logic:
+1. Sanitizes input (strips code blocks, quoted strings, pasted system-echo blocks)
+2. Scans cleaned input against trigger `keywords` (literal) and `patterns` (regex)
+3. Checks for informational patterns in a 60-character window around each match
+4. Applies reinforcement guard (suppresses if same workflow triggered 2+ times in 60s)
+5. Returns a `context` result injecting `[OMA WORKFLOW: ...]` or `[OMA PERSISTENT MODE: ...]`
+
+**`persistent-mode.ts`**: Pure handler (`run()`) that checks for active state files in `.agents/state/` and reinforces persistent workflow execution. Called in-process via `oma hook` on `Stop` events.
+
+**`triggers.json`**: The keyword-to-workflow mapping, statically inlined into the `oma` binary at build time (source: `.agents/hooks/core/triggers.json`). Defines:
 - `workflows`: Map of workflow name to `{ persistent: boolean, keywords: { language: [...] }, patterns?: { language: [...] } }`. `keywords` are literal phrases; `patterns` are raw regex strings (compiled with `iu` flags).
 - `informationalPatterns`: Phrases that indicate questions (filtered out from auto-detection)
 - `excludedWorkflows`: Workflows that require explicit `/command` invocation
@@ -383,18 +402,53 @@ Language sections in `keywords`, `patterns`, and `informationalPatterns` follow 
 - `en`: Loaded for backward compatibility. Functionally equivalent to `*`. New English content should go in `*`.
 - `ko`/`ja`/`zh`/etc.: Language-specific. Loaded only when `language: <code>` is set in `.agents/oma-config.yaml`.
 
-**`oma-hook.sh`**: Generated wrapper script written by `oma link`/`oma install`/`oma update`. Every vendor hook event routes through this file. Resolution order at runtime: `command -v oma` (PATH) → recorded absolute path from install time → `exit 0` (fail-open, never blocks the agent). Passes `"$@"` verbatim so `--vendor`, `--event`, and `--matcher` args reach `oma hook` unchanged. Includes the self-dedup preamble that suppresses double-fire when both a project and a global install register the same event.
+#### Per-vendor materialization: before → after
 
-**`keyword-detector.ts`**: Pure handler (`run(input, ctx): HandlerResult | null`) for keyword detection. Bundled into the `oma` binary and called in-process by `oma hook`. Logic:
-1. Sanitizes input (strips code blocks, quoted strings, pasted system-echo blocks)
-2. Scans cleaned input against trigger `keywords` (literal) and `patterns` (regex)
-3. Checks for informational patterns in a 60-character window around each match
-4. Applies reinforcement guard (suppresses if same workflow triggered 2+ times in 60s)
-5. Returns a `context` result injecting `[OMA WORKFLOW: ...]` or `[OMA PERSISTENT MODE: ...]`
+Older installs copied the **entire** `.agents/hooks/core/` set (~20 files) into every vendor's hook directory, even though the in-process dispatch made most of them dead files:
 
-**`persistent-mode.ts`**: Pure handler (`run()`) that checks for active state files in `.agents/state/` and reinforces persistent workflow execution. Called in-process via `oma hook` on `Stop` events.
+```
+# BEFORE — every vendor hookDir (.claude/hooks, .codex/hooks, .cursor/hooks, …)
+hooks/
+├── oma-hook.sh            ← executed (event dispatch)
+├── hud.ts                 ← executed (statusLine)
+├── filter-test-output.sh  ← read (test-filter pipe target)
+├── keyword-detector.ts    ← dead copy (runs in-process via oma hook)
+├── persistent-mode.ts     ← dead copy
+├── skill-injector.ts      ← dead copy
+├── state-boundary.ts      ← dead copy
+├── test-filter.ts         ← dead copy
+├── serena-primer.ts       ← dead copy
+├── triggers.json          ← dead copy (inlined into the oma binary)
+├── types.ts, constants.ts, fs-utils.ts, hook-output.ts,
+│   agentmemory-client.ts, agy-input.ts, grok-context.ts,
+│   inject-log.ts, state-emit.ts, state-marker.ts,
+│   vendor-renderer.ts     ← dead copies (handler-chain internals)
+└── …
+```
 
-**`hud.ts`**: Renders the `[OMA]` indicator in the status bar showing model name, context usage (color-coded: green/yellow/red), and active workflow state. Registered directly under `statusLine` (not routed through `oma hook`) to preserve hot-path render latency.
+Now the installer derives a whitelist from the vendor's variant JSON (`requiredVariantScripts` in `cli/platform/hooks-composer.ts`) and materializes only what that vendor executes or reads:
+
+```
+# AFTER
+.claude/hooks/              .codex/hooks/  .grok/hooks/  .kiro/hooks/
+├── oma-hook.sh             ├── oma-hook.sh
+├── hud.ts                  └── filter-test-output.sh
+└── filter-test-output.sh
+                            .cursor/hooks/  .commandcode/hooks/
+.gemini/hooks/  .qwen/hooks/  .gemini/antigravity-cli/hooks/
+(same as .claude)           └── oma-hook.sh
+```
+
+| Vendor | Materialized files | Why |
+|---|---|---|
+| claude, antigravity, qwen | `oma-hook.sh`, `hud.ts`, `filter-test-output.sh` | statusLine + test-filter |
+| gemini | `oma-hook.sh`, `hud.ts`, `filter-test-output.sh` | hud-only events + test-filter |
+| codex, grok, kiro | `oma-hook.sh`, `filter-test-output.sh` | test-filter, no statusLine |
+| cursor | `oma-hook.sh` | no statusLine, no test-filter |
+| commandcode | `oma-hook.sh` | Stop only — Command Code has no prompt event and PreToolUse cannot rewrite input ([hooks reference](https://commandcode.ai/docs/hooks/reference)) |
+| pi | full `.agents/hooks/core/` set under `.pi/extensions/oma/` | the pi bridge spawns handlers as subprocesses instead of using settings hooks |
+
+The destination directory is cleared before copying, so re-running `oma install`/`oma update`/`oma link` on an older install automatically sweeps the stale full-copy files.
 
 #### Debugging a handler chain in isolation
 

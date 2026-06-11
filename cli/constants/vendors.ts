@@ -18,6 +18,7 @@ export const VENDORS = [
   "antigravity",
   "claude",
   "codex",
+  "commandcode",
   "cursor",
   "gemini",
   "grok",
@@ -39,14 +40,26 @@ export const EXTENSION_VENDORS = ["pi"] as const;
 export type ExtensionVendor = (typeof EXTENSION_VENDORS)[number];
 
 /**
+ * Vendors that only receive skill installs (no hook detection, no runtime
+ * adapter). Source of truth for the `InstallOnlyVendor` type and the
+ * install-only tail of `ALL_CLI_VENDORS` / `CliTool`.
+ */
+export const INSTALL_ONLY_VENDORS = ["copilot", "hermes"] as const;
+
+/**
+ * Hook vendors that have no skill-symlink target (no `CLI_SKILLS_DIR`
+ * entry). Excluded from `CliTool` via type-level `Exclude`.
+ */
+export const NO_SKILL_VENDORS = ["grok"] as const;
+
+/**
  * All CLI tools including non-hook vendors (skill-install only).
  * Derived from VENDORS plus the install-only targets, sorted alphabetically
  * for deterministic output where consumers iterate.
  */
 export const ALL_CLI_VENDORS: CliVendor[] = [
   ...VENDORS,
-  "copilot",
-  "hermes",
+  ...INSTALL_ONLY_VENDORS,
 ].sort() as CliVendor[];
 
 export interface SkillTargetSpec {
@@ -60,6 +73,11 @@ export interface SkillTargetSpec {
    * before proceeding. Today only `hermes` qualifies.
    */
   requiresHomeConsent?: boolean;
+  /**
+   * When true, this vendor is shown in the install prompt but NOT selected
+   * by default. Users must explicitly opt in.
+   */
+  optIn?: boolean;
 }
 
 export const CLI_SKILLS_DIR: Record<CliTool, SkillTargetSpec> = {
@@ -70,6 +88,11 @@ export const CLI_SKILLS_DIR: Record<CliTool, SkillTargetSpec> = {
   },
   claude: { projectPath: ".claude/skills", homePath: ".claude/skills" },
   codex: { projectPath: ".codex/skills", homePath: ".codex/skills" },
+  commandcode: {
+    projectPath: ".commandcode/skills",
+    homePath: ".commandcode/skills",
+    optIn: true,
+  },
   copilot: { projectPath: ".github/skills", homePath: ".copilot/skills" },
   cursor: { projectPath: ".cursor/skills", homePath: ".cursor/skills" },
   gemini: { projectPath: ".gemini/skills", homePath: ".gemini/skills" },
@@ -78,6 +101,6 @@ export const CLI_SKILLS_DIR: Record<CliTool, SkillTargetSpec> = {
     homePath: ".hermes/skills/oma",
     requiresHomeConsent: true,
   },
-  kiro: { projectPath: ".kiro/skills", homePath: ".kiro/skills" },
+  kiro: { projectPath: ".kiro/skills", homePath: ".kiro/skills", optIn: true },
   qwen: { projectPath: ".qwen/skills", homePath: ".qwen/skills" },
 };

@@ -51,8 +51,9 @@ describe("migrateWorkflowDirectSymlinks (013)", () => {
       existsSync(
         join(
           cwd,
-          ".migration-backup",
-          "013",
+          ".agents",
+          "backup",
+          "013-workflow-symlinks",
           ".agents",
           "skills",
           "docs",

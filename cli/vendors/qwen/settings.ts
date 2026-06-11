@@ -1,10 +1,16 @@
+import { isRecord } from "../../utils/type-guards.js";
 import {
-  hasSerenaDashboardOpenDisabled,
-  isLegacyUvxSerena,
   RECOMMENDED_CHROME_DEVTOOLS_MCP,
   serenaStartMcpArgs,
-  withSerenaDashboardOpenDisabled,
 } from "../serena.js";
+import {
+  applyPrivacyTelemetry,
+  applyRecommendedMcpServers,
+  filterMcpServerKeys,
+  type McpServerEntry,
+  needsPrivacyTelemetryUpdate,
+  needsRecommendedMcpUpdate,
+} from "../settings-shared.js";
 
 /**
  * Recommended Qwen Code settings managed by oh-my-agent.
@@ -36,33 +42,21 @@ export const RECOMMENDED_QWEN_MCP = {
   },
 };
 
-type JsonRecord = Record<string, unknown>;
-
-interface QwenMcpServer {
-  command?: string;
-  args?: string[];
+interface QwenMcpServer extends McpServerEntry {
   env?: Record<string, string>;
   cwd?: string;
-  url?: string;
-  httpUrl?: string;
   headers?: Record<string, string>;
-  tcp?: string;
   type?: string;
   timeout?: number;
   trust?: boolean;
   description?: string;
   includeTools?: string[];
   excludeTools?: string[];
-  [key: string]: unknown;
 }
 
 export interface QwenSettings {
   mcpServers?: Record<string, QwenMcpServer>;
   [key: string]: unknown;
-}
-
-function isRecord(value: unknown): value is JsonRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 const QWEN_ALLOWED_MCP_SERVER_KEYS = new Set([
@@ -82,35 +76,13 @@ const QWEN_ALLOWED_MCP_SERVER_KEYS = new Set([
   "excludeTools",
 ]);
 
-function sanitizeQwenMcpServer(server: QwenMcpServer): QwenMcpServer {
-  const nextServer: QwenMcpServer = {};
-  for (const [key, value] of Object.entries(server)) {
-    if (value === undefined || value === null) continue;
-    if (!QWEN_ALLOWED_MCP_SERVER_KEYS.has(key)) continue;
-    nextServer[key] = value;
-  }
-  return nextServer;
-}
-
-function hasQwenMcpTransport(
-  server: QwenMcpServer | undefined,
-): server is QwenMcpServer {
-  if (!server) return false;
-  return (
-    typeof server.command === "string" ||
-    typeof server.url === "string" ||
-    typeof server.httpUrl === "string" ||
-    typeof server.tcp === "string"
-  );
-}
-
 export function sanitizeQwenSettings(rawSettings: unknown): QwenSettings {
   const qwenSettings = normalizeQwenSettings(rawSettings);
   if (qwenSettings.mcpServers) {
     qwenSettings.mcpServers = Object.fromEntries(
       Object.entries(qwenSettings.mcpServers).map(([name, server]) => [
         name,
-        sanitizeQwenMcpServer(server),
+        filterMcpServerKeys(server, QWEN_ALLOWED_MCP_SERVER_KEYS),
       ]),
     );
   }
@@ -133,22 +105,9 @@ export function needsQwenSettingsUpdate(
   const sanitized = sanitizeQwenSettings(rawSettings);
   if (JSON.stringify(normalized) !== JSON.stringify(sanitized)) return true;
 
-  const serenaServer = sanitized.mcpServers?.serena;
-  if (!hasQwenMcpTransport(serenaServer)) return true;
-  if (isLegacyUvxSerena(serenaServer)) return true;
-  if (!hasSerenaDashboardOpenDisabled(serenaServer)) return true;
+  if (needsRecommendedMcpUpdate(sanitized.mcpServers)) return true;
 
-  const chromeDevtools = sanitized.mcpServers?.["chrome-devtools"];
-  if (!hasQwenMcpTransport(chromeDevtools)) return true;
-
-  const privacy = isRecord(sanitized.privacy) ? sanitized.privacy : undefined;
-  if (options.telemetry === true) {
-    if (privacy && "usageStatisticsEnabled" in privacy) return true;
-  } else {
-    if (privacy?.usageStatisticsEnabled !== false) return true;
-  }
-
-  return false;
+  return needsPrivacyTelemetryUpdate(sanitized, options.telemetry);
 }
 
 export function applyQwenSettings(
@@ -156,37 +115,13 @@ export function applyQwenSettings(
   options: QwenSettingsOptions = {},
 ): QwenSettings {
   const qwenSettings = sanitizeQwenSettings(rawSettings);
-  const currentSerena = qwenSettings.mcpServers?.serena;
-  const nextSerena = withSerenaDashboardOpenDisabled(
-    hasQwenMcpTransport(currentSerena)
-      ? currentSerena
-      : {
-          ...(currentSerena || {}),
-          ...RECOMMENDED_QWEN_MCP.serena,
-        },
+
+  qwenSettings.mcpServers = applyRecommendedMcpServers(
+    qwenSettings.mcpServers,
+    RECOMMENDED_QWEN_MCP,
   );
 
-  qwenSettings.mcpServers = {
-    ...(qwenSettings.mcpServers || {}),
-    "chrome-devtools":
-      qwenSettings.mcpServers?.["chrome-devtools"] ??
-      RECOMMENDED_QWEN_MCP["chrome-devtools"],
-    serena: nextSerena,
-  };
-
-  const currentPrivacy = isRecord(qwenSettings.privacy)
-    ? { ...qwenSettings.privacy }
-    : {};
-  if (options.telemetry === true) {
-    delete currentPrivacy.usageStatisticsEnabled;
-  } else {
-    currentPrivacy.usageStatisticsEnabled = false;
-  }
-  if (Object.keys(currentPrivacy).length > 0) {
-    qwenSettings.privacy = currentPrivacy;
-  } else if ("privacy" in qwenSettings) {
-    delete qwenSettings.privacy;
-  }
+  applyPrivacyTelemetry(qwenSettings, options.telemetry);
 
   return qwenSettings;
 }

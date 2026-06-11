@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { safeReadJson } from "../../utils/safe-json.js";
 
 /**
  * Provider API-key env vars pi can use without an OAuth login. pi is a
@@ -46,31 +46,22 @@ export function isPiAuthenticated(
     return true;
   }
 
-  const authPath = join(piAgentDir(env), "auth.json");
-  if (!existsSync(authPath)) {
+  const data = safeReadJson(join(piAgentDir(env), "auth.json"));
+
+  // auth.json is an object keyed by provider/issuer; entries carry a literal
+  // key, a `$VAR` reference, or a `!command` to execute. Any non-empty entry
+  // counts as a configured credential.
+  if (typeof data !== "object" || data === null) {
     return false;
   }
 
-  try {
-    const data = JSON.parse(readFileSync(authPath, "utf-8"));
-
-    // auth.json is an object keyed by provider/issuer; entries carry a literal
-    // key, a `$VAR` reference, or a `!command` to execute. Any non-empty entry
-    // counts as a configured credential.
-    if (typeof data !== "object" || data === null) {
-      return false;
+  return Object.values(data).some((entry) => {
+    if (typeof entry === "string") {
+      return entry.length > 0;
     }
-
-    return Object.values(data).some((entry) => {
-      if (typeof entry === "string") {
-        return entry.length > 0;
-      }
-      if (entry && typeof entry === "object") {
-        return Object.keys(entry).length > 0;
-      }
-      return false;
-    });
-  } catch {
+    if (entry && typeof entry === "object") {
+      return Object.keys(entry).length > 0;
+    }
     return false;
-  }
+  });
 }

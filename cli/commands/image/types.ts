@@ -1,3 +1,4 @@
+import { exitCodeForStatus } from "../../utils/exit-codes.js";
 export type Size = `${number}x${number}` | "auto";
 export type Quality = "low" | "medium" | "high" | "auto";
 
@@ -97,17 +98,6 @@ export interface Manifest {
 }
 
 export function exitForError(kind: VendorError["kind"] | undefined): number {
-  switch (kind) {
-    case "safety-refused":
-      return 2;
-    case "invalid-input":
-      return 4;
-    case "auth-required":
-    case "not-installed":
-      return 5;
-    case "timeout":
-      return 6;
-    default:
-      return 1;
-  }
+  // "ok" is not an error kind, so this only ever yields failure codes.
+  return exitCodeForStatus(kind);
 }

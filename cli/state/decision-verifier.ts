@@ -39,6 +39,15 @@ export const REQUIRED_DECISIONS: RequiredDecisionTable = {
       },
     ],
   },
+  ralph: {
+    "exec-delegated": [
+      {
+        subject: "ralph.exec-delegated",
+        description:
+          "EXEC iteration delegated to the full ultrawork 5-phase workflow before any agent is spawned; abridging or substituting ultrawork without user approval is forbidden.",
+      },
+    ],
+  },
   orchestrate: {
     "fanout-strategy": [
       {
@@ -133,6 +142,22 @@ export const REQUIRED_DECISIONS: RequiredDecisionTable = {
         subject: "docs.sync-patch-approval",
         description:
           "Documentation sync decision captured for docs auto-applied versus skipped.",
+      },
+    ],
+  },
+  video: {
+    "mode-selection": [
+      {
+        subject: "video.mode-selection",
+        description:
+          "Confirmed video mode, aspect, visual track, and compositor captured before asset generation.",
+      },
+    ],
+    "cost-confirmation": [
+      {
+        subject: "video.cost-confirmation",
+        description:
+          "Paid-cost confirmation or key-free fallback decision captured when the estimate crosses the guardrail.",
       },
     ],
   },

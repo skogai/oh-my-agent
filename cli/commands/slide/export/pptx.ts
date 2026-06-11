@@ -28,7 +28,7 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import color from "picocolors";
-import { findChromeExecutable } from "../../search/strategies/browser.js";
+import { findChromeExecutable } from "../../../io/chrome.js";
 import { resolveWorkspace } from "../workspace.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────

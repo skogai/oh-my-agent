@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { resolveSafeWriteBackup } from "../io/backup.js";
 
 const BACKUP_RETENTION = 3;
 
@@ -24,7 +25,10 @@ export const FORBIDDEN_VENDOR_FILES: ReadonlySet<string> = new Set<string>([
  * Atomically write a JSON value to `targetPath`.
  *
  * Strategy:
- * 1. Stamp existing target (if any) into `<dir>/.<name>.backup-<Date.now()>-<pid>` (3-tier rotation: keep last 3, delete older).
+ * 1. Stamp existing target (if any) into the canonical backup location resolved
+ *    by `resolveSafeWriteBackup` — `<project>/.agents/backup/safe-write/` when
+ *    the target lives in a project, else a sibling dotfile for home/global
+ *    vendor configs (3-tier rotation: keep last 3, delete older).
  * 2. Write payload to a sibling temp file `<dir>/.<name>.tmp-<Date.now()>-<pid>`.
  * 3. `fs.renameSync(tmp, target)` for atomic swap.
  *    - On `EXDEV` (cross-device link error), fall back to `fs.copyFileSync(tmp, target)` + `fs.unlinkSync(tmp)`.
@@ -41,10 +45,24 @@ export const FORBIDDEN_VENDOR_FILES: ReadonlySet<string> = new Set<string>([
  * @throws {Error} if `path.basename(targetPath)` is in `FORBIDDEN_VENDOR_FILES`
  */
 export function safeWriteJson(targetPath: string, value: unknown): void {
+  safeWriteFile(targetPath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+/**
+ * Atomically write raw text to `targetPath` with the same backup / temp-file /
+ * rename strategy as `safeWriteJson` (see above). Use this for non-JSON
+ * config formats (TOML, YAML) that need the same crash-safety and rollback
+ * guarantees as JSON settings files.
+ *
+ * @param targetPath absolute path
+ * @param content full file content, written verbatim
+ * @throws {Error} if `path.basename(targetPath)` is in `FORBIDDEN_VENDOR_FILES`
+ */
+export function safeWriteFile(targetPath: string, content: string): void {
   const basename = path.basename(targetPath);
   if (FORBIDDEN_VENDOR_FILES.has(basename)) {
     throw new Error(
-      `safeWriteJson: refusing to write ${basename} — vendor-owned file (FORBIDDEN_VENDOR_FILES). targetPath=${targetPath}`,
+      `safeWriteFile: refusing to write ${basename} — vendor-owned file (FORBIDDEN_VENDOR_FILES). targetPath=${targetPath}`,
     );
   }
 
@@ -54,16 +72,19 @@ export function safeWriteJson(targetPath: string, value: unknown): void {
   // Ensure parent directory exists
   fs.mkdirSync(dir, { recursive: true });
 
-  // Step 1: backup existing target if it exists
+  // Step 1: backup existing target if it exists, into the canonical location.
   if (fs.existsSync(targetPath)) {
-    const backupPath = path.join(dir, `.${basename}.backup-${stamp}`);
-    fs.copyFileSync(targetPath, backupPath);
+    const backup = resolveSafeWriteBackup(targetPath);
+    fs.mkdirSync(backup.dir, { recursive: true });
+    fs.copyFileSync(
+      targetPath,
+      path.join(backup.dir, `${backup.prefix}${stamp}`),
+    );
   }
 
-  // Step 2: write to temp file
+  // Step 2: write to temp file (sibling to target — atomic rename needs same fs)
   const tmpPath = path.join(dir, `.${basename}.tmp-${stamp}`);
-  const payload = `${JSON.stringify(value, null, 2)}\n`;
-  fs.writeFileSync(tmpPath, payload, "utf-8");
+  fs.writeFileSync(tmpPath, content, "utf-8");
 
   // Step 3: atomic rename, EXDEV fallback
   try {
@@ -81,17 +102,16 @@ export function safeWriteJson(targetPath: string, value: unknown): void {
   }
 
   // Step 4: prune old backups, keep last BACKUP_RETENTION
-  pruneBackups(dir, basename);
+  pruneBackups(targetPath);
 }
 
 /** List existing backups for diagnostic / restore use. Sorted newest-first. */
 export function listBackups(targetPath: string): string[] {
-  const dir = path.dirname(targetPath);
-  const basename = path.basename(targetPath);
-  return getBackupsSortedNewestFirst(dir, basename);
+  return getBackupsSortedNewestFirst(targetPath);
 }
 
-function getBackupsSortedNewestFirst(dir: string, basename: string): string[] {
+function getBackupsSortedNewestFirst(targetPath: string): string[] {
+  const { dir, prefix } = resolveSafeWriteBackup(targetPath);
   let entries: fs.Dirent[];
   try {
     entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -99,7 +119,6 @@ function getBackupsSortedNewestFirst(dir: string, basename: string): string[] {
     return [];
   }
 
-  const prefix = `.${basename}.backup-`;
   const backupPaths = entries
     .filter((e) => e.isFile() && e.name.startsWith(prefix))
     .map((e) => path.join(dir, e.name));
@@ -118,8 +137,8 @@ function getBackupsSortedNewestFirst(dir: string, basename: string): string[] {
   });
 }
 
-function pruneBackups(dir: string, basename: string): void {
-  const sorted = getBackupsSortedNewestFirst(dir, basename);
+function pruneBackups(targetPath: string): void {
+  const sorted = getBackupsSortedNewestFirst(targetPath);
   const toDelete = sorted.slice(BACKUP_RETENTION);
   for (const filePath of toDelete) {
     try {

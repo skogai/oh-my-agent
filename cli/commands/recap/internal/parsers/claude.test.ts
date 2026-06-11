@@ -79,4 +79,82 @@ describe("claude parser", () => {
     mkdirSync(join(tempHome, ".claude", "projects"), { recursive: true });
     expect(await parser?.detect()).toBe(true);
   });
+
+  it("response pairing: two prompts sharing an 80+ char prefix each get their own response", async () => {
+    // Both prompts start with the same 80 characters but diverge after that.
+    const sharedPrefix = "A".repeat(80);
+    const promptA = `${sharedPrefix} - topic Alpha`;
+    const promptB = `${sharedPrefix} - topic Beta`;
+
+    const ts = new Date("2026-05-29T12:00:00.000Z").getTime();
+    const claudeDir = join(tempHome, ".claude");
+    const historyPath = join(claudeDir, "history.jsonl");
+    const projectDir = join(claudeDir, "projects", "test-project");
+    const sessionPath = join(projectDir, "session-abc.jsonl");
+
+    mkdirSync(claudeDir, { recursive: true });
+    mkdirSync(projectDir, { recursive: true });
+
+    // Write history.jsonl (what the `parse()` method reads for the prompt list)
+    writeFileSync(
+      historyPath,
+      [
+        JSON.stringify({
+          timestamp: ts,
+          display: promptA,
+          project: "/test/project",
+          sessionId: "session-abc",
+        }),
+        JSON.stringify({
+          timestamp: ts + 2000,
+          display: promptB,
+          project: "/test/project",
+          sessionId: "session-abc",
+        }),
+      ].join("\n"),
+      "utf-8",
+    );
+
+    // Write the session file with paired turns (user A → assistant A → user B → assistant B)
+    writeFileSync(
+      sessionPath,
+      [
+        JSON.stringify({
+          type: "user",
+          timestamp: new Date(ts).toISOString(),
+          message: { content: promptA },
+        }),
+        JSON.stringify({
+          type: "assistant",
+          timestamp: new Date(ts + 1000).toISOString(),
+          message: { content: [{ type: "text", text: "Response for Alpha" }] },
+        }),
+        JSON.stringify({
+          type: "user",
+          timestamp: new Date(ts + 2000).toISOString(),
+          message: { content: promptB },
+        }),
+        JSON.stringify({
+          type: "assistant",
+          timestamp: new Date(ts + 3000).toISOString(),
+          message: { content: [{ type: "text", text: "Response for Beta" }] },
+        }),
+      ].join("\n"),
+      "utf-8",
+    );
+
+    const entries = await parser?.parse(ts - 10_000, ts + 10_000);
+    expect(entries).toHaveLength(2);
+
+    const entryA = entries?.find((e) => e.prompt === promptA);
+    const entryB = entries?.find((e) => e.prompt === promptB);
+
+    expect(entryA).toBeDefined();
+    expect(entryB).toBeDefined();
+    expect(entryA?.response).toContain("Alpha");
+    expect(entryB?.response).toContain("Beta");
+    // Cross-assignment must not happen
+    expect(entryA?.response).not.toContain("Beta");
+    expect(entryB?.response).not.toContain("Alpha");
+  });
 });

@@ -31,6 +31,9 @@ jobs:
       - name: Lint (cli)
         run: bun run --cwd cli lint
 
+      - name: Boundaries (cli)
+        run: bun run --cwd cli check:boundaries
+
       - name: Typecheck
         run: bun run typecheck
 

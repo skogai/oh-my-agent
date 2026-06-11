@@ -145,18 +145,22 @@ registerParser({
             }
           }
 
-          // Pair user → next assistant for entries we already collected in this workspace
+          // Pair user → next assistant for entries we already collected in this workspace.
+          // Match on full prompt text (not just first 80 chars) so two prompts
+          // sharing an 80+ char prefix don't get each other's responses.
+          // curr.text is a preview (up to RESPONSE_PREVIEW chars) so we also
+          // accept a startsWith relationship to handle display truncation.
           for (let i = 0; i < messages.length - 1; i++) {
             const curr = messages[i];
             if (!curr || curr.role !== "user") continue;
             const next = messages[i + 1];
             if (next && next.role === "assistant") {
-              // Find matching entry by prompt prefix (cheap)
-              const prefix = curr.text.slice(0, 80);
               const match = entries.find(
                 (e) =>
                   e.project === project &&
-                  e.prompt.slice(0, 80) === prefix &&
+                  (e.prompt === curr.text ||
+                    e.prompt.startsWith(curr.text) ||
+                    curr.text.startsWith(e.prompt)) &&
                   !e.response,
               );
               if (match) {

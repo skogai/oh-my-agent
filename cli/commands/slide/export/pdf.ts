@@ -16,7 +16,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import color from "picocolors";
-import { findChromeExecutable } from "../../search/strategies/browser.js";
+import { findChromeExecutable } from "../../../io/chrome.js";
 import { runSlideViewer } from "../viewer.js";
 import { resolveWorkspace } from "../workspace.js";
 

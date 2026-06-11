@@ -110,3 +110,7 @@ __pycache__/
 
 # deepsec workspace (vuln scanner: config, INFO.md, data/, findings/, .env.local)
 .deepsec/
+
+# oh-my-agent runtime (local artifacts — do not commit)
+.agents/backup/
+.migration-backup/

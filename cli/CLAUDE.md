@@ -16,6 +16,19 @@
 2. If `target_vendor_for_agent === current_runtime_vendor`, use the runtime's native subagent path.
 3. If vendors differ, or native subagents are unavailable, use `oma agent:spawn` for that agent only.
 
+## Code Search
+
+Prefer **serena MCP** tools over native find/grep when locating code — they are symbol-aware and faster on large repos. Fall back to native Read / Glob / Grep only when serena is unavailable or for plain file content reads.
+
+| Task | Preferred tool |
+|------|----------------|
+| Locate a symbol definition (class / function / variable) | `find_symbol` |
+| Find references / callers of a symbol | `find_referencing_symbols` |
+| Outline a file's top-level symbols | `get_symbols_overview` |
+| Pattern or regex search across the codebase | `search_for_pattern` |
+| Find a file by name | `find_file` |
+| List directory contents | `list_dir` |
+
 ## Workflows
 
 Execute by naming the workflow in your prompt. Keywords are auto-detected via hooks.
@@ -31,6 +44,8 @@ Execute by naming the workflow in your prompt. Keywords are auto-detected via ho
 | debug | `debug.md` | Root cause + minimal fix |
 | deepsec | `deepsec.md` | Drive `oma-deepsec` end-to-end (setup / scan / pr-review / matchers / triage) |
 | scm | `scm.md` | SCM + Git operations + Conventional Commits |
+| docs | `docs.md` | Documentation drift verify + sync |
+| recap | `recap.md` | Daily / period AI conversation recap |
 | video | `video.md` | Brief → script → assets → render-spec → Remotion (oma-video) |
 
 To execute: read and follow `.agents/workflows/{name}.md` step by step.
@@ -47,5 +62,24 @@ Deactivate: say "workflow done".
 1. **Do not modify `.agents/` files** (SSOT protection).
 2. Workflows execute via keyword detection or explicit naming, never self-initiated.
 3. Response language follows `.agents/oma-config.yaml`
+
+## Project Rules
+
+Read the relevant file from `.agents/rules/` when working on matching code.
+
+| Rule | File | Scope |
+|------|------|-------|
+| mobile | `.agents/rules/mobile.md` | **/*.{dart,swift,kt} |
+| commit | `.agents/rules/commit.md` | on request |
+| dev-workflow | `.agents/rules/dev-workflow.md` | on request |
+| infrastructure | `.agents/rules/infrastructure.md` | **/*.{tf,tfvars,hcl} |
+| backend | `.agents/rules/backend.md` | on request |
+| i18n-guide | `.agents/rules/i18n-guide.md` | always |
+| debug | `.agents/rules/debug.md` | on request |
+| frontend | `.agents/rules/frontend.md` | **/*.{tsx,jsx,css,scss} |
+| design | `.agents/rules/design.md` | on request |
+| database | `.agents/rules/database.md` | **/*.{sql,prisma} |
+| market | `.agents/rules/market.md` | on request |
+| quality | `.agents/rules/quality.md` | on request |
 
 <!-- OMA:END -->
